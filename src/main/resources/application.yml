@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: ktx-app
+  datasource:
+    url: jdbc:mysql://localhost:3306/ktx?sslMode=DISABLED&characterEncoding=utf8
+    username: ${KTX_DB_USER:ktx}
+    password: ${KTX_DB_PASSWORD:ktx}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  servlet:
+    session:
+      timeout: 30m
+
+server:
+  servlet:
+    session:
+      cookie:
+        http-only: true
+
+ktx:
+  mail:
+    enabled: false
+  timezone: Asia/Ho_Chi_Minh
