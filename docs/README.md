@@ -11,6 +11,8 @@
 
 v1.4: stack Java 25 / Boot 4.1 / MySQL 8.4. v1.5: thêm §24 UI/UX. v1.6: theme trắng/clean theo [exampleUI.png](./image/exampleUI.png) — bỏ sidebar mực / linen / brass.
 
+Quy trình Git (Gitflow) cho thành viên: [../CONTRIBUTING.md](../CONTRIBUTING.md).
+
 ## Mục lục đặc tả
 
 | File | Nội dung (số mục gốc) |
