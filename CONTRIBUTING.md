@@ -2,7 +2,7 @@
 
 Repo: [hoclaptrinh33/BTL_Java_Web_QlyKiTucXa](https://github.com/hoclaptrinh33/BTL_Java_Web_QlyKiTucXa)
 
-**Không push thẳng vào `main` hoặc `develop`.** Mọi thay đổi đi qua nhánh riêng + Pull Request.
+**GitHub đã khóa `main` và `develop`.** `git push origin main` / `git push origin develop` sẽ bị từ chối. Phải làm trên nhánh riêng rồi mở Pull Request.
 
 Issue để nhận việc: [Issues](https://github.com/hoclaptrinh33/BTL_Java_Web_QlyKiTucXa/issues) · bảng việc [#40](https://github.com/hoclaptrinh33/BTL_Java_Web_QlyKiTucXa/issues/40).
 
@@ -35,6 +35,28 @@ feature/2-flyway-v1   feature/7-register   feature/11-crud-toa
 | `release/x.y` | (Tuỳ chọn) đóng gói buổi chấm | PR `develop` → `release/*` → `main` |
 
 Nhánh mặc định khi clone: **`develop`**.
+
+### GitHub chặn gì?
+
+Ruleset **Protect main and develop** (Settings → Rules):
+
+| Thao tác | Kết quả |
+| --- | --- |
+| `git push origin main` hoặc `git push origin develop` | **Bị chặn** — kể cả admin |
+| `git push --force` lên `main` / `develop` | **Bị chặn** |
+| Xóa nhánh `main` / `develop` | **Bị chặn** |
+| `git push origin feature/2-flyway-v1` | Được |
+| Mở PR `feature/…` → `develop` rồi bấm Merge | Được |
+| Mở PR `develop` → `main` (release) hoặc `hotfix/…` → `main` | Được |
+
+Lỗi điển hình khi push thẳng:
+
+```text
+remote: error: GH013: Repository rule violations found for refs/heads/develop.
+remote: - Changes must be made through a pull request.
+```
+
+Cách đúng: quay lại nhánh feature, push nhánh đó, tạo PR.
 
 ---
 
@@ -212,11 +234,11 @@ Không dùng `git push --force` lên `develop` / `main`. Force trên feature c�
 
 | | |
 | --- | --- |
-| Cấm | `git push origin main` |
-| Cấm | `git push origin develop` |
+| Cấm | `git push origin main` — GitHub từ chối |
+| Cấm | `git push origin develop` — GitHub từ chối |
 | Cấm | Commit trực tiếp trên `main` / `develop` rồi push |
 | Cấm | Một PR sửa 5 issue |
-| Được | `git push origin feature/...` rồi mở PR |
+| Được | `git push origin feature/...` rồi mở PR vào `develop` |
 | Được | Nhiều commit nhỏ trên feature |
 | Được | `git pull origin develop` mỗi ngày trước khi code |
 
