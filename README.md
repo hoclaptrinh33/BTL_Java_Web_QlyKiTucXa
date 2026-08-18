@@ -10,7 +10,9 @@
 
 ## Tài liệu
 
-Xem [docs/README.md](./docs/README.md) để đọc đặc tả chức năng và kỹ thuật.
+- Đặc tả chức năng và kỹ thuật: [docs/README.md](./docs/README.md)
+- **Gitflow — clone, nhánh `feature/…`, PR, không đẩy `main`:** [CONTRIBUTING.md](./CONTRIBUTING.md)
+- Nhận việc: [Issues](https://github.com/hoclaptrinh33/BTL_Java_Web_QlyKiTucXa/issues) · bảng việc [#40](https://github.com/hoclaptrinh33/BTL_Java_Web_QlyKiTucXa/issues/40)
 
 ## Yêu cầu chạy local
 
