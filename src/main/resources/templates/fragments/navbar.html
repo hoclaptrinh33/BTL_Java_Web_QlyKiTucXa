@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<header class="ktx-topbar" th:fragment="navbar">
+    <button class="btn ktx-icon-btn d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#ktxSidebar" aria-label="Mở menu">
+        <i class="bi bi-list"></i>
+    </button>
+    <div class="ktx-topbar__title">
+        <h1 th:text="${pageTitle}">Tổng quan</h1>
+        <p th:if="${pageSubtitle}" th:text="${pageSubtitle}">Bảng điều khiển hệ thống</p>
+    </div>
+    <form class="ktx-search d-none d-md-flex" role="search" action="#" method="get">
+        <i class="bi bi-search"></i>
+        <input type="search" name="q" placeholder="Tìm sinh viên, phòng, đơn…" aria-label="Tìm kiếm"/>
+    </form>
+    <button class="btn ktx-icon-btn" type="button" aria-label="Thông báo" disabled>
+        <i class="bi bi-bell"></i>
+    </button>
+    <div class="dropdown">
+        <button class="ktx-user" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="ktx-avatar" sec:authentication="name">AD</span>
+            <span class="ktx-user__meta">
+                <strong sec:authentication="name">user</strong>
+                <small sec:authorize="hasRole('ADMIN')">Quản trị viên</small>
+                <small sec:authorize="hasRole('STAFF')">Nhân viên</small>
+            </span>
+            <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+                <form th:action="@{/logout}" method="post">
+                    <button class="dropdown-item" type="submit">Đăng xuất</button>
+                </form>
+            </li>
+        </ul>
+    </div>
+</header>
+
+<header class="ktx-topbar ktx-topbar--portal" th:fragment="navbar-student">
+    <a class="ktx-brand" th:href="@{/student/dashboard}">
+        <i class="bi bi-buildings"></i>
+        <span>DormManage</span>
+    </a>
+    <nav class="ktx-portal-nav">
+        <a th:href="@{/student/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">Tổng quan</a>
+    </nav>
+    <div class="dropdown ms-auto">
+        <button class="ktx-user" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="ktx-avatar" sec:authentication="name">SV</span>
+            <span class="ktx-user__meta">
+                <strong sec:authentication="name">user</strong>
+                <small>Sinh viên</small>
+            </span>
+            <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+                <form th:action="@{/logout}" method="post">
+                    <button class="dropdown-item" type="submit">Đăng xuất</button>
+                </form>
+            </li>
+        </ul>
+    </div>
+</header>
+</body>
+</html>

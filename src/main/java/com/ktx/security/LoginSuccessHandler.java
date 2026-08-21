@@ -25,7 +25,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         redirectStrategy.sendRedirect(request, response, resolveTarget(authentication));
     }
 
-    String resolveTarget(Authentication authentication) {
+    public String resolveTarget(Authentication authentication) {
         Set<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toSet());

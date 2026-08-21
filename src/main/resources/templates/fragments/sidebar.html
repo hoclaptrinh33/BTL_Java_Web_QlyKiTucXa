@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<div class="ktx-sidebar__inner" th:fragment="inner">
+    <a class="ktx-brand" th:href="@{/}">
+        <i class="bi bi-buildings"></i>
+        <span>
+            <strong>DormManage</strong>
+            <small>Quản lý ký túc xá</small>
+        </span>
+    </a>
+    <nav class="ktx-nav">
+        <p class="ktx-nav__label">Quản lý</p>
+        <a th:href="@{/admin/dashboard}"
+           sec:authorize="hasRole('ADMIN')"
+           th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
+            <i class="bi bi-house"></i> Tổng quan
+        </a>
+        <a th:href="@{/staff/dashboard}"
+           sec:authorize="hasRole('STAFF')"
+           th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
+            <i class="bi bi-house"></i> Tổng quan
+        </a>
+    </nav>
+</div>
+</body>
+</html>
