@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Đăng ký · DormManage</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/ktx.css}"/>
+</head>
+<body class="login-page register-page">
+<div class="login-split">
+    <section class="login-hero" aria-hidden="false">
+        <div class="login-hero__brand">
+            <span class="login-hero__logo"><i class="bi bi-buildings"></i></span>
+            <div>
+                <strong>DormManage</strong>
+                <small>Quản lý ký túc xá thông minh</small>
+            </div>
+        </div>
+        <div class="login-hero__copy">
+            <h1>Đăng ký tài khoản<br/><span class="login-hero__accent">bắt đầu trải nghiệm</span></h1>
+            <span class="login-hero__rule"></span>
+            <p>Tham gia hệ thống để quản lý thông tin, đăng ký chỗ ở và nhận thông báo nhanh chóng, dễ dàng.</p>
+            <ul class="login-hero__features">
+                <li>
+                    <i class="bi bi-person-plus-fill"></i>
+                    <div>
+                        <strong>Đăng ký nhanh chóng</strong>
+                        <span>Tạo tài khoản chỉ trong vài bước đơn giản</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="bi bi-house-heart-fill"></i>
+                    <div>
+                        <strong>Quản lý thông tin cá nhân</strong>
+                        <span>Cập nhật hồ sơ và thông tin cư trú dễ dàng</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="bi bi-bell-fill"></i>
+                    <div>
+                        <strong>Nhận thông báo kịp thời</strong>
+                        <span>Thông báo về lịch trình, sự kiện và phân bổ phòng</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="bi bi-shield-lock-fill"></i>
+                    <div>
+                        <strong>Bảo mật &amp; An toàn</strong>
+                        <span>Thông tin của bạn được bảo mật tuyệt đối</span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <p class="login-hero__copyright">© 2025 DormManage. Tất cả quyền được bảo lưu.</p>
+    </section>
+
+    <section class="login-panel">
+        <div class="register-lang" aria-hidden="true">
+            <i class="bi bi-globe2"></i>
+            <span>Tiếng Việt</span>
+            <i class="bi bi-chevron-down"></i>
+        </div>
+        <div class="login-card register-card">
+            <h2>Đăng ký tài khoản</h2>
+            <p class="login-card__lead">Tạo tài khoản để sử dụng hệ thống</p>
+
+            <form th:action="@{/register}" th:object="${form}" method="post" class="login-form" novalidate>
+                <div class="register-form__row">
+                    <div>
+                        <label class="form-label" for="fullName">Họ và tên</label>
+                        <div class="login-field">
+                            <i class="bi bi-person"></i>
+                            <input class="form-control" type="text" id="fullName" th:field="*{fullName}"
+                                   autocomplete="name" required maxlength="120"
+                                   placeholder="Nhập họ và tên"/>
+                        </div>
+                        <p class="register-error" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></p>
+                    </div>
+                    <div>
+                        <label class="form-label" for="dateOfBirth">Ngày sinh</label>
+                        <div class="login-field">
+                            <i class="bi bi-calendar3"></i>
+                            <input class="form-control" type="date" id="dateOfBirth" th:field="*{dateOfBirth}"
+                                   autocomplete="bday"/>
+                        </div>
+                        <p class="register-error" th:if="${#fields.hasErrors('dateOfBirth')}" th:errors="*{dateOfBirth}"></p>
+                    </div>
+                </div>
+
+                <label class="form-label" for="email">Email</label>
+                <div class="login-field">
+                    <i class="bi bi-envelope"></i>
+                    <input class="form-control" type="email" id="email" th:field="*{email}"
+                           autocomplete="email" required maxlength="120"
+                           placeholder="Nhập email của bạn"/>
+                </div>
+                <p class="register-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+
+                <div class="register-form__row">
+                    <div>
+                        <label class="form-label" for="phone">Số điện thoại</label>
+                        <div class="login-field">
+                            <i class="bi bi-telephone"></i>
+                            <input class="form-control" type="tel" id="phone" th:field="*{phone}"
+                                   autocomplete="tel" maxlength="20"
+                                   placeholder="Nhập số điện thoại"/>
+                        </div>
+                        <p class="register-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></p>
+                    </div>
+                    <div>
+                        <label class="form-label" for="gender">Giới tính</label>
+                        <div class="login-field">
+                            <i class="bi bi-gender-ambiguous"></i>
+                            <select class="form-select" id="gender" th:field="*{gender}" required>
+                                <option value="">Chọn giới tính</option>
+                                <option value="MALE">Nam</option>
+                                <option value="FEMALE">Nữ</option>
+                            </select>
+                        </div>
+                        <p class="register-error" th:if="${#fields.hasErrors('gender')}" th:errors="*{gender}"></p>
+                    </div>
+                </div>
+
+                <label class="form-label" for="studentCode">Mã sinh viên / Mã người dùng</label>
+                <div class="login-field">
+                    <i class="bi bi-card-text"></i>
+                    <input class="form-control" type="text" id="studentCode" th:field="*{studentCode}"
+                           autocomplete="username" required maxlength="12"
+                           placeholder="Nhập mã sinh viên hoặc mã người dùng"/>
+                </div>
+                <p class="register-error" th:if="${#fields.hasErrors('studentCode')}" th:errors="*{studentCode}"></p>
+
+                <label class="form-label" for="password">Mật khẩu</label>
+                <div class="login-field">
+                    <i class="bi bi-lock"></i>
+                    <input class="form-control" type="password" id="password" th:field="*{password}"
+                           autocomplete="new-password" required minlength="8"
+                           placeholder="Tạo mật khẩu"/>
+                    <button class="login-field__toggle" type="button" data-toggle-password="password"
+                            aria-label="Hiện mật khẩu">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <p class="register-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+
+                <label class="form-label" for="confirmPassword">Xác nhận mật khẩu</label>
+                <div class="login-field">
+                    <i class="bi bi-lock"></i>
+                    <input class="form-control" type="password" id="confirmPassword" th:field="*{confirmPassword}"
+                           autocomplete="new-password" required minlength="8"
+                           placeholder="Nhập lại mật khẩu"/>
+                    <button class="login-field__toggle" type="button" data-toggle-password="confirmPassword"
+                            aria-label="Hiện mật khẩu">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <p class="register-error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></p>
+
+                <label class="register-terms">
+                    <input class="form-check-input" type="checkbox" th:field="*{termsAccepted}"/>
+                    <span>Tôi đồng ý với <a href="#">Điều khoản sử dụng</a> và <a href="#">Chính sách bảo mật</a></span>
+                </label>
+                <p class="register-error" th:if="${#fields.hasErrors('termsAccepted')}" th:errors="*{termsAccepted}"></p>
+
+                <button class="btn btn-primary login-submit" type="submit">Đăng ký</button>
+            </form>
+
+            <div class="login-sep">hoặc đăng ký với</div>
+            <a class="login-google" th:href="@{/register/google}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" aria-hidden="true">
+                    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.6 32.4 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.8-8 19.8-20 0-1.3-.1-2.5-.4-3.5z"/>
+                    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13.2 24 13.2c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/>
+                    <path fill="#4CAF50" d="M24 44c5.1 0 9.8-1.9 13.4-5.1l-6.2-5.2C29.2 35.3 26.7 36 24 36c-5.2 0-9.6-3.5-11.2-8.3l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+                    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.2-3.5 5.8-6.5 7.4l6.2 5.2C38.3 37.3 44 32 44 24c0-1.3-.1-2.5-.4-3.5z"/>
+                </svg>
+                Đăng ký với Google
+            </a>
+        </div>
+        <p class="login-register">Đã có tài khoản? <a th:href="@{/login}">Đăng nhập ngay</a></p>
+    </section>
+</div>
+<script>
+    document.querySelectorAll('[data-toggle-password]').forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+            const input = document.getElementById(toggle.getAttribute('data-toggle-password'));
+            const hidden = input.type === 'password';
+            input.type = hidden ? 'text' : 'password';
+            toggle.setAttribute('aria-label', hidden ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+            toggle.querySelector('i').className = hidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+        });
+    });
+</script>
+</body>
+</html>
