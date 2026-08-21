@@ -60,6 +60,7 @@
             <h2>Đăng nhập</h2>
             <p class="login-card__lead">Chào mừng bạn quay trở lại!</p>
 
+            <div th:if="${param.registered}" class="alert alert-success" role="alert">Đăng ký thành công, hãy đăng nhập bằng MSSV hoặc email</div>
             <div th:if="${param.error}" class="alert alert-danger" role="alert">Không đúng tài khoản hoặc mật khẩu</div>
             <div th:if="${param.disabled}" class="alert alert-danger" role="alert">Tài khoản bị khóa</div>
             <div th:if="${param.google}" class="alert alert-warning" role="alert">Đăng nhập Google sẽ bật khi cấu hình OAuth trên máy chủ</div>

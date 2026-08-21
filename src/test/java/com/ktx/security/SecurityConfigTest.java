@@ -16,6 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.ktx.repository.UserRepository;
+import com.ktx.service.AuthService;
 
 @WebMvcTest
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
@@ -26,6 +27,9 @@ class SecurityConfigTest {
 
     @MockitoBean
     private UserRepository userRepository;
+
+    @MockitoBean
+    private AuthService authService;
 
     @Test
     void staffCannotAccessAdmin() throws Exception {
