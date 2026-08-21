@@ -35,12 +35,18 @@ import com.ktx.security.LoginSuccessHandler;
 import com.ktx.security.SecurityConfig;
 import com.ktx.service.AuthService;
 
-@WebMvcTest
+@WebMvcTest(RegisterController.class)
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
 class RegisterControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private com.ktx.repository.StudentRepository studentRepository;
+
+    @MockitoBean
+    private com.ktx.security.LoginAttemptService loginAttemptService;
 
     @MockitoBean
     private AuthService authService;

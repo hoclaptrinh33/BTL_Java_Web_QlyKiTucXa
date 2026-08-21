@@ -33,11 +33,20 @@ class KtxUserDetailsServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private com.ktx.repository.StudentRepository studentRepository;
+
+    @Mock
+    private LoginAttemptService loginAttemptService;
+
+    @Mock
+    private jakarta.servlet.http.HttpServletRequest request;
+
     private KtxUserDetailsService service;
 
     @BeforeEach
     void setUp() {
-        service = new KtxUserDetailsService(userRepository);
+        service = new KtxUserDetailsService(userRepository, studentRepository, loginAttemptService, request);
     }
 
     @Test
@@ -95,6 +104,15 @@ class KtxUserDetailsServiceTest {
                 UsernamePasswordAuthenticationToken.unauthenticated("locked", "password");
 
         assertThrows(DisabledException.class, () -> provider.authenticate(token));
+    }
+
+    @Test
+    void loadUserByUsername_blocked_throwsLockedException() {
+        when(request.getRemoteAddr()).thenReturn("127.0.0.1");
+        when(loginAttemptService.isBlocked("127.0.0.1", "blockedUser")).thenReturn(true);
+
+        assertThrows(org.springframework.security.authentication.LockedException.class,
+                () -> service.loadUserByUsername("blockedUser"));
     }
 
     private static User user(String username, String email, Role role, boolean enabled) {

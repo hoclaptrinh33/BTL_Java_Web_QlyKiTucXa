@@ -18,12 +18,24 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.ktx.repository.UserRepository;
 import com.ktx.service.AuthService;
 
-@WebMvcTest
+@WebMvcTest({
+    com.ktx.web.admin.AdminDashboardController.class,
+    com.ktx.web.staff.StaffDashboardController.class,
+    com.ktx.web.auth.LoginController.class,
+    com.ktx.web.HomeController.class,
+    com.ktx.web.ErrorPageController.class
+})
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
 class SecurityConfigTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private com.ktx.repository.StudentRepository studentRepository;
+
+    @MockitoBean
+    private com.ktx.security.LoginAttemptService loginAttemptService;
 
     @MockitoBean
     private UserRepository userRepository;

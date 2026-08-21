@@ -25,4 +25,11 @@ class LoginFailureHandlerTest {
         handler.onAuthenticationFailure(new MockHttpServletRequest(), response, new DisabledException("off"));
         assertEquals("/login?disabled", response.getRedirectedUrl());
     }
+
+    @Test
+    void lockedRedirectsToLocked() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        handler.onAuthenticationFailure(new MockHttpServletRequest(), response, new org.springframework.security.authentication.LockedException("locked"));
+        assertEquals("/login?locked", response.getRedirectedUrl());
+    }
 }
