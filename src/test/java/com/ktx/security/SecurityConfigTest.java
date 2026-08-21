@@ -45,7 +45,15 @@ class SecurityConfigTest {
         mockMvc.perform(get("/login"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("name=\"_csrf\"")))
-                .andExpect(content().string(containsString("name=\"username\"")));
+                .andExpect(content().string(containsString("name=\"username\"")))
+                .andExpect(content().string(containsString("Đăng nhập với Google")));
+    }
+
+    @Test
+    void googleLoginIsPermitted() throws Exception {
+        mockMvc.perform(get("/login/google"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/login?google"));
     }
 
     @Test

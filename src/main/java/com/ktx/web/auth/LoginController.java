@@ -17,4 +17,9 @@ public class LoginController {
         }
         return "auth/login";
     }
+
+    @GetMapping("/login/google")
+    public String google() {
+        return "redirect:/login?google";
+    }
 }
