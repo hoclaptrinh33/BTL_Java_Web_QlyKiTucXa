@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Đăng nhập · DormManage</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/ktx.css}"/>
+</head>
+<body class="login-page">
+<div class="login-split">
+    <section class="login-hero" aria-hidden="false">
+        <div class="login-hero__brand">
+            <span class="login-hero__logo"><i class="bi bi-buildings"></i></span>
+            <div>
+                <strong>DormManage</strong>
+                <small>Quản lý ký túc xá thông minh</small>
+            </div>
+        </div>
+        <div class="login-hero__copy">
+            <h1>Quản lý dễ dàng<br/>Phân bổ hợp lý</h1>
+            <span class="login-hero__rule"></span>
+            <p>Nền tảng giúp quản lý ký túc xá hiệu quả, phân bổ chỗ ở công bằng và tối ưu.</p>
+            <ul class="login-hero__features">
+                <li>
+                    <i class="bi bi-people-fill"></i>
+                    <div>
+                        <strong>Quản lý sinh viên</strong>
+                        <span>Thông tin đầy đủ, cập nhật dễ dàng</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="bi bi-lamp-fill"></i>
+                    <div>
+                        <strong>Phân bổ chỗ ở</strong>
+                        <span>Tự động, hợp lý, minh bạch</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="bi bi-bar-chart-fill"></i>
+                    <div>
+                        <strong>Báo cáo &amp; Thống kê</strong>
+                        <span>Dữ liệu trực quan, hỗ trợ ra quyết định</span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <p class="login-hero__secure">
+            <i class="bi bi-shield-check"></i>
+            <span>Bảo mật thông tin tuyệt đối. Hệ thống được bảo vệ với các tiêu chuẩn bảo mật cao nhất.</span>
+        </p>
+    </section>
+
+    <section class="login-panel">
+        <div class="login-card">
+            <h2>Đăng nhập</h2>
+            <p class="login-card__lead">Chào mừng bạn quay trở lại!</p>
+
+            <div th:if="${param.error}" class="alert alert-danger" role="alert">Không đúng tài khoản hoặc mật khẩu</div>
+            <div th:if="${param.disabled}" class="alert alert-danger" role="alert">Tài khoản bị khóa</div>
+            <div th:if="${param.logout}" class="alert alert-success" role="alert">Bạn đã đăng xuất</div>
+            <div th:if="${param.expired}" class="alert alert-warning" role="alert">Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại</div>
+
+            <form th:action="@{/login}" method="post" class="login-form" novalidate>
+                <label class="form-label" for="username">Tên đăng nhập</label>
+                <div class="login-field">
+                    <i class="bi bi-person"></i>
+                    <input class="form-control" type="text" id="username" name="username"
+                           autocomplete="username" required
+                           placeholder="MSSV hoặc email"/>
+                </div>
+
+                <label class="form-label" for="password">Mật khẩu</label>
+                <div class="login-field">
+                    <i class="bi bi-lock"></i>
+                    <input class="form-control" type="password" id="password" name="password"
+                           autocomplete="current-password" required
+                           placeholder="Nhập mật khẩu"/>
+                    <button class="login-field__toggle" type="button" id="togglePassword" aria-label="Hiện mật khẩu">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+
+                <button class="btn btn-primary login-submit" type="submit">Đăng nhập</button>
+            </form>
+        </div>
+        <p class="login-register">Sinh viên? <a th:href="@{/register}">Tạo tài khoản</a></p>
+    </section>
+</div>
+<script>
+    const toggle = document.getElementById('togglePassword');
+    const password = document.getElementById('password');
+    toggle.addEventListener('click', () => {
+        const hidden = password.type === 'password';
+        password.type = hidden ? 'text' : 'password';
+        toggle.setAttribute('aria-label', hidden ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+        toggle.querySelector('i').className = hidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+    });
+</script>
+</body>
+</html>

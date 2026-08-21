@@ -15,9 +15,11 @@ import org.springframework.security.web.session.HttpSessionEventPublisher;
 public class SecurityConfig {
 
     private final LoginSuccessHandler loginSuccessHandler;
+    private final LoginFailureHandler loginFailureHandler;
 
-    public SecurityConfig(LoginSuccessHandler loginSuccessHandler) {
+    public SecurityConfig(LoginSuccessHandler loginSuccessHandler, LoginFailureHandler loginFailureHandler) {
         this.loginSuccessHandler = loginSuccessHandler;
+        this.loginFailureHandler = loginFailureHandler;
     }
 
     @Bean
@@ -34,12 +36,13 @@ public class SecurityConfig {
             .formLogin(form -> form
                 .loginPage("/login")
                 .successHandler(loginSuccessHandler)
-                .failureUrl("/login?error"))
+                .failureHandler(loginFailureHandler))
             .logout(l -> l.logoutUrl("/logout").logoutSuccessUrl("/login?logout"))
             .exceptionHandling(e -> e.accessDeniedPage("/error/403"))
             .sessionManagement(s -> s
                 .maximumSessions(1)
-                .maxSessionsPreventsLogin(false));
+                .maxSessionsPreventsLogin(false)
+                .expiredUrl("/login?expired"));
         return http.build();
     }
 
