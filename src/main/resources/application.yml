@@ -12,13 +12,11 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-  servlet:
-    session:
-      timeout: 30m
 
 server:
   servlet:
     session:
+      timeout: 30m
       cookie:
         http-only: true
 
