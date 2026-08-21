@@ -35,7 +35,7 @@ import com.ktx.security.LoginSuccessHandler;
 import com.ktx.security.SecurityConfig;
 import com.ktx.service.AuthService;
 
-@WebMvcTest
+@WebMvcTest(RegisterController.class)
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
 class RegisterControllerTest {
 

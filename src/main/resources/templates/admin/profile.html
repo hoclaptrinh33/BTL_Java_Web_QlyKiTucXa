@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <div class="row g-4">
+        <!-- Cột trái: Thông tin tài khoản -->
+        <div class="col-md-6">
+            <section class="ktx-card">
+                <h2 class="h5 mb-4">Thông tin tài khoản quản trị</h2>
+                <div class="table-responsive">
+                    <table class="table table-borderless align-middle mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted py-2" style="width: 40%;">Tên đăng nhập</td>
+                                <td class="py-2"><span class="ktx-chip" th:text="${admin.username}">admin</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Vai trò</td>
+                                <td class="py-2">
+                                    <span class="badge bg-danger">QUẢN TRỊ VIÊN</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Ngày tạo tài khoản</td>
+                                <td class="py-2 text-muted" th:text="${#temporals.format(admin.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026 00:00</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Đăng nhập lần cuối</td>
+                                <td class="py-2 text-muted" th:text="${admin.lastLoginAt != null ? #temporals.format(admin.lastLoginAt, 'dd/MM/yyyy HH:mm') : 'Chưa đăng nhập'}">Chưa có dữ liệu</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- Cột phải: Form cập nhật thông tin -->
+        <div class="col-md-6">
+            <section class="ktx-card">
+                <h2 class="h5 mb-4">Cập nhật thông tin liên hệ</h2>
+                <form th:action="@{/admin/profile}" th:object="${profileForm}" method="post">
+                    <div class="mb-4">
+                        <label for="email" class="form-label fw-semibold">Địa chỉ Email</label>
+                        <input type="email" class="form-control" id="email" th:field="*{email}"
+                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'" placeholder="Nhập địa chỉ email quản trị"/>
+                        <div class="invalid-feedback" th:errors="*{email}"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary px-4">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>

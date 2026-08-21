@@ -25,6 +25,7 @@ import com.ktx.domain.enums.Gender;
 import com.ktx.domain.enums.PriorityCategory;
 import com.ktx.domain.enums.Role;
 import com.ktx.dto.RegisterForm;
+import com.ktx.repository.StaffRepository;
 import com.ktx.repository.StudentRepository;
 import com.ktx.repository.UserRepository;
 
@@ -39,11 +40,14 @@ class AuthServiceTest {
     @Mock
     private StudentRepository studentRepository;
 
+    @Mock
+    private StaffRepository staffRepository;
+
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, studentRepository, ENCODER);
+        authService = new AuthService(userRepository, studentRepository, staffRepository, ENCODER);
     }
 
     @Test
