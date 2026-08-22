@@ -34,6 +34,7 @@
                         <span th:unless="${b.active}" class="badge text-bg-secondary">Tạm tắt</span>
                     </td>
                     <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/rooms(buildingId=${b.id})}">Phòng</a>
                         <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/buildings/{id}/edit(id=${b.id})}">Sửa</a>
                     </td>
                 </tr>

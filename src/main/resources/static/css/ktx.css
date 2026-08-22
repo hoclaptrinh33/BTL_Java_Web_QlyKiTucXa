@@ -638,6 +638,167 @@ a:focus-visible {
     color: var(--muted);
 }
 
+.ktx-dialog-overlay {
+    display: grid;
+    place-items: start stretch;
+}
+
+.ktx-dialog {
+    width: min(100%, 880px);
+    margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+.ktx-dialog__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem 0.5rem;
+}
+
+.ktx-dialog__head h2 {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.ktx-dialog__head p {
+    margin: 0.35rem 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.ktx-dialog__close {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    color: var(--muted);
+    display: grid;
+    place-items: center;
+    text-decoration: none;
+}
+
+.ktx-dialog__form {
+    padding: 0.5rem 1.5rem 1.25rem;
+}
+
+.ktx-dialog__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(240px, 0.85fr);
+    gap: 1.25rem 1.5rem;
+}
+
+.ktx-field {
+    margin-bottom: 1rem;
+}
+
+.ktx-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+}
+
+.ktx-field__control {
+    position: relative;
+}
+
+.ktx-field__control > i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+}
+
+.ktx-field__control .form-control,
+.ktx-field__control .form-select {
+    padding-left: 2.15rem;
+}
+
+.ktx-field:has(.is-invalid) .invalid-feedback {
+    display: block;
+}
+
+.ktx-dialog__foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--line);
+    margin-top: 0.5rem;
+}
+
+.ktx-room-preview {
+    background: var(--canvas);
+    border: 1px dashed var(--line);
+    border-radius: 16px;
+    padding: 1rem 1.1rem;
+}
+
+.ktx-room-preview__label {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.55rem;
+}
+
+.ktx-room-preview__chip {
+    font-size: 0.95rem;
+}
+
+.ktx-room-preview__meta {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin: 0.65rem 0 0.75rem;
+}
+
+.ktx-room-preview__beds {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0;
+    margin: 0;
+}
+
+.ktx-room-preview__beds li {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    background: var(--violet-soft);
+    color: var(--violet);
+    border-radius: 999px;
+    padding: 0.15rem 0.55rem;
+}
+
+.ktx-status {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.15rem 0.65rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.ktx-status.is-active {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.ktx-status.is-maintenance {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.ktx-status.is-inactive {
+    background: #e2e8f0;
+    color: #475569;
+}
+
 @media (max-width: 991.98px) {
     .login-split {
         grid-template-columns: 1fr;
@@ -660,6 +821,11 @@ a:focus-visible {
 
     .ktx-search {
         display: none !important;
+    }
+
+    .ktx-dialog__grid,
+    .ktx-field-row {
+        grid-template-columns: 1fr;
     }
 }
 

@@ -21,6 +21,11 @@
            th:classappend="${activeMenu == 'buildings'} ? 'is-active'">
             <i class="bi bi-building"></i> Tòa nhà
         </a>
+        <a th:href="@{/admin/rooms}"
+           sec:authorize="hasRole('ADMIN')"
+           th:classappend="${activeMenu == 'rooms'} ? 'is-active'">
+            <i class="bi bi-door-closed"></i> Phòng ở
+        </a>
         <a th:href="@{/staff/dashboard}"
            sec:authorize="hasRole('STAFF')"
            th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">

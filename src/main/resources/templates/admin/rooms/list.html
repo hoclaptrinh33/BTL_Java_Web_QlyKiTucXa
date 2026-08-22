@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+        <form th:action="@{/admin/rooms}" method="get" class="d-flex align-items-center gap-2">
+            <select name="buildingId" class="form-select" style="min-width: 220px;" onchange="this.form.submit()">
+                <option value="">Tất cả tòa</option>
+                <option th:each="b : ${buildings}" th:value="${b.id}" th:selected="${buildingId == b.id}"
+                        th:text="${b.code} + ' — ' + ${b.name}">A</option>
+            </select>
+        </form>
+        <a class="btn btn-primary" th:href="@{/admin/rooms/new(buildingId=${buildingId})}">
+            <i class="bi bi-plus-lg"></i> Thêm phòng
+        </a>
+    </div>
+
+    <section class="ktx-card" th:if="${rooms.empty}">
+        <p class="text-muted mb-3">Chưa có phòng. Thêm phòng theo tòa — hệ thống tự tạo giường G1…Gn.</p>
+        <a class="btn btn-primary" th:href="@{/admin/rooms/new(buildingId=${buildingId})}">Thêm phòng</a>
+    </section>
+
+    <section class="ktx-card p-0" th:unless="${rooms.empty}">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 ktx-table">
+                <thead>
+                <tr>
+                    <th>Mã cửa</th>
+                    <th>Tòa</th>
+                    <th>Tầng</th>
+                    <th>Loại</th>
+                    <th class="text-end">Giá / kỳ</th>
+                    <th>Giường</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${rooms}">
+                    <td><span class="ktx-chip" th:text="${r.doorCode}">A-101</span></td>
+                    <td>
+                        <strong th:text="${r.buildingName}">Tòa A</strong>
+                        <small class="d-block text-muted" th:text="${r.genderLabel}">Nam</small>
+                    </td>
+                    <td th:text="${r.floor}">1</td>
+                    <td th:text="${r.typeLabel}">Phòng 6 giường</td>
+                    <td class="text-end" th:text="${#numbers.formatInteger(r.pricePerTerm, 1, 'POINT')} + ' đ'">1.800.000 đ</td>
+                    <td>
+                        <span th:text="${r.occupiedBeds}">0</span> dùng /
+                        <span th:text="${r.vacantBeds}">0</span> trống
+                    </td>
+                    <td>
+                        <span class="ktx-status" th:classappend="${r.statusClass}" th:text="${r.statusLabel}">Hoạt động</span>
+                    </td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/rooms/{id}/edit(id=${r.id})}">Sửa</a>
+                        <form th:action="@{/admin/rooms/{id}/delete(id=${r.id})}" method="post" class="d-inline"
+                              onsubmit="return confirm('Xóa phòng này và các giường trống?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>
