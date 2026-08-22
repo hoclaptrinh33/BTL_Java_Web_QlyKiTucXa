@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <div class="row g-4">
+        <!-- Cột trái: Thông tin chỉ đọc -->
+        <div class="col-md-6">
+            <section class="ktx-card">
+                <h2 class="h5 mb-4">Thông tin học tập & kỷ luật</h2>
+                <div class="table-responsive">
+                    <table class="table table-borderless align-middle mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted py-2" style="width: 40%;">Mã sinh viên</td>
+                                <td class="py-2"><span class="ktx-chip" th:text="${student.studentCode}">D22CQCN001</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Họ và tên</td>
+                                <td class="fw-semibold py-2" th:text="${student.fullName}">Nguyễn Văn A</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Email</td>
+                                <td class="py-2" th:text="${student.user.email}">sv@example.com</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Giới tính</td>
+                                <td class="py-2" th:text="${student.gender == T(com.ktx.domain.enums.Gender).MALE ? 'Nam' : 'Nữ'}">Nam</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Ngày sinh</td>
+                                <td class="py-2" th:text="${student.dateOfBirth}">01/01/2004</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Lớp · Khoa</td>
+                                <td class="py-2" th:text="${(student.classCode != null ? student.classCode : '') + (student.facultyCode != null ? ' · ' + student.facultyCode : '')}">D22CQCN01 · CNTT</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Diện ưu tiên</td>
+                                <td class="py-2">
+                                    <span th:if="${student.priorityCategory.name() != 'NONE'}" class="badge bg-primary" th:text="${student.priorityCategory}">UT</span>
+                                    <span th:if="${student.priorityCategory.name() == 'NONE'}" class="text-muted">Không</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Điểm rèn luyện</td>
+                                <td class="py-2 fw-semibold text-primary" th:text="${student.conductScore}">100</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Lịch sử nội trú tốt</td>
+                                <td class="py-2">
+                                    <span th:if="${student.previousStayGood}" class="text-success"><i class="bi bi-patch-check-fill me-1"></i>Tốt</span>
+                                    <span th:if="${!student.previousStayGood}" class="text-muted">Chưa ghi nhận</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Khóa nội trú</td>
+                                <td class="py-2">
+                                    <span th:if="${student.blockedFromHousing}" class="text-danger fw-semibold"><i class="bi bi-x-circle-fill me-1"></i>Bị khóa</span>
+                                    <span th:if="${!student.blockedFromHousing}" class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Bình thường</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- Cột phải: Form cập nhật thông tin -->
+        <div class="col-md-6">
+            <section class="ktx-card">
+                <h2 class="h5 mb-4">Cập nhật thông tin liên hệ</h2>
+                <form th:action="@{/student/profile}" th:object="${profileForm}" method="post">
+                    <div class="mb-3">
+                        <label for="phone" class="form-label fw-semibold">Số điện thoại</label>
+                        <input type="text" class="form-control" id="phone" th:field="*{phone}"
+                               th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid'" placeholder="Nhập số điện thoại"/>
+                        <div class="invalid-feedback" th:errors="*{phone}"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="hometown" class="form-label fw-semibold">Quê quán</label>
+                        <input type="text" class="form-control" id="hometown" th:field="*{hometown}"
+                               th:classappend="${#fields.hasErrors('hometown')} ? 'is-invalid'" placeholder="Xã/Huyện/Tỉnh"/>
+                        <div class="invalid-feedback" th:errors="*{hometown}"></div>
+                    </div>
+
+                    <h3 class="h6 mt-4 mb-3 border-top pt-3 text-muted">Người liên hệ khẩn cấp</h3>
+
+                    <div class="mb-3">
+                        <label for="emergencyName" class="form-label fw-semibold">Họ và tên người liên hệ</label>
+                        <input type="text" class="form-control" id="emergencyName" th:field="*{emergencyName}"
+                               th:classappend="${#fields.hasErrors('emergencyName')} ? 'is-invalid'" placeholder="Họ và tên người thân"/>
+                        <div class="invalid-feedback" th:errors="*{emergencyName}"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="emergencyPhone" class="form-label fw-semibold">Số điện thoại người liên hệ</label>
+                        <input type="text" class="form-control" id="emergencyPhone" th:field="*{emergencyPhone}"
+                               th:classappend="${#fields.hasErrors('emergencyPhone')} ? 'is-invalid'" placeholder="Số điện thoại người thân"/>
+                        <div class="invalid-feedback" th:errors="*{emergencyPhone}"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary px-4">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>

@@ -12,9 +12,16 @@ import com.ktx.domain.User;
 public class KtxUserDetails implements UserDetails {
 
     private final User user;
+    private final boolean isNotLocked;
 
     public KtxUserDetails(User user) {
         this.user = user;
+        this.isNotLocked = true;
+    }
+
+    public KtxUserDetails(User user, boolean isNotLocked) {
+        this.user = user;
+        this.isNotLocked = isNotLocked;
     }
 
     public User getUser() {
@@ -34,6 +41,11 @@ public class KtxUserDetails implements UserDetails {
     @Override
     public String getUsername() {
         return user.getUsername();
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return isNotLocked;
     }
 
     @Override

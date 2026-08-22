@@ -22,13 +22,34 @@ import com.ktx.service.BuildingService;
 import com.ktx.service.DashboardService;
 import com.ktx.service.RoomService;
 import com.ktx.service.StudentService;
+import com.ktx.web.ErrorPageController;
+import com.ktx.web.HomeController;
+import com.ktx.web.admin.AdminDashboardController;
+import com.ktx.web.auth.LoginController;
+import com.ktx.web.auth.RegisterController;
+import com.ktx.web.staff.StaffDashboardController;
+import com.ktx.web.student.StudentDashboardController;
 
-@WebMvcTest
+@WebMvcTest(controllers = {
+    HomeController.class,
+    LoginController.class,
+    RegisterController.class,
+    ErrorPageController.class,
+    AdminDashboardController.class,
+    StaffDashboardController.class,
+    StudentDashboardController.class
+})
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
 class SecurityConfigTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private com.ktx.repository.StudentRepository studentRepository;
+
+    @MockitoBean
+    private com.ktx.security.LoginAttemptService loginAttemptService;
 
     @MockitoBean
     private UserRepository userRepository;
