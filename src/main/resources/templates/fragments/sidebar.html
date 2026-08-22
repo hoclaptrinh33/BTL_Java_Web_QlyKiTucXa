@@ -20,6 +20,11 @@
            th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
             <i class="bi bi-house"></i> <span>Tổng quan</span>
         </a>
+        <a th:href="@{/staff/buildings/rooms}"
+           sec:authorize="hasRole('STAFF')"
+           th:classappend="${activeMenu == 'rooms'} ? 'is-active'">
+            <i class="bi bi-door-closed"></i> <span>Phòng tòa</span>
+        </a>
 
         <th:block sec:authorize="hasRole('ADMIN')">
             <p class="ktx-nav__label">Quản lý</p>
