@@ -40,7 +40,7 @@ import com.ktx.service.DashboardService;
 import com.ktx.service.RoomService;
 import com.ktx.service.StudentService;
 
-@WebMvcTest
+@WebMvcTest(controllers = com.ktx.web.auth.RegisterController.class)
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
 class RegisterControllerTest {
 

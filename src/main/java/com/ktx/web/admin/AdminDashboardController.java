@@ -5,14 +5,17 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import com.ktx.service.DashboardService;
+import com.ktx.service.RoomService;
 
 @Controller
 public class AdminDashboardController {
 
     private final DashboardService dashboardService;
+    private final RoomService roomService;
 
-    public AdminDashboardController(DashboardService dashboardService) {
+    public AdminDashboardController(DashboardService dashboardService, RoomService roomService) {
         this.dashboardService = dashboardService;
+        this.roomService = roomService;
     }
 
     @GetMapping("/admin/dashboard")
@@ -21,6 +24,7 @@ public class AdminDashboardController {
         model.addAttribute("pageSubtitle", "Bảng điều khiển hệ thống");
         model.addAttribute("activeMenu", "dashboard");
         model.addAttribute("dash", dashboardService.load());
+        model.addAttribute("driftCount", roomService.findOccupancyDrifts().size());
         return "admin/dashboard";
     }
 

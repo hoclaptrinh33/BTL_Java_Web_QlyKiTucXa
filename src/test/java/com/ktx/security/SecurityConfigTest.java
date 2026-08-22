@@ -23,7 +23,13 @@ import com.ktx.service.DashboardService;
 import com.ktx.service.RoomService;
 import com.ktx.service.StudentService;
 
-@WebMvcTest
+@WebMvcTest(controllers = {
+        com.ktx.web.admin.AdminDashboardController.class,
+        com.ktx.web.staff.StaffDashboardController.class,
+        com.ktx.web.HomeController.class,
+        com.ktx.web.auth.LoginController.class,
+        com.ktx.web.ErrorPageController.class
+})
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
 class SecurityConfigTest {
 

@@ -11,6 +11,9 @@
             </select>
         </form>
         <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-outline-warning" th:href="@{/admin/rooms/occupancy-drift}">
+                <i class="bi bi-arrow-repeat"></i> Đồng bộ lưu trú
+            </a>
             <a class="btn btn-outline-primary" th:href="@{/admin/rooms/batch(buildingId=${buildingId})}">
                 <i class="bi bi-collection"></i> Thêm hàng loạt
             </a>

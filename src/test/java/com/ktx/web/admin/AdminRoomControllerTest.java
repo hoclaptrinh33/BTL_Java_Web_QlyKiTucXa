@@ -356,4 +356,39 @@ class AdminRoomControllerTest {
         a.setGenderPolicy(BuildingGenderPolicy.MALE);
         return a;
     }
+
+    @Test
+    void occupancyDriftPage_accessibleByAdmin() throws Exception {
+        when(roomService.findOccupancyDrifts()).thenReturn(List.of());
+
+        mockMvc.perform(get("/admin/rooms/occupancy-drift").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Đồng bộ lưu trú")))
+                .andExpect(content().string(containsString("Dữ liệu chỗ ở đồng nhất!")));
+    }
+
+    @Test
+    void occupancyDriftPage_forbiddenForStaffAndStudent() throws Exception {
+        mockMvc.perform(get("/admin/rooms/occupancy-drift").with(user("staff").roles("STAFF")))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/admin/rooms/occupancy-drift").with(user("student").roles("STUDENT")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void reconcileAll_redirectsToDriftPage() throws Exception {
+        mockMvc.perform(post("/admin/rooms/reconcile-all").with(csrf()).with(user("admin").roles("ADMIN")))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/admin/rooms/occupancy-drift"));
+        verify(roomService).reconcileOccupancy();
+    }
+
+    @Test
+    void reconcileSingle_redirectsToDriftPage() throws Exception {
+        mockMvc.perform(post("/admin/rooms/beds/5/reconcile").with(csrf()).with(user("admin").roles("ADMIN")))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/admin/rooms/occupancy-drift"));
+        verify(roomService).reconcileSingleBed(5L);
+    }
 }
