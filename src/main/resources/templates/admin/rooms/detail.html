@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
+        <div>
+            <a class="text-decoration-none small" th:href="@{/admin/rooms(buildingId=${room.building.id})}">
+                ← Danh sách phòng
+            </a>
+            <h1 class="h4 mb-1 mt-1">
+                <span class="ktx-chip" th:text="${row.doorCode}">A-101</span>
+                <span class="ms-1" th:text="${row.buildingName}">Tòa A</span>
+            </h1>
+            <p class="text-muted mb-0" th:text="${row.typeLabel} + ' · ' + ${row.genderLabel} + ' · tầng ' + ${row.floor}">
+                Phòng 6 giường
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-primary" th:href="@{/admin/rooms/{id}/edit(id=${room.id})}">Sửa phòng</a>
+        </div>
+    </div>
+
+    <section class="ktx-roomstat mb-3">
+        <div>
+            <i class="bi bi-person-check is-mint"></i>
+            <span>Đang ở</span>
+            <b th:text="${row.occupiedBeds}">0</b>
+        </div>
+        <div>
+            <i class="bi bi-door-open is-sky"></i>
+            <span>Trống</span>
+            <b th:text="${row.vacantBeds}">0</b>
+        </div>
+        <div>
+            <i class="bi bi-tools is-peach"></i>
+            <span>Bảo trì</span>
+            <b th:text="${row.maintenanceBeds}">0</b>
+        </div>
+        <div>
+            <i class="bi bi-grid is-violet"></i>
+            <span>Sức chứa</span>
+            <b th:text="${row.capacity}">6</b>
+        </div>
+    </section>
+
+    <section class="ktx-card mb-3">
+        <div class="ktx-card__head">
+            <h2>Giường</h2>
+            <span class="text-muted small">OCCUPIED không đổi tại đây — nhả lúc checkout</span>
+        </div>
+        <div class="ktx-bed-grid" th:if="${!beds.empty}">
+            <article class="ktx-bed" th:each="bed : ${beds}"
+                     th:classappend="${T(com.ktx.service.BedService).statusClass(bed.status)}">
+                <div class="ktx-bed__code" th:text="${bed.bedCode}">G1</div>
+                <span class="ktx-status"
+                      th:classappend="${T(com.ktx.service.BedService).statusClass(bed.status)}"
+                      th:text="${T(com.ktx.service.BedService).statusLabel(bed.status)}">Trống</span>
+                <form th:if="${bed.status.name() == 'VACANT'}"
+                      th:action="@{/admin/rooms/{id}/beds/{bedId}/status(id=${room.id}, bedId=${bed.id})}"
+                      method="post" class="mt-2">
+                    <input type="hidden" name="status" value="MAINTENANCE"/>
+                    <input type="hidden" name="version" th:value="${bed.version}"/>
+                    <button type="submit" class="btn btn-sm btn-outline-warning">Bảo trì</button>
+                </form>
+                <form th:if="${bed.status.name() == 'MAINTENANCE'}"
+                      th:action="@{/admin/rooms/{id}/beds/{bedId}/status(id=${room.id}, bedId=${bed.id})}"
+                      method="post" class="mt-2">
+                    <input type="hidden" name="status" value="VACANT"/>
+                    <input type="hidden" name="version" th:value="${bed.version}"/>
+                    <button type="submit" class="btn btn-sm btn-outline-success">Sửa xong</button>
+                </form>
+                <p th:if="${bed.status.name() == 'OCCUPIED'}" class="form-text mb-0 mt-2">Đang chiếm chỗ</p>
+            </article>
+        </div>
+        <p class="ktx-empty" th:if="${beds.empty}">Chưa có giường.</p>
+    </section>
+
+    <section class="ktx-card mb-3" id="assets">
+        <div class="ktx-card__head">
+            <h2>Tài sản phòng</h2>
+        </div>
+        <div class="table-responsive" th:if="${!assets.empty}">
+            <table class="table table-hover align-middle mb-3 ktx-table">
+                <thead>
+                <tr>
+                    <th>Tên</th>
+                    <th>Loại</th>
+                    <th class="text-end">SL</th>
+                    <th>Tình trạng</th>
+                    <th>Serial</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="a : ${assets}">
+                    <td th:text="${a.name}">Quạt</td>
+                    <td th:text="${T(com.ktx.service.AssetService).categoryLabel(a.category)}">Quạt</td>
+                    <td class="text-end" th:text="${a.quantity}">1</td>
+                    <td th:text="${T(com.ktx.service.AssetService).conditionLabel(a.condition)}">Tốt</td>
+                    <td th:text="${a.serialNumber != null} ? ${a.serialNumber} : '—'">—</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary"
+                           th:href="@{/admin/rooms/{id}(id=${room.id}, assetId=${a.id})}">Sửa</a>
+                        <form th:action="@{/admin/rooms/{id}/assets/{assetId}/delete(id=${room.id}, assetId=${a.id})}"
+                              method="post" class="d-inline"
+                              onsubmit="return confirm('Xóa tài sản này?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="ktx-empty mb-3" th:if="${assets.empty}">Chưa kê khai tài sản. Thêm quạt, tủ, công tơ điện/nước.</p>
+
+        <h3 class="h6 mb-3" th:text="${editingAsset} ? 'Sửa tài sản' : 'Thêm tài sản'">Thêm tài sản</h3>
+        <form th:action="${editingAsset} ? @{/admin/rooms/{id}/assets/{assetId}/edit(id=${room.id}, assetId=${editAssetId})} : @{/admin/rooms/{id}/assets(id=${room.id})}"
+              th:object="${assetForm}" method="post" class="ktx-asset-form">
+            <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}">
+                <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}">Lỗi</p>
+            </div>
+            <div class="ktx-field-row">
+                <div class="ktx-field">
+                    <label class="form-label" for="assetName">Tên <span class="req">*</span></label>
+                    <input class="form-control" id="assetName" th:field="*{name}"
+                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                           maxlength="120" placeholder="VD: Quạt trần"/>
+                    <div class="invalid-feedback" th:errors="*{name}"></div>
+                </div>
+                <div class="ktx-field">
+                    <label class="form-label" for="assetCategory">Loại <span class="req">*</span></label>
+                    <select class="form-select" id="assetCategory" th:field="*{category}"
+                            th:classappend="${#fields.hasErrors('category')} ? 'is-invalid'">
+                        <option th:each="c : ${assetCategories}" th:value="${c}"
+                                th:text="${T(com.ktx.service.AssetService).categoryLabel(c)}">Quạt</option>
+                    </select>
+                    <div class="invalid-feedback" th:errors="*{category}"></div>
+                </div>
+            </div>
+            <div class="ktx-field-row">
+                <div class="ktx-field">
+                    <label class="form-label" for="assetQty">Số lượng <span class="req">*</span></label>
+                    <input class="form-control" type="number" min="1" id="assetQty" th:field="*{quantity}"
+                           th:classappend="${#fields.hasErrors('quantity')} ? 'is-invalid'"/>
+                    <div class="invalid-feedback" th:errors="*{quantity}"></div>
+                </div>
+                <div class="ktx-field">
+                    <label class="form-label" for="assetCondition">Tình trạng <span class="req">*</span></label>
+                    <select class="form-select" id="assetCondition" th:field="*{condition}"
+                            th:classappend="${#fields.hasErrors('condition')} ? 'is-invalid'">
+                        <option th:each="c : ${assetConditions}" th:value="${c}"
+                                th:text="${T(com.ktx.service.AssetService).conditionLabel(c)}">Tốt</option>
+                    </select>
+                    <div class="invalid-feedback" th:errors="*{condition}"></div>
+                </div>
+                <div class="ktx-field">
+                    <label class="form-label" for="assetSerial">Số serial</label>
+                    <input class="form-control" id="assetSerial" th:field="*{serialNumber}"
+                           th:classappend="${#fields.hasErrors('serialNumber')} ? 'is-invalid'"
+                           maxlength="50" placeholder="Công tơ điện/nước"/>
+                    <div class="invalid-feedback" th:errors="*{serialNumber}"></div>
+                </div>
+            </div>
+            <div class="ktx-field">
+                <label class="form-label" for="assetNote">Ghi chú</label>
+                <textarea class="form-control" id="assetNote" rows="2" th:field="*{note}"
+                          th:classappend="${#fields.hasErrors('note')} ? 'is-invalid'"
+                          maxlength="500"></textarea>
+                <div class="invalid-feedback" th:errors="*{note}"></div>
+                <div class="form-text">Mỗi phòng tối đa 1 công tơ điện và 1 công tơ nước.</div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="btn btn-primary"
+                        th:text="${editingAsset} ? 'Lưu tài sản' : 'Thêm tài sản'">Thêm tài sản</button>
+                <a th:if="${editingAsset}" class="btn btn-light" th:href="@{/admin/rooms/{id}(id=${room.id})}">Hủy</a>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

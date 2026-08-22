@@ -1712,7 +1712,7 @@ a:focus-visible {
 .ktx-notices p { margin: 0.15rem 0 0.1rem; color: var(--muted); font-size: 0.8rem; }
 .ktx-notices small { color: var(--muted); font-size: 0.72rem; }
 
-.ktx-roomstat { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.ktx-roomstat { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; }
 .ktx-roomstat div { background: var(--canvas); border-radius: 12px; padding: 0.75rem 0.8rem; }
 .ktx-roomstat i { display: block; margin-bottom: 0.25rem; }
 .ktx-roomstat span { display: block; color: var(--muted); font-size: 0.75rem; }
@@ -1728,6 +1728,36 @@ a:focus-visible {
 .ktx-filter a.is-active { background: var(--violet-soft); color: var(--violet); }
 .ktx-placeholder { text-align: center; padding: 2.5rem 1.5rem; }
 .ktx-placeholder .ktx-kpi__icon { margin-left: auto; margin-right: auto; }
+
+.ktx-bed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+.ktx-bed {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 0.85rem;
+    background: var(--canvas);
+}
+.ktx-bed__code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 0.35rem;
+}
+.ktx-bed.is-vacant { border-color: #bae6fd; }
+.ktx-bed.is-occupied { border-color: #fecdd3; }
+.ktx-bed.is-maintenance { border-color: #fed7aa; }
+.ktx-status.is-vacant { background: #e0f2fe; color: #0369a1; }
+.ktx-status.is-occupied { background: #ffe4e6; color: #be123c; }
+.ktx-asset-form .ktx-field-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.85rem;
+    margin-bottom: 0.85rem;
+}
+.ktx-asset-form .ktx-field { margin-bottom: 0; }
 
 @media (max-width: 1199.98px) {
     .ktx-kpi-grid, .ktx-dash-mid, .ktx-dash-bottom { grid-template-columns: 1fr 1fr; }

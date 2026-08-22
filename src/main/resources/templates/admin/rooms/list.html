@@ -59,6 +59,7 @@
                         <span class="ktx-status" th:classappend="${r.statusClass}" th:text="${r.statusLabel}">Hoạt động</span>
                     </td>
                     <td class="text-end">
+                        <a class="btn btn-sm btn-outline-secondary" th:href="@{/admin/rooms/{id}(id=${r.id})}">Chi tiết</a>
                         <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/rooms/{id}/edit(id=${r.id})}">Sửa</a>
                         <form th:action="@{/admin/rooms/{id}/delete(id=${r.id})}" method="post" class="d-inline"
                               onsubmit="return confirm('Xóa phòng này và các giường trống?');">

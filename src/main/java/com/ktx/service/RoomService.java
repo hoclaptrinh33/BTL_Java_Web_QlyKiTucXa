@@ -28,6 +28,7 @@ import com.ktx.dto.RoomForm;
 import com.ktx.dto.RoomRow;
 import com.ktx.repository.BedRepository;
 import com.ktx.repository.BuildingRepository;
+import com.ktx.repository.RoomAssetRepository;
 import com.ktx.repository.RoomRepository;
 import com.ktx.repository.SystemConfigRepository;
 
@@ -49,13 +50,16 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final BuildingRepository buildingRepository;
     private final BedRepository bedRepository;
+    private final RoomAssetRepository roomAssetRepository;
     private final SystemConfigRepository systemConfigRepository;
 
     public RoomService(RoomRepository roomRepository, BuildingRepository buildingRepository,
-            BedRepository bedRepository, SystemConfigRepository systemConfigRepository) {
+            BedRepository bedRepository, RoomAssetRepository roomAssetRepository,
+            SystemConfigRepository systemConfigRepository) {
         this.roomRepository = roomRepository;
         this.buildingRepository = buildingRepository;
         this.bedRepository = bedRepository;
+        this.roomAssetRepository = roomAssetRepository;
         this.systemConfigRepository = systemConfigRepository;
     }
 
@@ -250,6 +254,7 @@ public class RoomService {
         if (bedRepository.countByRoomIdAndStatus(id, BedStatus.OCCUPIED) > 0) {
             throw new BusinessException(CANNOT_DELETE_OCCUPIED);
         }
+        roomAssetRepository.deleteAll(roomAssetRepository.findByRoomIdOrderByIdAsc(id));
         List<Bed> beds = bedRepository.findByRoomIdOrderByBedCodeAsc(id);
         bedRepository.deleteAll(beds);
         roomRepository.delete(room);
