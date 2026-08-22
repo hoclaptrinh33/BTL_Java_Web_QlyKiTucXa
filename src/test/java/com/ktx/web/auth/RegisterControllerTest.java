@@ -34,6 +34,7 @@ import com.ktx.security.LoginFailureHandler;
 import com.ktx.security.LoginSuccessHandler;
 import com.ktx.security.SecurityConfig;
 import com.ktx.service.AuthService;
+import com.ktx.service.BuildingService;
 
 @WebMvcTest
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
@@ -47,6 +48,9 @@ class RegisterControllerTest {
 
     @MockitoBean
     private UserRepository userRepository;
+
+    @MockitoBean
+    private BuildingService buildingService;
 
     @Test
     void registerPageIsPermittedAndHasCsrf() throws Exception {
