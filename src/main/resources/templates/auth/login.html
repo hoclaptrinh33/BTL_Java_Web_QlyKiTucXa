@@ -63,6 +63,7 @@
             <div th:if="${param.registered}" class="alert alert-success" role="alert">Đăng ký thành công, hãy đăng nhập bằng MSSV hoặc email</div>
             <div th:if="${param.error}" class="alert alert-danger" role="alert">Không đúng tài khoản hoặc mật khẩu</div>
             <div th:if="${param.disabled}" class="alert alert-danger" role="alert">Tài khoản bị khóa</div>
+            <div th:if="${param.locked}" class="alert alert-danger" role="alert">Tạm khóa 10 phút</div>
             <div th:if="${param.google}" class="alert alert-warning" role="alert">Đăng nhập Google sẽ bật khi cấu hình OAuth trên máy chủ</div>
             <div th:if="${param.logout}" class="alert alert-success" role="alert">Bạn đã đăng xuất</div>
             <div th:if="${param.expired}" class="alert alert-warning" role="alert">Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại</div>

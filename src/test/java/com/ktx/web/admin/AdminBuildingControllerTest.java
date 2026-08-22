@@ -47,6 +47,9 @@ class AdminBuildingControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private com.ktx.security.LoginAttemptService loginAttemptService;
+
+    @MockitoBean
     private BuildingService buildingService;
 
     @MockitoBean
