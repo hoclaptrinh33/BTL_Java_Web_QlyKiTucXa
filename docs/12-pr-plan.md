@@ -39,6 +39,13 @@ Chiến lược: mỗi PR review được, merge được, có test hoặc màn 
 - **Deps:** PR-03
 - **Mô tả:** Tạo bed theo capacity; giới tính tòa; STAFF `assigned_building_id` NOT NULL enforce khi tạo user STAFF (cùng PR-04 nếu user form nằm đó — predicate ghi hạ tầng có từ PR này). ADMIN bypass `StaffScope`.
 
+## PR-05a — Sinh phòng hàng loạt
+
+- **Title:** `feat(infra): sinh phong hang loat theo dai tang`
+- **Files:** `RoomBatchForm`, `RoomBatchResult`, `RoomService.createBatch`, `AdminRoomController` `GET/POST /admin/rooms/batch`, `admin/rooms/batch.html`, test
+- **Deps:** PR-05 (CRUD phòng)
+- **Mô tả:** Form tòa + tầng từ/đến + số phòng/tầng + loại + `price_per_term`. Số `{tầng}{stt}` (`101–110`). Một transaction, skip số đã có, tự sinh giường `G1…Gn`. Không Excel, không cọc trên phòng. Trần 100 phòng/lần.
+
 ## PR-06 — Đợt đăng ký & đơn nguyện vọng
 
 - **Title:** `feat(apply): period lifecycle + sinh viên nộp/rút đơn`

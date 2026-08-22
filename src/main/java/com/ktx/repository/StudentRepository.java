@@ -1,5 +1,6 @@
 package com.ktx.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     @Query("SELECT s FROM Student s JOIN FETCH s.user WHERE s.user.username = :username")
     Optional<Student> findByUserUsername(@Param("username") String username);
+
+    @Query("SELECT s FROM Student s JOIN FETCH s.user ORDER BY s.studentCode")
+    List<Student> findAllWithUser();
 }

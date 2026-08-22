@@ -1,11 +1,166 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
 <body>
-<main th:fragment="content">
-    <section class="ktx-card">
-        <h2 class="h5 mb-2">Tổng quan quản trị</h2>
-        <p class="text-muted mb-0">Khung dashboard. KPI, occupancy và Chart.js sẽ có ở các issue sau.</p>
+<main th:fragment="content" class="ktx-dash">
+    <section class="ktx-kpi-grid">
+        <article class="ktx-kpi">
+            <span class="ktx-kpi__icon is-lilac"><i class="bi bi-people-fill"></i></span>
+            <p class="ktx-kpi__label">Tổng sinh viên</p>
+            <p class="ktx-kpi__value" th:text="${#numbers.formatInteger(dash.studentCount, 1, 'POINT')}">0</p>
+            <p class="ktx-kpi__meta"><span th:text="${#numbers.formatInteger(dash.occupyingStudentCount, 1, 'POINT')} + ' đang nội trú'">0 đang nội trú</span></p>
+        </article>
+        <article class="ktx-kpi">
+            <span class="ktx-kpi__icon is-sky"><i class="bi bi-building"></i></span>
+            <p class="ktx-kpi__label">Tổng phòng</p>
+            <p class="ktx-kpi__value" th:text="${#numbers.formatInteger(dash.activeRoomCount, 1, 'POINT')}">0</p>
+            <p class="ktx-kpi__meta"><span th:text="${dash.buildingCount}">0</span> tòa, <span th:text="${dash.roomCount}">0</span> phòng</p>
+        </article>
+        <article class="ktx-kpi">
+            <span class="ktx-kpi__icon is-mint"><i class="bi bi-lamp"></i></span>
+            <p class="ktx-kpi__label">Giường sử dụng</p>
+            <p class="ktx-kpi__value" th:text="${#numbers.formatInteger(dash.occupiedBeds, 1, 'POINT')}">0</p>
+            <p class="ktx-kpi__meta">Sử dụng <span th:text="${dash.occupancyPercentLabel}">0.0</span>%</p>
+        </article>
+        <article class="ktx-kpi">
+            <span class="ktx-kpi__icon is-peach"><i class="bi bi-lamp-fill"></i></span>
+            <p class="ktx-kpi__label">Giường trống</p>
+            <p class="ktx-kpi__value" th:text="${#numbers.formatInteger(dash.vacantBeds, 1, 'POINT')}">0</p>
+            <p class="ktx-kpi__meta" th:if="${dash.capacityBeds > 0}"><span th:text="${dash.vacantPercentLabel}">0.0</span>% còn trống</p>
+            <p class="ktx-kpi__meta" th:if="${dash.capacityBeds == 0}">Chưa có giường khả dụng</p>
+        </article>
     </section>
+
+    <section class="ktx-dash-mid">
+        <article class="ktx-card ktx-donut-card">
+            <h2>Tỷ lệ sử dụng giường</h2>
+            <div class="ktx-donut-wrap" th:if="${dash.hasBeds}">
+                <div class="ktx-donut">
+                    <canvas id="ktxOccupancyDonut" width="220" height="220"></canvas>
+                    <div class="ktx-donut__center">
+                        <strong th:text="${dash.occupancyPercentLabel} + '%'">0%</strong>
+                        <span>Đang sử dụng</span>
+                    </div>
+                </div>
+                <ul class="ktx-legend">
+                    <li><i class="is-violet"></i> Đang sử dụng <b th:text="${#numbers.formatInteger(dash.occupiedBeds, 1, 'POINT')}">0</b></li>
+                    <li><i class="is-mint"></i> Còn trống <b th:text="${#numbers.formatInteger(dash.vacantBeds, 1, 'POINT')}">0</b></li>
+                    <li><i class="is-peach"></i> Bảo trì <b th:text="${#numbers.formatInteger(dash.maintenanceBeds, 1, 'POINT')}">0</b></li>
+                </ul>
+            </div>
+            <p class="ktx-empty" th:unless="${dash.hasBeds}">Chưa có giường. Thêm tòa và phòng để xem occupancy.</p>
+        </article>
+
+        <article class="ktx-card">
+            <h2>Phân bổ theo tòa</h2>
+            <div class="ktx-barchart" th:if="${!dash.buildings.empty}">
+                <div class="ktx-barchart__row" th:each="row : ${dash.buildings}">
+                    <span class="ktx-barchart__label" th:text="${row.name}">Tòa A</span>
+                    <div class="ktx-barchart__track" th:if="${row.totalBeds > 0}">
+                        <span class="is-used" th:style="|width:${row.occupiedShare}%|"></span>
+                        <span class="is-vacant" th:style="|width:${row.vacantShare}%|"></span>
+                        <span class="is-maint" th:style="|width:${row.maintenanceShare}%|"></span>
+                    </div>
+                    <div class="ktx-barchart__track is-empty" th:if="${row.totalBeds == 0}"></div>
+                    <span class="ktx-barchart__pct" th:text="${row.occupancyPercentLabel} + '%'">0%</span>
+                </div>
+                <ul class="ktx-legend ktx-legend--inline">
+                    <li><i class="is-mint"></i> Đang sử dụng</li>
+                    <li><i class="is-sky"></i> Còn trống</li>
+                    <li><i class="is-peach"></i> Bảo trì</li>
+                </ul>
+            </div>
+            <p class="ktx-empty" th:if="${dash.buildings.empty}">Chưa có tòa. Thêm tòa Nam hoặc Nữ.</p>
+        </article>
+
+        <article class="ktx-card">
+            <h2>Thao tác nhanh</h2>
+            <div class="ktx-quick">
+                <a class="ktx-quick__tile is-lilac" th:href="@{/admin/students}"><i class="bi bi-person-plus"></i> Sinh viên</a>
+                <a class="ktx-quick__tile is-sky" th:href="@{/admin/periods}"><i class="bi bi-calendar-plus"></i> Đợt đăng ký</a>
+                <a class="ktx-quick__tile is-mint" th:href="@{/admin/allocations}"><i class="bi bi-grid-3x3-gap"></i> Phân bổ chỗ ở</a>
+                <a class="ktx-quick__tile is-peach" th:href="@{/admin/rooms/new}"><i class="bi bi-door-closed"></i> Thêm phòng</a>
+            </div>
+        </article>
+    </section>
+
+    <section class="ktx-dash-bottom">
+        <article class="ktx-card ktx-table-card">
+            <div class="ktx-card__head">
+                <h2>Đơn ở mới nhất</h2>
+                <a th:href="@{/admin/periods}">Xem tất cả</a>
+            </div>
+            <div class="table-responsive" th:if="${!dash.recentApplications.empty}">
+                <table class="table table-hover align-middle mb-0 ktx-table">
+                    <thead>
+                    <tr>
+                        <th>Mã đơn</th>
+                        <th>Sinh viên</th>
+                        <th>Thời gian</th>
+                        <th>Loại phòng</th>
+                        <th>Ưu tiên</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="app : ${dash.recentApplications}">
+                        <td><span class="ktx-chip" th:text="${app.code}">ĐN-000001</span></td>
+                        <td>
+                            <div class="ktx-person">
+                                <span class="ktx-avatar ktx-avatar--sm" th:text="${app.initials}">NA</span>
+                                <span>
+                                    <strong th:text="${app.studentName}">Nguyễn Văn A</strong>
+                                    <small th:text="${app.studentCode}">D22CQCN001</small>
+                                </span>
+                            </div>
+                        </td>
+                        <td th:text="${app.submittedAt}">—</td>
+                        <td th:text="${app.roomTypeLabel}">Phòng 4 người</td>
+                        <td><span class="ktx-pill" th:classappend="'is-' + ${app.priorityTone}" th:text="${app.priorityLabel}">Thường</span></td>
+                        <td><span class="ktx-pill" th:classappend="'is-' + ${app.statusTone}" th:text="${app.statusLabel}">Đã nộp</span></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="ktx-empty" th:if="${dash.recentApplications.empty}">Chưa có đơn. Mở đợt đăng ký để sinh viên nộp nguyện vọng.</p>
+        </article>
+        <div class="ktx-dash-side">
+            <article class="ktx-card">
+                <div class="ktx-card__head"><h2>Thông báo</h2></div>
+                <ul class="ktx-notices">
+                    <li th:each="n : ${dash.notices}" th:class="'is-' + ${n.tone}">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <div>
+                            <strong th:text="${n.title}">Tiêu đề</strong>
+                            <p th:text="${n.body}">Nội dung</p>
+                            <small th:text="${n.timeLabel}">Hôm nay</small>
+                        </div>
+                    </li>
+                </ul>
+            </article>
+            <article class="ktx-card">
+                <div class="ktx-card__head">
+                    <h2>Tình trạng phòng</h2>
+                    <a th:href="@{/admin/rooms}">Xem tất cả</a>
+                </div>
+                <div class="ktx-roomstat">
+                    <div><i class="bi bi-door-open is-mint"></i><span>Phòng trống</span><b th:text="${dash.emptyRooms}">0</b></div>
+                    <div><i class="bi bi-door-closed is-violet"></i><span>Phòng đã đầy</span><b th:text="${dash.fullRooms}">0</b></div>
+                    <div><i class="bi bi-tools is-peach"></i><span>Bảo trì</span><b th:text="${dash.maintenanceRooms}">0</b></div>
+                    <div><i class="bi bi-lamp is-sky"></i><span>Giường bảo trì</span><b th:text="${dash.maintenanceBeds}">0</b></div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+    <script th:inline="javascript">
+        window.ktxDashboard = {
+            occupied: [[${dash.occupiedBeds}]],
+            vacant: [[${dash.vacantBeds}]],
+            maintenance: [[${dash.maintenanceBeds}]]
+        };
+    </script>
+    <script th:src="@{/js/ktx-charts.js}"></script>
 </main>
 </body>
 </html>

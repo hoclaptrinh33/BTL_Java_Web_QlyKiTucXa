@@ -10,6 +10,11 @@ import com.ktx.domain.Staff;
 
 public interface StaffRepository extends JpaRepository<Staff, Long> {
 
-    @Query("SELECT s FROM Staff s JOIN FETCH s.user JOIN FETCH s.assignedBuilding WHERE s.user.username = :username")
+    @Query("""
+            SELECT s FROM Staff s
+            JOIN FETCH s.user
+            JOIN FETCH s.assignedBuilding
+            WHERE s.user.username = :username
+            """)
     Optional<Staff> findByUserUsername(@Param("username") String username);
 }

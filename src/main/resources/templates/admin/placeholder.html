@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <section class="ktx-card ktx-placeholder">
+        <span class="ktx-kpi__icon is-lilac mb-3"><i class="bi bi-hourglass-split"></i></span>
+        <h2 class="h5 mb-2" th:text="${pageTitle}">Màn hình</h2>
+        <p class="text-muted mb-0" th:text="${placeholderHint}">Đang xây dựng.</p>
+    </section>
+</main>
+</body>
+</html>
