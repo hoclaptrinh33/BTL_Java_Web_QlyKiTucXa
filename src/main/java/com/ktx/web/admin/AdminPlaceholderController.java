@@ -55,11 +55,7 @@ public class AdminPlaceholderController {
                 "Sinh viên đang ở, hóa đơn quá hạn, lấp đầy theo tòa.");
     }
 
-    @GetMapping("/admin/users")
-    public String users(Model model) {
-        return page(model, "users", "Người dùng", "Tài khoản admin, cán bộ tòa",
-                "Tạo STAFF bắt buộc chọn tòa. Sinh viên tự đăng ký.");
-    }
+
 
     @GetMapping("/admin/configs")
     public String configs(Model model) {
