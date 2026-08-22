@@ -24,6 +24,7 @@ import com.ktx.domain.User;
 import com.ktx.domain.enums.Gender;
 import com.ktx.domain.enums.PriorityCategory;
 import com.ktx.domain.enums.Role;
+import com.ktx.dto.PasswordChangeForm;
 import com.ktx.dto.RegisterForm;
 import com.ktx.repository.StaffRepository;
 import com.ktx.repository.StudentRepository;
@@ -127,5 +128,45 @@ class AuthServiceTest {
         form.setConfirmPassword("password1");
         form.setTermsAccepted(true);
         return form;
+    }
+
+    @Test
+    void changePassword_wrongCurrentPassword_throwsIllegalArgumentException() {
+        User user = new User();
+        user.setUsername("testuser");
+        user.setPasswordHash(ENCODER.encode("oldPassword"));
+
+        when(userRepository.findByUsername("testuser")).thenReturn(java.util.Optional.of(user));
+
+        PasswordChangeForm form = new PasswordChangeForm();
+        form.setCurrentPassword("wrongPassword");
+        form.setNewPassword("newPassword");
+        form.setConfirmPassword("newPassword");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> authService.changePassword("testuser", form));
+
+        assertEquals("Mật khẩu hiện tại không chính xác", ex.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void changePassword_correctCredentials_savesHashedPassword() {
+        User user = new User();
+        user.setUsername("testuser");
+        user.setPasswordHash(ENCODER.encode("oldPassword"));
+
+        when(userRepository.findByUsername("testuser")).thenReturn(java.util.Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        PasswordChangeForm form = new PasswordChangeForm();
+        form.setCurrentPassword("oldPassword");
+        form.setNewPassword("newPassword");
+        form.setConfirmPassword("newPassword");
+
+        authService.changePassword("testuser", form);
+
+        assertTrue(ENCODER.matches("newPassword", user.getPasswordHash()));
+        verify(userRepository).save(user);
     }
 }

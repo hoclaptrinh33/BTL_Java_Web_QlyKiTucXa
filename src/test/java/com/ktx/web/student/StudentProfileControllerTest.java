@@ -1,6 +1,8 @@
 package com.ktx.web.student;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -44,6 +46,12 @@ class StudentProfileControllerTest {
 
     @MockitoBean
     private UserRepository userRepository;
+
+    @MockitoBean
+    private com.ktx.security.LoginAttemptService loginAttemptService;
+
+    @MockitoBean
+    private com.ktx.repository.NotificationRepository notificationRepository;
 
     @Test
     void getProfileSucceedsForStudent() throws Exception {
@@ -111,5 +119,28 @@ class StudentProfileControllerTest {
         mockMvc.perform(get("/student/password").with(user("D22CQCN001").roles("STUDENT")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Thay đổi mật khẩu")));
+    }
+
+    @Test
+    void changePassword_wrongCurrentPassword_showsFieldError() throws Exception {
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("Mật khẩu hiện tại không chính xác"))
+                .when(authService).changePassword(org.mockito.Mockito.eq("D22CQCN001"), any(com.ktx.dto.PasswordChangeForm.class));
+
+        mockMvc.perform(post("/student/password").with(csrf()).with(user("D22CQCN001").roles("STUDENT"))
+                        .param("currentPassword", "wrongPass")
+                        .param("newPassword", "newPass123")
+                        .param("confirmPassword", "newPass123"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Mật khẩu hiện tại không chính xác")));
+    }
+
+    @Test
+    void changePassword_correctCredentials_redirectsToPasswordPage() throws Exception {
+        mockMvc.perform(post("/student/password").with(csrf()).with(user("D22CQCN001").roles("STUDENT"))
+                        .param("currentPassword", "oldPass")
+                        .param("newPassword", "newPass123")
+                        .param("confirmPassword", "newPass123"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/student/password"));
     }
 }
