@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <p class="text-muted mb-0">Mỗi tòa chỉ Nam hoặc Nữ.</p>
+        <a class="btn btn-primary" th:href="@{/admin/buildings/new}">Thêm tòa</a>
+    </div>
+
+    <section class="ktx-card" th:if="${buildings.empty}">
+        <p class="text-muted mb-3">Chưa có tòa. Thêm tòa A Nam hoặc B Nữ để bắt đầu.</p>
+        <a class="btn btn-primary" th:href="@{/admin/buildings/new}">Thêm tòa</a>
+    </section>
+
+    <section class="ktx-card p-0" th:unless="${buildings.empty}">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>Mã</th>
+                    <th>Tên</th>
+                    <th>Giới tính</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="b : ${buildings}">
+                    <td><span class="ktx-chip" th:text="${b.code}">A</span></td>
+                    <td th:text="${b.name}">Tòa A — Nam</td>
+                    <td th:text="${b.genderPolicy.name() == 'MALE'} ? 'Nam' : 'Nữ'">Nam</td>
+                    <td>
+                        <span th:if="${b.active}" class="badge text-bg-success">Đang dùng</span>
+                        <span th:unless="${b.active}" class="badge text-bg-secondary">Tạm tắt</span>
+                    </td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/buildings/{id}/edit(id=${b.id})}">Sửa</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

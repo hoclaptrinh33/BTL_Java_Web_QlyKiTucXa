@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.ktx.repository.UserRepository;
 import com.ktx.service.AuthService;
+import com.ktx.service.BuildingService;
 
 @WebMvcTest
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
@@ -30,6 +31,9 @@ class SecurityConfigTest {
 
     @MockitoBean
     private AuthService authService;
+
+    @MockitoBean
+    private BuildingService buildingService;
 
     @Test
     void staffCannotAccessAdmin() throws Exception {
