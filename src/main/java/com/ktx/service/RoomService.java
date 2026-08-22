@@ -31,6 +31,10 @@ import com.ktx.repository.BuildingRepository;
 import com.ktx.repository.RoomAssetRepository;
 import com.ktx.repository.RoomRepository;
 import com.ktx.repository.SystemConfigRepository;
+import com.ktx.repository.ContractRepository;
+import com.ktx.domain.Contract;
+import com.ktx.common.util.OccupyingStatuses;
+import com.ktx.dto.OccupancyDriftRow;
 
 @Service
 public class RoomService {
@@ -52,15 +56,17 @@ public class RoomService {
     private final BedRepository bedRepository;
     private final RoomAssetRepository roomAssetRepository;
     private final SystemConfigRepository systemConfigRepository;
+    private final ContractRepository contractRepository;
 
     public RoomService(RoomRepository roomRepository, BuildingRepository buildingRepository,
             BedRepository bedRepository, RoomAssetRepository roomAssetRepository,
-            SystemConfigRepository systemConfigRepository) {
+            SystemConfigRepository systemConfigRepository, ContractRepository contractRepository) {
         this.roomRepository = roomRepository;
         this.buildingRepository = buildingRepository;
         this.bedRepository = bedRepository;
         this.roomAssetRepository = roomAssetRepository;
         this.systemConfigRepository = systemConfigRepository;
+        this.contractRepository = contractRepository;
     }
 
     @Transactional(readOnly = true)
@@ -333,5 +339,151 @@ public class RoomService {
 
     private static String normalizeNumber(String raw) {
         return raw == null ? "" : raw.trim().toUpperCase(Locale.ROOT);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OccupancyDriftRow> findOccupancyDrifts() {
+        List<Bed> beds = bedRepository.findAllWithRoomAndBuilding();
+        List<Contract> contracts = contractRepository.findOccupyingWithDetails(OccupyingStatuses.OCCUPYING);
+
+        Map<Long, Contract> bedActiveContractMap = new HashMap<>();
+        for (Contract c : contracts) {
+            if (c.getBed() != null) {
+                bedActiveContractMap.put(c.getBed().getId(), c);
+            }
+        }
+
+        List<OccupancyDriftRow> drifts = new ArrayList<>();
+        for (Bed bed : beds) {
+            Contract activeContract = bedActiveContractMap.get(bed.getId());
+            boolean isDrift = false;
+
+            if (activeContract != null) {
+                if (bed.getStatus() != BedStatus.OCCUPIED 
+                        || bed.getCurrentContractId() == null 
+                        || !bed.getCurrentContractId().equals(activeContract.getId())) {
+                    isDrift = true;
+                }
+            } else {
+                if (bed.getStatus() == BedStatus.OCCUPIED || bed.getCurrentContractId() != null) {
+                    isDrift = true;
+                }
+            }
+
+            if (isDrift) {
+                OccupancyDriftRow row = new OccupancyDriftRow();
+                row.setBedId(bed.getId());
+                row.setBuildingCode(bed.getRoom().getBuilding().getCode());
+                row.setRoomNumber(bed.getRoom().getRoomNumber());
+                row.setBedCode(bed.getBedCode());
+                row.setActualStatus(bed.getStatus().name());
+                row.setActualContractId(bed.getCurrentContractId());
+
+                if (activeContract != null) {
+                    row.setExpectedStatus(BedStatus.OCCUPIED.name());
+                    row.setExpectedContractId(activeContract.getId());
+                    row.setExpectedContractNo(activeContract.getContractNo());
+                    if (activeContract.getStudent() != null) {
+                        row.setStudentName(activeContract.getStudent().getFullName());
+                        row.setStudentCode(activeContract.getStudent().getStudentCode());
+                    }
+                } else {
+                    row.setExpectedStatus(bed.getStatus() == BedStatus.MAINTENANCE ? BedStatus.MAINTENANCE.name() : BedStatus.VACANT.name());
+                    row.setExpectedContractId(null);
+                    row.setExpectedContractNo("—");
+                    row.setStudentName("—");
+                    row.setStudentCode("—");
+                }
+                drifts.add(row);
+            }
+        }
+        return drifts;
+    }
+
+    @Transactional
+    public void reconcileOccupancy() {
+        List<Bed> beds = bedRepository.findAll();
+        List<Contract> contracts = contractRepository.findOccupyingWithDetails(OccupyingStatuses.OCCUPYING);
+
+        Map<Long, Contract> bedActiveContractMap = new HashMap<>();
+        for (Contract c : contracts) {
+            if (c.getBed() != null) {
+                bedActiveContractMap.put(c.getBed().getId(), c);
+            }
+        }
+
+        List<Bed> toUpdate = new ArrayList<>();
+        for (Bed bed : beds) {
+            Contract activeContract = bedActiveContractMap.get(bed.getId());
+            boolean modified = false;
+
+            if (activeContract != null) {
+                if (bed.getStatus() != BedStatus.OCCUPIED) {
+                    bed.setStatus(BedStatus.OCCUPIED);
+                    modified = true;
+                }
+                if (bed.getCurrentContractId() == null || !bed.getCurrentContractId().equals(activeContract.getId())) {
+                    bed.setCurrentContractId(activeContract.getId());
+                    modified = true;
+                }
+            } else {
+                if (bed.getStatus() == BedStatus.OCCUPIED) {
+                    bed.setStatus(BedStatus.VACANT);
+                    modified = true;
+                }
+                if (bed.getCurrentContractId() != null) {
+                    bed.setCurrentContractId(null);
+                    modified = true;
+                }
+            }
+
+            if (modified) {
+                toUpdate.add(bed);
+            }
+        }
+
+        if (!toUpdate.isEmpty()) {
+            bedRepository.saveAll(toUpdate);
+        }
+    }
+
+    @Transactional
+    public void reconcileSingleBed(Long bedId) {
+        Bed bed = bedRepository.findById(bedId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy giường"));
+        
+        List<Contract> activeContracts = contractRepository.findOccupyingWithDetails(OccupyingStatuses.OCCUPYING);
+        Contract activeContractForBed = null;
+        for (Contract c : activeContracts) {
+            if (c.getBed() != null && c.getBed().getId().equals(bedId)) {
+                activeContractForBed = c;
+                break;
+            }
+        }
+
+        boolean modified = false;
+        if (activeContractForBed != null) {
+            if (bed.getStatus() != BedStatus.OCCUPIED) {
+                bed.setStatus(BedStatus.OCCUPIED);
+                modified = true;
+            }
+            if (bed.getCurrentContractId() == null || !bed.getCurrentContractId().equals(activeContractForBed.getId())) {
+                bed.setCurrentContractId(activeContractForBed.getId());
+                modified = true;
+            }
+        } else {
+            if (bed.getStatus() == BedStatus.OCCUPIED) {
+                bed.setStatus(BedStatus.VACANT);
+                modified = true;
+            }
+            if (bed.getCurrentContractId() != null) {
+                bed.setCurrentContractId(null);
+                modified = true;
+            }
+        }
+
+        if (modified) {
+            bedRepository.save(bed);
+        }
     }
 }
