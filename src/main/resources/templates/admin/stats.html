@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <p class="text-muted mb-3">
+        Occupancy = giường đang dùng / giường khả dụng (phòng ACTIVE, trừ bảo trì).
+        Trang tổng quan chỉ hiện KPI; bảng dưới là chi tiết theo tòa.
+    </p>
+    <section class="ktx-kpi-grid mb-3">
+        <article class="ktx-kpi">
+            <span class="ktx-kpi__icon is-lilac"><i class="bi bi-people-fill"></i></span>
+            <p class="ktx-kpi__label">Sinh viên nội trú</p>
+            <p class="ktx-kpi__value" th:text="${#numbers.formatInteger(dash.occupyingStudentCount, 1, 'POINT')}">0</p>
+            <p class="ktx-kpi__meta">Tổng hồ sơ <span th:text="${dash.studentCount}">0</span></p>
+        </article>
+        <article class="ktx-kpi">
+            <span class="ktx-kpi__icon is-mint"><i class="bi bi-graph-up"></i></span>
+            <p class="ktx-kpi__label">Lấp đầy</p>
+            <p class="ktx-kpi__value" th:text="${dash.occupancyPercentLabel} + '%'">0%</p>
+            <p class="ktx-kpi__meta"><span th:text="${dash.occupiedBeds}">0</span> / <span th:text="${dash.capacityBeds}">0</span> giường</p>
+        </article>
+        <article class="ktx-kpi">
+            <span class="ktx-kpi__icon is-sky"><i class="bi bi-lamp"></i></span>
+            <p class="ktx-kpi__label">Giường trống</p>
+            <p class="ktx-kpi__value" th:text="${#numbers.formatInteger(dash.vacantBeds, 1, 'POINT')}">0</p>
+            <p class="ktx-kpi__meta">Bảo trì <span th:text="${dash.maintenanceBeds}">0</span></p>
+        </article>
+        <article class="ktx-kpi">
+            <span class="ktx-kpi__icon is-peach"><i class="bi bi-building"></i></span>
+            <p class="ktx-kpi__label">Phòng ACTIVE</p>
+            <p class="ktx-kpi__value" th:text="${#numbers.formatInteger(dash.activeRoomCount, 1, 'POINT')}">0</p>
+            <p class="ktx-kpi__meta">Đầy <span th:text="${dash.fullRooms}">0</span> · Trống <span th:text="${dash.emptyRooms}">0</span></p>
+        </article>
+    </section>
+    <section class="ktx-card p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 ktx-table">
+                <thead>
+                <tr>
+                    <th>Tòa</th>
+                    <th>Giới tính</th>
+                    <th class="text-end">Phòng</th>
+                    <th class="text-end">Đang dùng</th>
+                    <th class="text-end">Trống</th>
+                    <th class="text-end">Bảo trì</th>
+                    <th>Lấp đầy</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${dash.buildings.empty}">
+                    <td colspan="7" class="text-muted p-4">Chưa có tòa. Thêm tòa để thống kê occupancy.</td>
+                </tr>
+                <tr th:each="row : ${dash.buildings}">
+                    <td><span class="ktx-chip" th:text="${row.code}">A</span> <span class="ms-2" th:text="${row.name}">Tòa A</span></td>
+                    <td th:text="${row.genderLabel}">Nam</td>
+                    <td class="text-end" th:text="${row.rooms}">0</td>
+                    <td class="text-end" th:text="${row.occupied}">0</td>
+                    <td class="text-end" th:text="${row.vacant}">0</td>
+                    <td class="text-end" th:text="${row.maintenance}">0</td>
+                    <td>
+                        <div class="ktx-barchart__track ktx-barchart__track--sm" th:if="${row.totalBeds > 0}">
+                            <span class="is-used" th:style="|width:${row.occupiedShare}%|"></span>
+                            <span class="is-vacant" th:style="|width:${row.vacantShare}%|"></span>
+                            <span class="is-maint" th:style="|width:${row.maintenanceShare}%|"></span>
+                        </div>
+                        <small class="text-muted" th:text="${row.occupancyPercentLabel} + '%'">0%</small>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

@@ -15,8 +15,13 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.UserRepository;
 import com.ktx.service.AuthService;
+import com.ktx.service.BuildingService;
+import com.ktx.service.DashboardService;
+import com.ktx.service.RoomService;
+import com.ktx.service.StudentService;
 
 @WebMvcTest({
     com.ktx.web.admin.AdminDashboardController.class,
@@ -42,6 +47,21 @@ class SecurityConfigTest {
 
     @MockitoBean
     private AuthService authService;
+
+    @MockitoBean
+    private BuildingService buildingService;
+
+    @MockitoBean
+    private RoomService roomService;
+
+    @MockitoBean
+    private DashboardService dashboardService;
+
+    @MockitoBean
+    private StudentService studentService;
+
+    @MockitoBean
+    private NotificationRepository notificationRepository;
 
     @Test
     void staffCannotAccessAdmin() throws Exception {

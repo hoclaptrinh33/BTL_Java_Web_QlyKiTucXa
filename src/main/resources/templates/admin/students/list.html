@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <p class="text-muted mb-0">
+            <span th:text="${occupyingCount}">0</span> đang ở KTX ·
+            <span th:text="${totalCount}">0</span> hồ sơ.
+            Sinh viên tự đăng ký; admin theo dõi nội trú.
+        </p>
+        <div class="ktx-filter">
+            <a th:href="@{/admin/students(stay='all')}" th:classappend="${stay == 'all'} ? 'is-active'">Tất cả</a>
+            <a th:href="@{/admin/students(stay='occupying')}" th:classappend="${stay == 'occupying'} ? 'is-active'">Đang ở KTX</a>
+            <a th:href="@{/admin/students(stay='vacant')}" th:classappend="${stay == 'vacant'} ? 'is-active'">Chưa có chỗ</a>
+        </div>
+    </div>
+    <section class="ktx-card" th:if="${students.empty}">
+        <p class="text-muted mb-0">Chưa có sinh viên khớp bộ lọc. Sinh viên tạo tài khoản tại trang đăng ký.</p>
+    </section>
+    <section class="ktx-card p-0" th:unless="${students.empty}">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 ktx-table">
+                <thead>
+                <tr>
+                    <th>MSSV</th>
+                    <th>Sinh viên</th>
+                    <th>Giới tính</th>
+                    <th>Lớp</th>
+                    <th>Ưu tiên</th>
+                    <th class="text-end">Điểm</th>
+                    <th>Nội trú</th>
+                    <th>Tài khoản</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="sv : ${students}">
+                    <td><span class="ktx-chip" th:text="${sv.studentCode}">D22CQCN001</span></td>
+                    <td>
+                        <div class="ktx-person">
+                            <span class="ktx-avatar ktx-avatar--sm" th:text="${sv.initials}">NA</span>
+                            <span>
+                                <strong th:text="${sv.fullName}">Nguyễn Văn A</strong>
+                                <small th:text="${sv.phone != null ? sv.phone : 'Chưa có SĐT'}">—</small>
+                            </span>
+                        </div>
+                    </td>
+                    <td th:text="${sv.genderLabel}">Nam</td>
+                    <td th:text="${sv.classCode != null ? sv.classCode : '—'}">—</td>
+                    <td><span class="ktx-pill" th:classappend="'is-' + ${sv.priorityTone}" th:text="${sv.priorityLabel}">Thường</span></td>
+                    <td class="text-end" th:text="${sv.conductScore}">100</td>
+                    <td><span class="ktx-pill" th:classappend="'is-' + ${sv.stayTone}" th:text="${sv.stayLabel}">Chưa có chỗ</span></td>
+                    <td>
+                        <span class="ktx-pill is-mint" th:if="${sv.enabled}">Hoạt động</span>
+                        <span class="ktx-pill is-rose" th:unless="${sv.enabled}">Khóa</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>
