@@ -34,9 +34,6 @@ class KtxUserDetailsServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private com.ktx.repository.StudentRepository studentRepository;
-
-    @Mock
     private LoginAttemptService loginAttemptService;
 
     @Mock
@@ -46,7 +43,7 @@ class KtxUserDetailsServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new KtxUserDetailsService(userRepository, studentRepository, loginAttemptService, request);
+        service = new KtxUserDetailsService(userRepository, loginAttemptService, request);
     }
 
     @Test
@@ -107,12 +104,31 @@ class KtxUserDetailsServiceTest {
     }
 
     @Test
-    void loadUserByUsername_blocked_throwsLockedException() {
+    void loadUserByUsername_blocked_returnsLockedUserDetails() {
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
         when(loginAttemptService.isBlocked("127.0.0.1", "blockedUser")).thenReturn(true);
+        User user = user("blockedUser", "blocked@ktx.local", Role.STUDENT, true);
+        when(userRepository.findByUsernameOrEmail("blockedUser", "blockedUser")).thenReturn(Optional.of(user));
+
+        UserDetails details = service.loadUserByUsername("blockedUser");
+        assertFalse(details.isAccountNonLocked());
+    }
+
+    @Test
+    void authenticate_blocked_throwsLockedException() {
+        when(request.getRemoteAddr()).thenReturn("127.0.0.1");
+        when(loginAttemptService.isBlocked("127.0.0.1", "blockedUser")).thenReturn(true);
+        User user = user("blockedUser", "blocked@ktx.local", Role.STUDENT, true);
+        when(userRepository.findByUsernameOrEmail("blockedUser", "blockedUser")).thenReturn(Optional.of(user));
+
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(service);
+        provider.setPasswordEncoder(ENCODER);
+
+        UsernamePasswordAuthenticationToken token =
+                UsernamePasswordAuthenticationToken.unauthenticated("blockedUser", "password");
 
         assertThrows(org.springframework.security.authentication.LockedException.class,
-                () -> service.loadUserByUsername("blockedUser"));
+                () -> provider.authenticate(token));
     }
 
     private static User user(String username, String email, Role role, boolean enabled) {
