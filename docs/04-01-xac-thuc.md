@@ -48,6 +48,7 @@ Các module khác: [6.2 Hạ tầng](./04-02-ha-tang.md) · [6.3 Phân bổ](./0
 | GET/POST | `/student/password`                  | STUDENT      | `student/password.html`  |
 | GET/POST | `/admin/profile`, `/staff/profile` | ADMIN/STAFF  | tương tự                |
 | CRUD     | `/admin/users`                       | ADMIN        | `admin/users/*.html`     |
+| GET      | `/admin/students?stay=all\|occupying\|vacant` | ADMIN | `admin/students/list.html` |
 
 **Service:** `AuthService`, `KtxUserDetailsService.loadUserByUsername` tìm theo username **hoặc** email (`findByUsernameOrEmail`). `LoginSuccessHandler` điều hướng:
 

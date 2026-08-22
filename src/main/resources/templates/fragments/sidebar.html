@@ -10,22 +10,70 @@
         </span>
     </a>
     <nav class="ktx-nav">
-        <p class="ktx-nav__label">Quản lý</p>
         <a th:href="@{/admin/dashboard}"
            sec:authorize="hasRole('ADMIN')"
            th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
-            <i class="bi bi-house"></i> Tổng quan
-        </a>
-        <a th:href="@{/admin/buildings}"
-           sec:authorize="hasRole('ADMIN')"
-           th:classappend="${activeMenu == 'buildings'} ? 'is-active'">
-            <i class="bi bi-building"></i> Tòa nhà
+            <i class="bi bi-house"></i> <span>Tổng quan</span>
         </a>
         <a th:href="@{/staff/dashboard}"
            sec:authorize="hasRole('STAFF')"
            th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
-            <i class="bi bi-house"></i> Tổng quan
+            <i class="bi bi-house"></i> <span>Tổng quan</span>
         </a>
+
+        <th:block sec:authorize="hasRole('ADMIN')">
+            <p class="ktx-nav__label">Quản lý</p>
+            <a th:href="@{/admin/students}" th:classappend="${activeMenu == 'students'} ? 'is-active'">
+                <i class="bi bi-people"></i> <span>Sinh viên</span>
+            </a>
+            <a th:href="@{/admin/buildings}" th:classappend="${activeMenu == 'buildings'} ? 'is-active'">
+                <i class="bi bi-building"></i> <span>Tòa nhà</span>
+            </a>
+            <a th:href="@{/admin/rooms}" th:classappend="${activeMenu == 'rooms'} ? 'is-active'">
+                <i class="bi bi-door-closed"></i> <span>Phòng ở</span>
+            </a>
+            <a th:href="@{/admin/periods}" th:classappend="${activeMenu == 'periods'} ? 'is-active'">
+                <i class="bi bi-calendar-event"></i> <span>Đợt đăng ký</span>
+            </a>
+            <a th:href="@{/admin/allocations}" th:classappend="${activeMenu == 'allocations'} ? 'is-active'">
+                <i class="bi bi-grid-3x3-gap"></i> <span>Phân bổ chỗ ở</span>
+            </a>
+
+            <p class="ktx-nav__label">Thanh toán</p>
+            <a th:href="@{/admin/payments}" th:classappend="${activeMenu == 'payments'} ? 'is-active'">
+                <i class="bi bi-credit-card"></i> <span>Thanh toán</span>
+            </a>
+            <a th:href="@{/admin/invoices}" th:classappend="${activeMenu == 'invoices'} ? 'is-active'">
+                <i class="bi bi-receipt"></i> <span>Hóa đơn</span>
+            </a>
+
+            <p class="ktx-nav__label">Vận hành</p>
+            <a th:href="@{/admin/tickets}" th:classappend="${activeMenu == 'tickets'} ? 'is-active'">
+                <i class="bi bi-tools"></i> <span>Yêu cầu sửa chữa</span>
+            </a>
+            <a th:href="@{/admin/violations}" th:classappend="${activeMenu == 'violations'} ? 'is-active'">
+                <i class="bi bi-exclamation-triangle"></i> <span>Báo cáo vi phạm</span>
+            </a>
+            <a th:href="@{/admin/check-in-out}" th:classappend="${activeMenu == 'checkin'} ? 'is-active'">
+                <i class="bi bi-door-open"></i> <span>Lịch sử ra vào</span>
+            </a>
+
+            <p class="ktx-nav__label">Báo cáo</p>
+            <a th:href="@{/admin/reports}" th:classappend="${activeMenu == 'reports'} ? 'is-active'">
+                <i class="bi bi-file-earmark-bar-graph"></i> <span>Báo cáo</span>
+            </a>
+            <a th:href="@{/admin/stats}" th:classappend="${activeMenu == 'stats'} ? 'is-active'">
+                <i class="bi bi-bar-chart"></i> <span>Thống kê</span>
+            </a>
+
+            <p class="ktx-nav__label">Cài đặt</p>
+            <a th:href="@{/admin/users}" th:classappend="${activeMenu == 'users'} ? 'is-active'">
+                <i class="bi bi-person-gear"></i> <span>Người dùng</span>
+            </a>
+            <a th:href="@{/admin/configs}" th:classappend="${activeMenu == 'configs'} ? 'is-active'">
+                <i class="bi bi-gear"></i> <span>Cài đặt hệ thống</span>
+            </a>
+        </th:block>
     </nav>
 </div>
 </body>

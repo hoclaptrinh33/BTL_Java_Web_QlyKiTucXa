@@ -142,15 +142,14 @@ flowchart LR
     R --> L
 ```
 
-**Sidebar ADMIN** (nhóm, đúng thứ tự vận hành):
+**Sidebar ADMIN** (nhóm, khớp exampleUI + nghiệp vụ KTX):
 
 1. Tổng quan → `/admin/dashboard`
-2. Hạ tầng → Tòa, Phòng, Lệch occupancy
-3. Phân bổ → Đợt, Đơn, Preview/chốt, Gán tay
-4. Lưu trú → Hợp đồng, Đổi/trả phòng, Gia hạn
-5. Viện phí → Chỉ số, Hóa đơn, Thanh toán
-6. Vận hành → Ticket, Vi phạm
-7. Hệ thống → Người dùng, Cấu hình, Báo cáo
+2. **Quản lý** — Sinh viên (`/admin/students`) · Tòa nhà · Phòng ở · Đợt đăng ký · Phân bổ chỗ ở
+3. **Thanh toán** — Thanh toán · Hóa đơn (mọi khoản: phòng, cọc, điện nước, phụ phí)
+4. **Vận hành** — Yêu cầu sửa chữa · Báo cáo vi phạm · Lịch sử ra vào
+5. **Báo cáo** — Báo cáo (Excel/PDF) · Thống kê (`/admin/stats`, chi tiết hơn dashboard)
+6. **Cài đặt** — Người dùng · Cài đặt hệ thống
 
 **Sidebar STAFF** (rút): Tổng quan tòa · Phòng tòa · Check-in · Chỉ số · Hóa đơn phòng · Ticket · Vi phạm. Không mục Phân bổ / Cấu hình / Users.
 

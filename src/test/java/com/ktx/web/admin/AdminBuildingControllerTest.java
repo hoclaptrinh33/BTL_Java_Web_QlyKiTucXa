@@ -28,12 +28,16 @@ import com.ktx.common.exception.DuplicateFieldException;
 import com.ktx.domain.Building;
 import com.ktx.domain.enums.BuildingGenderPolicy;
 import com.ktx.dto.BuildingForm;
+import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.UserRepository;
 import com.ktx.security.KtxUserDetailsService;
 import com.ktx.security.LoginFailureHandler;
 import com.ktx.security.LoginSuccessHandler;
 import com.ktx.security.SecurityConfig;
 import com.ktx.service.BuildingService;
+import com.ktx.service.DashboardService;
+import com.ktx.service.RoomService;
+import com.ktx.service.StudentService;
 
 @WebMvcTest(controllers = AdminBuildingController.class)
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
@@ -47,6 +51,18 @@ class AdminBuildingControllerTest {
 
     @MockitoBean
     private UserRepository userRepository;
+
+    @MockitoBean
+    private DashboardService dashboardService;
+
+    @MockitoBean
+    private StudentService studentService;
+
+    @MockitoBean
+    private RoomService roomService;
+
+    @MockitoBean
+    private NotificationRepository notificationRepository;
 
     @Test
     void staffCannotAccessBuildings() throws Exception {
@@ -64,6 +80,8 @@ class AdminBuildingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Tòa A — Nam")))
                 .andExpect(content().string(containsString("ktx-chip")))
+                .andExpect(content().string(containsString("bldg-kpi-grid")))
+                .andExpect(content().string(containsString("Thêm tòa nhà")))
                 .andExpect(content().string(not(containsString("value=\"MIXED\""))));
     }
 
@@ -116,6 +134,17 @@ class AdminBuildingControllerTest {
                         .param("genderPolicy", "MALE"))
                 .andExpect(status().isForbidden());
         verify(buildingService, never()).create(any());
+    }
+
+    @Test
+    void deleteBuildingRedirects() throws Exception {
+        Building b = building(1L, "A", "Tòa A", BuildingGenderPolicy.MALE);
+        when(buildingService.getById(1L)).thenReturn(b);
+
+        mockMvc.perform(post("/admin/buildings/1/delete").with(csrf()).with(user("admin").roles("ADMIN")))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/admin/buildings"));
+        verify(buildingService).delete(1L);
     }
 
     private static Building building(Long id, String code, String name, BuildingGenderPolicy gender) {

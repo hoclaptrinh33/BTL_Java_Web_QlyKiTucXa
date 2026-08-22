@@ -28,6 +28,7 @@ import com.ktx.domain.User;
 import com.ktx.domain.enums.Gender;
 import com.ktx.domain.enums.Role;
 import com.ktx.dto.RegisterForm;
+import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.UserRepository;
 import com.ktx.security.KtxUserDetailsService;
 import com.ktx.security.LoginFailureHandler;
@@ -35,6 +36,9 @@ import com.ktx.security.LoginSuccessHandler;
 import com.ktx.security.SecurityConfig;
 import com.ktx.service.AuthService;
 import com.ktx.service.BuildingService;
+import com.ktx.service.DashboardService;
+import com.ktx.service.RoomService;
+import com.ktx.service.StudentService;
 
 @WebMvcTest
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
@@ -51,6 +55,18 @@ class RegisterControllerTest {
 
     @MockitoBean
     private BuildingService buildingService;
+
+    @MockitoBean
+    private RoomService roomService;
+
+    @MockitoBean
+    private DashboardService dashboardService;
+
+    @MockitoBean
+    private StudentService studentService;
+
+    @MockitoBean
+    private NotificationRepository notificationRepository;
 
     @Test
     void registerPageIsPermittedAndHasCsrf() throws Exception {

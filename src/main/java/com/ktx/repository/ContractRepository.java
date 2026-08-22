@@ -1,6 +1,7 @@
 package com.ktx.repository;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,4 +20,9 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
             """)
     boolean existsOccupyingInBuilding(@Param("buildingId") Long buildingId,
             @Param("statuses") Collection<ContractStatus> statuses);
+
+    long countByStatusIn(Collection<ContractStatus> statuses);
+
+    @Query("SELECT c.student.id FROM Contract c WHERE c.status IN :statuses")
+    List<Long> findStudentIdsByStatusIn(@Param("statuses") Collection<ContractStatus> statuses);
 }
