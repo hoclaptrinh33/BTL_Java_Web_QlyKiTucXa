@@ -1,5 +1,7 @@
 package com.ktx.web.admin;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
 
 import org.springframework.stereotype.Controller;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ktx.common.exception.BusinessException;
@@ -17,6 +20,8 @@ import com.ktx.common.exception.DuplicateFieldException;
 import com.ktx.domain.Building;
 import com.ktx.domain.enums.BuildingGenderPolicy;
 import com.ktx.dto.BuildingForm;
+import com.ktx.dto.BuildingOverviewDto;
+import com.ktx.dto.BuildingRowDto;
 import com.ktx.service.BuildingService;
 
 @Controller
@@ -30,9 +35,51 @@ public class AdminBuildingController {
     }
 
     @GetMapping
-    public String list(Model model) {
-        page(model, "Tòa nhà", "Quản lý tòa Nam / Nữ");
-        model.addAttribute("buildings", buildingService.listAll());
+    public String list(@RequestParam(name = "q", required = false) String q,
+                       @RequestParam(name = "gender", required = false) String gender,
+                       @RequestParam(name = "active", required = false) Boolean active,
+                       Model model) {
+        page(model, "Quản lý tòa nhà", "Danh mục tòa Nam / Nữ và phòng ở");
+
+        BuildingOverviewDto overview = buildingService.loadOverviewStats();
+        if (overview == null) {
+            overview = new BuildingOverviewDto();
+        }
+        List<BuildingRowDto> buildingRows = buildingService.listBuildingRows(q, gender, active);
+        List<Building> rawBuildings = buildingService.listAll();
+
+        if ((buildingRows == null || buildingRows.isEmpty()) && rawBuildings != null && !rawBuildings.isEmpty()) {
+            buildingRows = rawBuildings.stream().map(b -> {
+                BuildingRowDto row = new BuildingRowDto();
+                row.setId(b.getId());
+                row.setCode(b.getCode());
+                row.setName(b.getName());
+                row.setGenderPolicy(b.getGenderPolicy());
+                row.setGenderLabel(b.getGenderPolicy() == BuildingGenderPolicy.MALE ? "Nam" : "Nữ");
+                row.setActive(Boolean.TRUE.equals(b.getActive()));
+                row.setStatusLabel(Boolean.TRUE.equals(b.getActive()) ? "Hoạt động" : "Tạm tắt");
+                row.setStatusClass(Boolean.TRUE.equals(b.getActive()) ? "is-active" : "is-inactive");
+                row.setZone("Khu " + b.getCode());
+                row.setZoneClass("is-zone-a");
+                row.setFloorCount(1);
+                row.setRoomCount(0);
+                row.setBedCount(0);
+                row.setOccupiedBeds(0);
+                row.setVacantBeds(0);
+                row.setOccupancyPercent(0.0);
+                row.setAddress("Địa chỉ: Khu " + b.getCode() + ", Trường ĐH XYZ");
+                row.setImageUrl("/images/buildings/building-1.jpg");
+                return row;
+            }).toList();
+        }
+
+        model.addAttribute("overview", overview);
+        model.addAttribute("buildingRows", buildingRows);
+        model.addAttribute("buildings", rawBuildings);
+        model.addAttribute("q", q != null ? q : "");
+        model.addAttribute("genderFilter", gender != null ? gender : "ALL");
+        model.addAttribute("activeFilter", active);
+
         return "admin/buildings/list";
     }
 
@@ -104,6 +151,19 @@ public class AdminBuildingController {
             formModel(model, form, id, occupying);
             return "admin/buildings/form";
         }
+    }
+
+    @PostMapping("/{id}/delete")
+    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            Building building = buildingService.getById(id);
+            String code = building.getCode();
+            buildingService.delete(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa tòa " + code);
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/buildings";
     }
 
     @ModelAttribute("genderPolicies")

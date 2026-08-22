@@ -32,13 +32,16 @@ import com.ktx.domain.Building;
 import com.ktx.domain.Room;
 import com.ktx.domain.enums.BuildingGenderPolicy;
 import com.ktx.dto.RoomForm;
+import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.UserRepository;
 import com.ktx.security.KtxUserDetailsService;
 import com.ktx.security.LoginFailureHandler;
 import com.ktx.security.LoginSuccessHandler;
 import com.ktx.security.SecurityConfig;
 import com.ktx.service.BuildingService;
+import com.ktx.service.DashboardService;
 import com.ktx.service.RoomService;
+import com.ktx.service.StudentService;
 
 @WebMvcTest(controllers = AdminRoomController.class)
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
@@ -55,6 +58,15 @@ class AdminRoomControllerTest {
 
     @MockitoBean
     private UserRepository userRepository;
+
+    @MockitoBean
+    private DashboardService dashboardService;
+
+    @MockitoBean
+    private StudentService studentService;
+
+    @MockitoBean
+    private NotificationRepository notificationRepository;
 
     @Test
     void staffCannotAccessRooms() throws Exception {

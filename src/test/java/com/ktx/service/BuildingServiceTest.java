@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -20,11 +21,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.ktx.common.exception.BusinessException;
 import com.ktx.common.exception.DuplicateFieldException;
 import com.ktx.common.util.OccupyingStatuses;
+import com.ktx.domain.Bed;
 import com.ktx.domain.Building;
+import com.ktx.domain.Room;
 import com.ktx.domain.enums.BuildingGenderPolicy;
 import com.ktx.dto.BuildingForm;
+import com.ktx.repository.BedRepository;
 import com.ktx.repository.BuildingRepository;
 import com.ktx.repository.ContractRepository;
+import com.ktx.repository.RoomRepository;
 
 @ExtendWith(MockitoExtension.class)
 class BuildingServiceTest {
@@ -35,11 +40,17 @@ class BuildingServiceTest {
     @Mock
     private ContractRepository contractRepository;
 
+    @Mock
+    private RoomRepository roomRepository;
+
+    @Mock
+    private BedRepository bedRepository;
+
     private BuildingService buildingService;
 
     @BeforeEach
     void setUp() {
-        buildingService = new BuildingService(buildingRepository, contractRepository);
+        buildingService = new BuildingService(buildingRepository, contractRepository, roomRepository, bedRepository);
     }
 
     @Test
@@ -96,6 +107,61 @@ class BuildingServiceTest {
         assertEquals("B", saved.getCode());
         assertEquals(BuildingGenderPolicy.FEMALE, saved.getGenderPolicy());
         assertEquals(Boolean.FALSE, saved.getActive());
+    }
+
+    @Test
+    void loadOverviewStats_computesCorrectly() {
+        Building b = building(1L, "A", BuildingGenderPolicy.MALE);
+        when(buildingRepository.findAll()).thenReturn(List.of(b));
+
+        Room r = new Room();
+        r.setId(10L);
+        r.setBuilding(b);
+        r.setStatus(com.ktx.domain.enums.RoomStatus.ACTIVE);
+        when(roomRepository.findAllWithBuilding()).thenReturn(List.of(r));
+
+        Bed bed1 = new Bed();
+        bed1.setId(101L);
+        bed1.setRoom(r);
+        bed1.setStatus(com.ktx.domain.enums.BedStatus.OCCUPIED);
+
+        Bed bed2 = new Bed();
+        bed2.setId(102L);
+        bed2.setRoom(r);
+        bed2.setStatus(com.ktx.domain.enums.BedStatus.VACANT);
+
+        when(bedRepository.findAllWithRoomAndBuilding()).thenReturn(List.of(bed1, bed2));
+
+        var stats = buildingService.loadOverviewStats();
+        assertEquals(1, stats.getTotalBuildings());
+        assertEquals(1, stats.getTotalRooms());
+        assertEquals(2, stats.getTotalBeds());
+        assertEquals(1, stats.getOccupiedBeds());
+        assertEquals(1, stats.getVacantBeds());
+        assertEquals(50.0, stats.getOccupancyPercent());
+    }
+
+    @Test
+    void delete_rejectsWhenHasRooms() {
+        Building b = building(1L, "A", BuildingGenderPolicy.MALE);
+        when(buildingRepository.findById(1L)).thenReturn(Optional.of(b));
+        when(contractRepository.existsOccupyingInBuilding(1L, OccupyingStatuses.OCCUPYING)).thenReturn(false);
+        when(roomRepository.existsByBuildingId(1L)).thenReturn(true);
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> buildingService.delete(1L));
+        assertEquals(BuildingService.CANNOT_DELETE_HAS_ROOMS, ex.getMessage());
+        verify(buildingRepository, never()).delete(any());
+    }
+
+    @Test
+    void delete_succeedsWhenEmpty() {
+        Building b = building(1L, "A", BuildingGenderPolicy.MALE);
+        when(buildingRepository.findById(1L)).thenReturn(Optional.of(b));
+        when(contractRepository.existsOccupyingInBuilding(1L, OccupyingStatuses.OCCUPYING)).thenReturn(false);
+        when(roomRepository.existsByBuildingId(1L)).thenReturn(false);
+
+        buildingService.delete(1L);
+        verify(buildingRepository).delete(b);
     }
 
     private static BuildingForm form(String code, String name, BuildingGenderPolicy gender, boolean active) {

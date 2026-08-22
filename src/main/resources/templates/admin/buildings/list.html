@@ -2,46 +2,304 @@
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
 <body>
 <main th:fragment="content">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <p class="text-muted mb-0">Mỗi tòa chỉ Nam hoặc Nữ.</p>
-        <a class="btn btn-primary" th:href="@{/admin/buildings/new}">Thêm tòa</a>
+    <!-- Top Bar: Title, Breadcrumb, Search, Filter -->
+    <div class="bldg-header">
+        <div class="bldg-header__left">
+            <h1>Quản lý tòa nhà</h1>
+            <p class="bldg-header__breadcrumb">
+                <a th:href="@{/admin/dashboard}">Trang chủ</a> &rsaquo; <span>Tòa nhà</span>
+            </p>
+        </div>
+        <div class="bldg-header__right">
+            <form th:action="@{/admin/buildings}" method="get" class="d-flex align-items-center gap-2">
+                <div class="bldg-search-input">
+                    <i class="bi bi-search"></i>
+                    <input type="text" name="q" th:value="${q}" class="form-control" placeholder="Tìm kiếm tòa nhà..." />
+                </div>
+                <div class="dropdown">
+                    <button class="btn bldg-filter-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-funnel"></i> Bộ lọc
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end p-3" style="min-width: 220px;">
+                        <li class="mb-2">
+                            <label class="form-label small text-muted mb-1">Giới tính / Khu</label>
+                            <select name="gender" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="ALL" th:selected="${genderFilter == 'ALL'}">Tất cả</option>
+                                <option value="MALE" th:selected="${genderFilter == 'MALE'}">Nam</option>
+                                <option value="FEMALE" th:selected="${genderFilter == 'FEMALE'}">Nữ</option>
+                            </select>
+                        </li>
+                        <li class="mb-2">
+                            <label class="form-label small text-muted mb-1">Trạng thái</label>
+                            <select name="active" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="" th:selected="${activeFilter == null}">Tất cả</option>
+                                <option value="true" th:selected="${activeFilter == true}">Hoạt động</option>
+                                <option value="false" th:selected="${activeFilter == false}">Tạm tắt</option>
+                            </select>
+                        </li>
+                        <li class="d-flex justify-content-between pt-2 border-top">
+                            <a th:href="@{/admin/buildings}" class="btn btn-sm btn-link text-decoration-none p-0 text-muted">Đặt lại</a>
+                            <button type="submit" class="btn btn-sm btn-primary">Lọc</button>
+                        </li>
+                    </ul>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <section class="ktx-card" th:if="${buildings.empty}">
-        <p class="text-muted mb-3">Chưa có tòa. Thêm tòa A Nam hoặc B Nữ để bắt đầu.</p>
-        <a class="btn btn-primary" th:href="@{/admin/buildings/new}">Thêm tòa</a>
+    <!-- 5 KPI Statistic Cards -->
+    <section class="bldg-kpi-grid">
+        <!-- Card 1: Tổng tòa nhà -->
+        <article class="bldg-kpi">
+            <span class="bldg-kpi__icon is-purple">
+                <i class="bi bi-buildings"></i>
+            </span>
+            <div class="bldg-kpi__body">
+                <div class="bldg-kpi__label">Tổng tòa nhà</div>
+                <div class="bldg-kpi__value" th:text="${overview != null ? overview.totalBuildings : 0}">0</div>
+                <p class="bldg-kpi__meta">Tất cả tòa nhà trong hệ thống</p>
+            </div>
+        </article>
+
+        <!-- Card 2: Tổng phòng -->
+        <article class="bldg-kpi">
+            <span class="bldg-kpi__icon is-blue">
+                <i class="bi bi-building"></i>
+            </span>
+            <div class="bldg-kpi__body">
+                <div class="bldg-kpi__label">Tổng phòng</div>
+                <div class="bldg-kpi__value" th:text="${overview != null ? #numbers.formatInteger(overview.totalRooms, 1, 'POINT') : 0}">0</div>
+                <p class="bldg-kpi__meta" th:text="'Trong ' + (${overview != null ? overview.totalBuildings : 0}) + ' tòa nhà'">Trong 0 tòa nhà</p>
+            </div>
+        </article>
+
+        <!-- Card 3: Tổng giường -->
+        <article class="bldg-kpi">
+            <span class="bldg-kpi__icon is-green">
+                <i class="bi bi-lamp"></i>
+            </span>
+            <div class="bldg-kpi__body">
+                <div class="bldg-kpi__label">Tổng giường</div>
+                <div class="bldg-kpi__value" th:text="${overview != null ? #numbers.formatInteger(overview.totalBeds, 1, 'POINT') : 0}">0</div>
+                <p class="bldg-kpi__meta" th:text="'Trong ' + (${overview != null ? overview.totalBuildings : 0}) + ' tòa nhà'">Trong 0 tòa nhà</p>
+            </div>
+        </article>
+
+        <!-- Card 4: Giường đã sử dụng -->
+        <article class="bldg-kpi">
+            <span class="bldg-kpi__icon is-orange">
+                <i class="bi bi-person-check-fill"></i>
+            </span>
+            <div class="bldg-kpi__body">
+                <div class="bldg-kpi__label">Giường đã sử dụng</div>
+                <div class="bldg-kpi__value" th:text="${overview != null ? #numbers.formatInteger(overview.occupiedBeds, 1, 'POINT') : 0}">0</div>
+                <p class="bldg-kpi__meta" th:text="${overview != null ? #numbers.formatDecimal(overview.occupancyPercent, 1, 1) : 0.0} + '% tổng giường'">0.0% tổng giường</p>
+            </div>
+        </article>
+
+        <!-- Card 5: Giường trống -->
+        <article class="bldg-kpi">
+            <span class="bldg-kpi__icon is-red">
+                <i class="bi bi-door-open"></i>
+            </span>
+            <div class="bldg-kpi__body">
+                <div class="bldg-kpi__label">Giường trống</div>
+                <div class="bldg-kpi__value" th:text="${overview != null ? #numbers.formatInteger(overview.vacantBeds, 1, 'POINT') : 0}">0</div>
+                <p class="bldg-kpi__meta" th:text="${overview != null ? #numbers.formatDecimal(overview.vacantPercent, 1, 1) : 0.0} + '% tổng giường'">0.0% tổng giường</p>
+            </div>
+        </article>
     </section>
 
-    <section class="ktx-card p-0" th:unless="${buildings.empty}">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead>
-                <tr>
-                    <th>Mã</th>
-                    <th>Tên</th>
-                    <th>Giới tính</th>
-                    <th>Trạng thái</th>
-                    <th class="text-end">Thao tác</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="b : ${buildings}">
-                    <td><span class="ktx-chip" th:text="${b.code}">A</span></td>
-                    <td th:text="${b.name}">Tòa A — Nam</td>
-                    <td th:text="${b.genderPolicy.name() == 'MALE'} ? 'Nam' : 'Nữ'">Nam</td>
-                    <td>
-                        <span th:if="${b.active}" class="badge text-bg-success">Đang dùng</span>
-                        <span th:unless="${b.active}" class="badge text-bg-secondary">Tạm tắt</span>
-                    </td>
-                    <td class="text-end">
-                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/rooms(buildingId=${b.id})}">Phòng</a>
-                        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/buildings/{id}/edit(id=${b.id})}">Sửa</a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+    <!-- Section Header: Danh sách tòa nhà + Nút "+ Thêm tòa nhà" ở góc phải trên -->
+    <div class="bldg-section-header">
+        <h2>Danh sách tòa nhà</h2>
+        <div class="bldg-section-actions">
+            <a th:href="@{/admin/buildings/new}" class="bldg-btn-add">
+                <i class="bi bi-plus-lg"></i>
+                <span>Thêm tòa nhà</span>
+            </a>
+            <div class="bldg-view-toggle">
+                <button type="button" class="bldg-view-btn is-active" id="btnViewGrid" title="Chế độ xem lưới" onclick="toggleBldgView('grid')">
+                    <i class="bi bi-grid-fill"></i>
+                </button>
+                <button type="button" class="bldg-view-btn" id="btnViewList" title="Chế độ xem bảng" onclick="toggleBldgView('table')">
+                    <i class="bi bi-list-ul"></i>
+                </button>
+            </div>
         </div>
-    </section>
+    </div>
+
+    <!-- Empty State if no buildings -->
+    <div class="bldg-empty-state" th:if="${buildingRows == null || buildingRows.empty}">
+        <i class="bi bi-buildings"></i>
+        <h3>Chưa có tòa nhà nào</h3>
+        <p>Hệ thống chưa có tòa nhà nào phù hợp với bộ lọc. Hãy bắt đầu bằng cách thêm tòa nhà mới cho ký túc xá.</p>
+        <a th:href="@{/admin/buildings/new}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Thêm tòa nhà mới
+        </a>
+    </div>
+
+    <th:block th:if="${buildingRows != null && !buildingRows.empty}">
+        <!-- Section 1: Grid View (Building Cards Grid) -->
+        <div class="bldg-grid" id="bldgGridView">
+            <article class="bldg-card" th:each="b : ${buildingRows}">
+                <div class="bldg-card__cover" th:classappend="${b.genderPolicy != null and b.genderPolicy.name() == 'FEMALE'} ? 'is-female' : 'is-male'">
+                    <i class="bi bi-buildings"></i>
+                    <span class="ktx-chip" th:text="${b.code}">A</span>
+                    <span class="bldg-card__zone" th:text="${b.genderLabel}">Nam</span>
+                </div>
+                <div class="bldg-card__body">
+                    <div class="bldg-card__title-row">
+                        <div class="bldg-card__title-left">
+                            <h3 class="bldg-card__name" th:text="${b.name}">Tòa A</h3>
+                            <span class="bldg-status-badge" th:classappend="${b.statusClass}" th:text="${b.statusLabel}">Hoạt động</span>
+                        </div>
+                        <div class="dropdown">
+                            <button class="bldg-card__more-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thao tác">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" th:href="@{/admin/buildings/{id}/edit(id=${b.id})}"><i class="bi bi-pencil-square me-2 text-muted"></i>Sửa thông tin</a></li>
+                                <li><a class="dropdown-item" th:href="@{/admin/rooms(buildingId=${b.id})}"><i class="bi bi-door-closed me-2 text-muted"></i>Xem danh sách phòng</a></li>
+                                <li><hr class="dropdown-divider"/></li>
+                                <li>
+                                    <form th:action="@{/admin/buildings/{id}/delete(id=${b.id})}" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tòa này?');">
+                                        <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash3 me-2"></i>Xóa tòa</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bldg-card__specs">
+                        <div class="bldg-spec-item">
+                            <i class="bi bi-building"></i>
+                            <span th:text="${b.floorCount} + ' tầng'">4 tầng</span>
+                        </div>
+                        <div class="bldg-spec-item">
+                            <i class="bi bi-grid"></i>
+                            <span th:text="${b.roomCount} + ' phòng'">32 phòng</span>
+                        </div>
+                        <div class="bldg-spec-item">
+                            <i class="bi bi-lamp"></i>
+                            <span th:text="${b.bedCount} + ' giường'">256 giường</span>
+                        </div>
+                    </div>
+
+                    <div class="bldg-card__occupancy">
+                        <div class="bldg-card__occupancy-top">
+                            <span class="bldg-card__occupancy-label">Tỷ lệ sử dụng</span>
+                            <span class="bldg-card__occupancy-pct" th:text="${#numbers.formatDecimal(b.occupancyPercent, 1, 0)} + '%'">85%</span>
+                        </div>
+                        <div class="bldg-progress-track">
+                            <div class="bldg-progress-fill" th:classappend="${b.occupancyPercent < 50} ? 'is-orange'" th:style="'width: ' + ${b.occupancyPercent} + '%'"></div>
+                        </div>
+                    </div>
+
+                    <div class="bldg-card__footer" th:text="'Tòa ' + ${b.genderLabel} + ' · mã ' + ${b.code}">
+                        Tòa Nam · mã A
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <!-- Section 2: Table View (Danh sách tòa nhà) -->
+        <section class="bldg-table-card" id="bldgTableView">
+            <h2 th:text="'Danh sách tòa nhà (' + ${buildingRows.size()} + ')'">Danh sách tòa nhà (6)</h2>
+            <div class="table-responsive">
+                <table class="bldg-table">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Tên tòa nhà</th>
+                        <th>Giới tính</th>
+                        <th>Số tầng</th>
+                        <th>Số phòng</th>
+                        <th>Số giường</th>
+                        <th>Đã sử dụng</th>
+                        <th>Còn trống</th>
+                        <th>Tỷ lệ sử dụng</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="b, stat : ${buildingRows}">
+                        <td th:text="${stat.count}">1</td>
+                        <td><strong th:text="${b.name}">Tòa A</strong></td>
+                        <td>
+                            <span class="ktx-chip" th:text="${b.genderLabel}">Nam</span>
+                        </td>
+                        <td th:text="${b.floorCount}">4</td>
+                        <td th:text="${b.roomCount}">32</td>
+                        <td th:text="${b.bedCount}">256</td>
+                        <td th:text="${b.occupiedBeds}">218</td>
+                        <td th:text="${b.vacantBeds}">38</td>
+                        <td>
+                            <div class="bldg-table-progress">
+                                <div class="bldg-progress-track">
+                                    <div class="bldg-progress-fill" th:classappend="${b.occupancyPercent < 50} ? 'is-orange'" th:style="'width: ' + ${b.occupancyPercent} + '%'"></div>
+                                </div>
+                                <span th:text="${#numbers.formatDecimal(b.occupancyPercent, 1, 0)} + '%'">85%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="bldg-status-badge" th:classappend="${b.statusClass}" th:text="${b.statusLabel}">Hoạt động</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="bldg-actions">
+                                <a class="bldg-action-icon" th:href="@{/admin/rooms(buildingId=${b.id})}" title="Xem danh sách phòng">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a class="bldg-action-icon" th:href="@{/admin/buildings/{id}/edit(id=${b.id})}" title="Chỉnh sửa">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <form th:action="@{/admin/buildings/{id}/delete(id=${b.id})}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tòa này?');">
+                                    <button type="submit" class="bldg-action-icon is-delete" title="Xóa tòa">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="bldg-table-foot">
+                <div class="bldg-table-info" th:text="'Hiển thị 1 đến ' + ${buildingRows.size()} + ' của ' + ${buildingRows.size()} + ' kết quả'">
+                    Hiển thị 1 đến 6 của 6 kết quả
+                </div>
+                <div class="bldg-pagination">
+                    <button class="bldg-page-btn" type="button" disabled aria-label="Trang trước"><i class="bi bi-chevron-left"></i></button>
+                    <button class="bldg-page-btn is-active" type="button">1</button>
+                    <button class="bldg-page-btn" type="button" disabled aria-label="Trang sau"><i class="bi bi-chevron-right"></i></button>
+                </div>
+            </div>
+        </section>
+    </th:block>
+
+    <!-- Client-side view toggle script -->
+    <script>
+        function toggleBldgView(viewMode) {
+            const grid = document.getElementById('bldgGridView');
+            const table = document.getElementById('bldgTableView');
+            const btnGrid = document.getElementById('btnViewGrid');
+            const btnList = document.getElementById('btnViewList');
+            if (!grid || !table) return;
+
+            if (viewMode === 'grid') {
+                grid.style.display = 'grid';
+                table.style.display = 'none';
+                btnGrid.classList.add('is-active');
+                btnList.classList.remove('is-active');
+            } else if (viewMode === 'table') {
+                grid.style.display = 'none';
+                table.style.display = 'block';
+                btnList.classList.add('is-active');
+                btnGrid.classList.remove('is-active');
+            }
+        }
+    </script>
 </main>
 </body>
 </html>
