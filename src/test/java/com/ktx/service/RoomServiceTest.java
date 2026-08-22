@@ -35,6 +35,7 @@ import com.ktx.dto.RoomBatchResult;
 import com.ktx.dto.RoomForm;
 import com.ktx.repository.BedRepository;
 import com.ktx.repository.BuildingRepository;
+import com.ktx.repository.RoomAssetRepository;
 import com.ktx.repository.RoomRepository;
 import com.ktx.repository.SystemConfigRepository;
 
@@ -48,13 +49,16 @@ class RoomServiceTest {
     @Mock
     private BedRepository bedRepository;
     @Mock
+    private RoomAssetRepository roomAssetRepository;
+    @Mock
     private SystemConfigRepository systemConfigRepository;
 
     private RoomService roomService;
 
     @BeforeEach
     void setUp() {
-        roomService = new RoomService(roomRepository, buildingRepository, bedRepository, systemConfigRepository);
+        roomService = new RoomService(roomRepository, buildingRepository, bedRepository, roomAssetRepository,
+                systemConfigRepository);
     }
 
     @Test
@@ -190,9 +194,11 @@ class RoomServiceTest {
         when(bedRepository.countByRoomIdAndStatus(9L, BedStatus.OCCUPIED)).thenReturn(0L);
         List<Bed> beds = List.of(new Bed(), new Bed());
         when(bedRepository.findByRoomIdOrderByBedCodeAsc(9L)).thenReturn(beds);
+        when(roomAssetRepository.findByRoomIdOrderByIdAsc(9L)).thenReturn(List.of());
 
         roomService.delete(9L);
 
+        verify(roomAssetRepository).deleteAll(List.of());
         verify(bedRepository).deleteAll(beds);
         verify(roomRepository).delete(room);
     }

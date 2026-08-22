@@ -1,6 +1,7 @@
 package com.ktx.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -21,4 +22,6 @@ public interface BedRepository extends JpaRepository<Bed, Long> {
     long countByRoomId(Long roomId);
 
     List<Bed> findByRoomIdOrderByBedCodeAsc(Long roomId);
+
+    Optional<Bed> findByIdAndRoomId(Long id, Long roomId);
 }

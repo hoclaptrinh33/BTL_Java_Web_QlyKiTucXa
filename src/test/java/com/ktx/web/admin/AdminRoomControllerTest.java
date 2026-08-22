@@ -28,18 +28,25 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.ktx.common.exception.BusinessException;
 import com.ktx.common.exception.DuplicateFieldException;
+import com.ktx.domain.Bed;
 import com.ktx.domain.Building;
 import com.ktx.domain.Room;
+import com.ktx.domain.RoomAsset;
+import com.ktx.domain.enums.BedStatus;
 import com.ktx.domain.enums.BuildingGenderPolicy;
+import com.ktx.dto.RoomAssetForm;
 import com.ktx.dto.RoomBatchForm;
 import com.ktx.dto.RoomBatchResult;
 import com.ktx.dto.RoomForm;
+import com.ktx.repository.BedRepository;
 import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.UserRepository;
 import com.ktx.security.KtxUserDetailsService;
 import com.ktx.security.LoginFailureHandler;
 import com.ktx.security.LoginSuccessHandler;
 import com.ktx.security.SecurityConfig;
+import com.ktx.service.AssetService;
+import com.ktx.service.BedService;
 import com.ktx.service.BuildingService;
 import com.ktx.service.DashboardService;
 import com.ktx.service.RoomService;
@@ -57,6 +64,15 @@ class AdminRoomControllerTest {
 
     @MockitoBean
     private BuildingService buildingService;
+
+    @MockitoBean
+    private BedService bedService;
+
+    @MockitoBean
+    private AssetService assetService;
+
+    @MockitoBean
+    private BedRepository bedRepository;
 
     @MockitoBean
     private UserRepository userRepository;
@@ -208,6 +224,114 @@ class AdminRoomControllerTest {
                         .param("status", "ACTIVE"))
                 .andExpect(status().isForbidden());
         verify(roomService, never()).createBatch(any());
+    }
+
+    @Test
+    void detailShowsBedsAndAssets() throws Exception {
+        Building a = building();
+        Room room = new Room();
+        room.setId(9L);
+        room.setBuilding(a);
+        room.setRoomNumber("101");
+        room.setFloor(1);
+        room.setRoomType(com.ktx.domain.enums.RoomType.STANDARD_6);
+        room.setCapacity(6);
+        room.setPricePerTerm(new java.math.BigDecimal("1800000"));
+        room.setStatus(com.ktx.domain.enums.RoomStatus.ACTIVE);
+        Bed bed = new Bed();
+        bed.setId(5L);
+        bed.setBedCode("G1");
+        bed.setStatus(BedStatus.VACANT);
+        bed.setVersion(0L);
+        when(roomService.getById(9L)).thenReturn(room);
+        when(bedRepository.findByRoomIdOrderByBedCodeAsc(9L)).thenReturn(List.of(bed));
+        when(assetService.list(9L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/admin/rooms/9").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("A-101")))
+                .andExpect(content().string(containsString("G1")))
+                .andExpect(content().string(containsString("Bảo trì")))
+                .andExpect(content().string(containsString("Thêm tài sản")));
+    }
+
+    @Test
+    void updateBedStatusRedirects() throws Exception {
+        Bed bed = new Bed();
+        bed.setBedCode("G1");
+        bed.setStatus(BedStatus.MAINTENANCE);
+        when(bedService.updateStatus(9L, 5L, BedStatus.MAINTENANCE, 0L)).thenReturn(bed);
+
+        mockMvc.perform(post("/admin/rooms/9/beds/5/status").with(csrf()).with(user("admin").roles("ADMIN"))
+                        .param("status", "MAINTENANCE")
+                        .param("version", "0"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/admin/rooms/9"));
+        verify(bedService).updateStatus(9L, 5L, BedStatus.MAINTENANCE, 0L);
+    }
+
+    @Test
+    void updateBedStatusStaleShowsFlash() throws Exception {
+        when(bedService.updateStatus(9L, 5L, BedStatus.MAINTENANCE, 1L))
+                .thenThrow(new BusinessException(BedService.STALE));
+
+        mockMvc.perform(post("/admin/rooms/9/beds/5/status").with(csrf()).with(user("admin").roles("ADMIN"))
+                        .param("status", "MAINTENANCE")
+                        .param("version", "1"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/admin/rooms/9"));
+    }
+
+    @Test
+    void updateBedStatusWithoutCsrfIsRejected() throws Exception {
+        mockMvc.perform(post("/admin/rooms/9/beds/5/status").with(user("admin").roles("ADMIN"))
+                        .param("status", "MAINTENANCE")
+                        .param("version", "0"))
+                .andExpect(status().isForbidden());
+        verify(bedService, never()).updateStatus(any(), any(), any(), any());
+    }
+
+    @Test
+    void createAssetRedirectsToDetail() throws Exception {
+        RoomAsset asset = new RoomAsset();
+        asset.setName("Quạt trần");
+        when(assetService.create(any(), any(RoomAssetForm.class))).thenReturn(asset);
+
+        mockMvc.perform(post("/admin/rooms/9/assets").with(csrf()).with(user("admin").roles("ADMIN"))
+                        .param("name", "Quạt trần")
+                        .param("category", "FAN")
+                        .param("quantity", "1")
+                        .param("condition", "GOOD"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/admin/rooms/9"));
+        verify(assetService).create(any(), any(RoomAssetForm.class));
+    }
+
+    @Test
+    void createSecondMeterShowsError() throws Exception {
+        Building a = building();
+        Room room = new Room();
+        room.setId(9L);
+        room.setBuilding(a);
+        room.setRoomNumber("101");
+        room.setFloor(1);
+        room.setRoomType(com.ktx.domain.enums.RoomType.STANDARD_6);
+        room.setCapacity(6);
+        room.setPricePerTerm(new java.math.BigDecimal("1800000"));
+        room.setStatus(com.ktx.domain.enums.RoomStatus.ACTIVE);
+        when(roomService.getById(9L)).thenReturn(room);
+        when(bedRepository.findByRoomIdOrderByBedCodeAsc(9L)).thenReturn(List.of());
+        when(assetService.list(9L)).thenReturn(List.of());
+        when(assetService.create(any(), any(RoomAssetForm.class)))
+                .thenThrow(new BusinessException(AssetService.DUPLICATE_METER));
+
+        mockMvc.perform(post("/admin/rooms/9/assets").with(csrf()).with(user("admin").roles("ADMIN"))
+                        .param("name", "Công tơ 2")
+                        .param("category", "ELECTRIC_METER")
+                        .param("quantity", "1")
+                        .param("condition", "GOOD"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Mỗi phòng chỉ một công tơ điện")));
     }
 
     @Test

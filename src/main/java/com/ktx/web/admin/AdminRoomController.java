@@ -20,12 +20,21 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ktx.common.exception.BusinessException;
 import com.ktx.common.exception.DuplicateFieldException;
+import com.ktx.domain.Bed;
 import com.ktx.domain.Room;
+import com.ktx.domain.RoomAsset;
+import com.ktx.domain.enums.AssetCategory;
+import com.ktx.domain.enums.AssetCondition;
+import com.ktx.domain.enums.BedStatus;
 import com.ktx.domain.enums.RoomStatus;
 import com.ktx.domain.enums.RoomType;
+import com.ktx.dto.RoomAssetForm;
 import com.ktx.dto.RoomBatchForm;
 import com.ktx.dto.RoomBatchResult;
 import com.ktx.dto.RoomForm;
+import com.ktx.repository.BedRepository;
+import com.ktx.service.AssetService;
+import com.ktx.service.BedService;
 import com.ktx.service.BuildingService;
 import com.ktx.service.RoomService;
 
@@ -35,10 +44,17 @@ public class AdminRoomController {
 
     private final RoomService roomService;
     private final BuildingService buildingService;
+    private final BedService bedService;
+    private final AssetService assetService;
+    private final BedRepository bedRepository;
 
-    public AdminRoomController(RoomService roomService, BuildingService buildingService) {
+    public AdminRoomController(RoomService roomService, BuildingService buildingService,
+            BedService bedService, AssetService assetService, BedRepository bedRepository) {
         this.roomService = roomService;
         this.buildingService = buildingService;
+        this.bedService = bedService;
+        this.assetService = assetService;
+        this.bedRepository = bedRepository;
     }
 
     @GetMapping
@@ -128,6 +144,119 @@ public class AdminRoomController {
         }
     }
 
+    @GetMapping("/{id}")
+    public String detail(@PathVariable Long id,
+            @RequestParam(name = "assetId", required = false) Long assetId,
+            Model model, RedirectAttributes redirectAttributes) {
+        try {
+            RoomAssetForm form = new RoomAssetForm();
+            form.setQuantity(1);
+            form.setCondition(AssetCondition.GOOD);
+            form.setCategory(AssetCategory.FAN);
+            if (assetId != null) {
+                RoomAsset asset = assetService.getById(id, assetId);
+                form.setName(asset.getName());
+                form.setCategory(asset.getCategory());
+                form.setQuantity(asset.getQuantity());
+                form.setCondition(asset.getCondition());
+                form.setNote(asset.getNote());
+                form.setSerialNumber(asset.getSerialNumber());
+            }
+            detailModel(model, id, form, assetId);
+            return "admin/rooms/detail";
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/admin/rooms";
+        }
+    }
+
+    @GetMapping("/{id}/assets")
+    public String assets(@PathVariable Long id) {
+        return "redirect:/admin/rooms/" + id;
+    }
+
+    @PostMapping("/{id}/beds/{bedId}/status")
+    public String updateBedStatus(@PathVariable Long id, @PathVariable Long bedId,
+            @RequestParam("status") BedStatus status,
+            @RequestParam("version") Long version,
+            RedirectAttributes redirectAttributes) {
+        try {
+            Bed updated = bedService.updateStatus(id, bedId, status, version);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Giường " + updated.getBedCode() + " → " + BedService.statusLabel(updated.getStatus()));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/rooms/" + id;
+    }
+
+    @PostMapping("/{id}/assets")
+    public String createAsset(@PathVariable Long id, @Valid @ModelAttribute("assetForm") RoomAssetForm form,
+            BindingResult binding, Model model, RedirectAttributes redirectAttributes) {
+        if (binding.hasErrors()) {
+            try {
+                detailModel(model, id, form, null);
+                return "admin/rooms/detail";
+            } catch (BusinessException ex) {
+                redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                return "redirect:/admin/rooms";
+            }
+        }
+        try {
+            RoomAsset created = assetService.create(id, form);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã thêm " + created.getName());
+            return "redirect:/admin/rooms/" + id;
+        } catch (BusinessException ex) {
+            if (RoomService.NOT_FOUND.equals(ex.getMessage())) {
+                redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                return "redirect:/admin/rooms";
+            }
+            binding.reject("business", ex.getMessage());
+            detailModel(model, id, form, null);
+            return "admin/rooms/detail";
+        }
+    }
+
+    @PostMapping("/{id}/assets/{assetId}/edit")
+    public String updateAsset(@PathVariable Long id, @PathVariable Long assetId,
+            @Valid @ModelAttribute("assetForm") RoomAssetForm form, BindingResult binding,
+            Model model, RedirectAttributes redirectAttributes) {
+        if (binding.hasErrors()) {
+            try {
+                detailModel(model, id, form, assetId);
+                return "admin/rooms/detail";
+            } catch (BusinessException ex) {
+                redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                return "redirect:/admin/rooms/" + id;
+            }
+        }
+        try {
+            RoomAsset updated = assetService.update(id, assetId, form);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật " + updated.getName());
+            return "redirect:/admin/rooms/" + id;
+        } catch (BusinessException ex) {
+            if (AssetService.NOT_FOUND.equals(ex.getMessage()) || RoomService.NOT_FOUND.equals(ex.getMessage())) {
+                redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                return "redirect:/admin/rooms/" + id;
+            }
+            binding.reject("business", ex.getMessage());
+            detailModel(model, id, form, assetId);
+            return "admin/rooms/detail";
+        }
+    }
+
+    @PostMapping("/{id}/assets/{assetId}/delete")
+    public String deleteAsset(@PathVariable Long id, @PathVariable Long assetId,
+            RedirectAttributes redirectAttributes) {
+        try {
+            assetService.delete(id, assetId);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa tài sản");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/rooms/" + id;
+    }
+
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
@@ -198,6 +327,16 @@ public class AdminRoomController {
         return RoomStatus.values();
     }
 
+    @ModelAttribute("assetCategories")
+    public AssetCategory[] assetCategories() {
+        return AssetCategory.values();
+    }
+
+    @ModelAttribute("assetConditions")
+    public AssetCondition[] assetConditions() {
+        return AssetCondition.values();
+    }
+
     private void batchModel(Model model, RoomBatchForm form) {
         page(model, "Thêm phòng hàng loạt", "Sinh dải tầng — hệ thống tự tạo giường G1…Gn");
         model.addAttribute("form", form);
@@ -259,6 +398,30 @@ public class AdminRoomController {
             }
         }
         return message.toString();
+    }
+
+    private void detailModel(Model model, Long roomId, RoomAssetForm form, Long editAssetId) {
+        Room room = roomService.getById(roomId);
+        List<Bed> beds = bedRepository.findByRoomIdOrderByBedCodeAsc(roomId);
+        long[] counts = new long[3];
+        for (Bed bed : beds) {
+            if (bed.getStatus() == BedStatus.OCCUPIED) {
+                counts[0]++;
+            } else if (bed.getStatus() == BedStatus.VACANT) {
+                counts[1]++;
+            } else {
+                counts[2]++;
+            }
+        }
+        page(model, "Phòng " + room.getBuilding().getCode() + "-" + room.getRoomNumber(),
+                "Giường và tài sản — công tơ điện/nước mỗi phòng một cái");
+        model.addAttribute("room", room);
+        model.addAttribute("row", RoomService.toRow(room, counts));
+        model.addAttribute("beds", beds);
+        model.addAttribute("assets", assetService.list(roomId));
+        model.addAttribute("assetForm", form);
+        model.addAttribute("editAssetId", editAssetId);
+        model.addAttribute("editingAsset", editAssetId != null);
     }
 
     private static void page(Model model, String title, String subtitle) {
