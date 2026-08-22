@@ -2,6 +2,7 @@ package com.ktx.web.admin;
 
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.validation.Valid;
@@ -22,6 +23,8 @@ import com.ktx.common.exception.DuplicateFieldException;
 import com.ktx.domain.Room;
 import com.ktx.domain.enums.RoomStatus;
 import com.ktx.domain.enums.RoomType;
+import com.ktx.dto.RoomBatchForm;
+import com.ktx.dto.RoomBatchResult;
 import com.ktx.dto.RoomForm;
 import com.ktx.service.BuildingService;
 import com.ktx.service.RoomService;
@@ -59,6 +62,46 @@ public class AdminRoomController {
         }
         formModel(model, form, null, false);
         return "admin/rooms/form";
+    }
+
+    @GetMapping("/batch")
+    public String batchForm(@RequestParam(name = "buildingId", required = false) Long buildingId, Model model) {
+        RoomBatchForm form = new RoomBatchForm();
+        form.setStatus(RoomStatus.ACTIVE);
+        form.setFloorFrom(1);
+        form.setFloorTo(5);
+        form.setRoomsPerFloor(10);
+        form.setRoomType(RoomType.STANDARD_6);
+        form.setPricePerTerm(RoomService.defaultPrice(RoomType.STANDARD_6));
+        if (buildingId != null) {
+            form.setBuildingId(buildingId);
+        }
+        batchModel(model, form);
+        return "admin/rooms/batch";
+    }
+
+    @PostMapping("/batch")
+    public String createBatch(@Valid @ModelAttribute("form") RoomBatchForm form, BindingResult binding,
+            Model model, RedirectAttributes redirectAttributes) {
+        if (binding.hasErrors()) {
+            batchModel(model, form);
+            return "admin/rooms/batch";
+        }
+        try {
+            RoomBatchResult result = roomService.createBatch(form);
+            redirectAttributes.addFlashAttribute("successMessage", batchSuccessMessage(result));
+            return "redirect:/admin/rooms?buildingId=" + result.getBuildingId();
+        } catch (BusinessException ex) {
+            if (RoomService.BATCH_EMPTY.equals(ex.getMessage())) {
+                binding.reject("business", ex.getMessage());
+            } else if (RoomService.FLOOR_RANGE_INVALID.equals(ex.getMessage())) {
+                binding.rejectValue("floorTo", "range", ex.getMessage());
+            } else {
+                binding.reject("business", ex.getMessage());
+            }
+            batchModel(model, form);
+            return "admin/rooms/batch";
+        }
     }
 
     @PostMapping
@@ -155,12 +198,22 @@ public class AdminRoomController {
         return RoomStatus.values();
     }
 
+    private void batchModel(Model model, RoomBatchForm form) {
+        page(model, "Thêm phòng hàng loạt", "Sinh dải tầng — hệ thống tự tạo giường G1…Gn");
+        model.addAttribute("form", form);
+        catalog(model, form.getRoomType());
+    }
+
     private void formModel(Model model, RoomForm form, Long roomId, boolean editing) {
         page(model, editing ? "Sửa phòng" : "Thêm phòng",
                 editing ? "Cập nhật giá, tầng, trạng thái" : "Tạo phòng — hệ thống tự sinh giường");
         model.addAttribute("form", form);
         model.addAttribute("roomId", roomId);
         model.addAttribute("editing", editing);
+        catalog(model, form.getRoomType());
+    }
+
+    private void catalog(Model model, RoomType selectedType) {
         var buildings = buildingService.listAll();
         model.addAttribute("buildings", buildings);
         model.addAttribute("buildingOptions", buildings.stream().map(b -> Map.of(
@@ -168,7 +221,7 @@ public class AdminRoomController {
                 "code", b.getCode(),
                 "name", b.getName(),
                 "genderPolicy", b.getGenderPolicy().name())).toList());
-        model.addAttribute("capacity", roomService.capacityOf(form.getRoomType()));
+        model.addAttribute("capacity", roomService.capacityOf(selectedType));
         Map<String, BigDecimal> defaultPrices = new LinkedHashMap<>();
         Map<String, Integer> capacities = new LinkedHashMap<>();
         for (RoomType type : RoomType.values()) {
@@ -177,6 +230,35 @@ public class AdminRoomController {
         }
         model.addAttribute("defaultPrices", defaultPrices);
         model.addAttribute("capacities", capacities);
+    }
+
+    static String batchSuccessMessage(RoomBatchResult result) {
+        StringBuilder message = new StringBuilder("Đã tạo ")
+                .append(result.getCreated())
+                .append(" phòng · ")
+                .append(result.getBedsCreated())
+                .append(" giường");
+        if (result.getFirstDoorCode() != null && result.getLastDoorCode() != null) {
+            message.append(" (")
+                    .append(result.getFirstDoorCode())
+                    .append(" → ")
+                    .append(result.getLastDoorCode())
+                    .append(')');
+        }
+        if (result.getSkipped() > 0) {
+            message.append(". Bỏ qua ")
+                    .append(result.getSkipped())
+                    .append(" số đã có");
+            List<String> skipped = result.getSkippedNumbers();
+            if (!skipped.isEmpty()) {
+                int shown = Math.min(8, skipped.size());
+                message.append(": ").append(String.join(", ", skipped.subList(0, shown)));
+                if (skipped.size() > shown) {
+                    message.append("…");
+                }
+            }
+        }
+        return message.toString();
     }
 
     private static void page(Model model, String title, String subtitle) {

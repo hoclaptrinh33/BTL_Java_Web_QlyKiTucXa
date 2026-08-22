@@ -3,6 +3,7 @@ package com.ktx.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -29,6 +30,8 @@ import com.ktx.domain.enums.BedStatus;
 import com.ktx.domain.enums.BuildingGenderPolicy;
 import com.ktx.domain.enums.RoomStatus;
 import com.ktx.domain.enums.RoomType;
+import com.ktx.dto.RoomBatchForm;
+import com.ktx.dto.RoomBatchResult;
 import com.ktx.dto.RoomForm;
 import com.ktx.repository.BedRepository;
 import com.ktx.repository.BuildingRepository;
@@ -121,6 +124,56 @@ class RoomServiceTest {
     }
 
     @Test
+    void createBatch_makesRoomsAndBedsAndSkipsExisting() {
+        stubCreateBuilding();
+        when(roomRepository.findRoomNumbersByBuildingId(1L)).thenReturn(List.of("101"));
+        when(roomRepository.saveAll(anyList())).thenAnswer(inv -> {
+            List<Room> rooms = inv.getArgument(0);
+            long id = 1L;
+            for (Room room : rooms) {
+                room.setId(id++);
+            }
+            return rooms;
+        });
+        when(bedRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        RoomBatchForm form = batchForm(1, 2, 2, RoomType.STANDARD_6, new BigDecimal("1800000"));
+        RoomBatchResult result = roomService.createBatch(form);
+
+        assertEquals(3, result.getCreated());
+        assertEquals(1, result.getSkipped());
+        assertEquals(18, result.getBedsCreated());
+        assertEquals("A-102", result.getFirstDoorCode());
+        assertEquals("A-202", result.getLastDoorCode());
+        assertEquals(List.of("101"), result.getSkippedNumbers());
+        ArgumentCaptor<List<Room>> rooms = ArgumentCaptor.forClass(List.class);
+        verify(roomRepository).saveAll(rooms.capture());
+        assertEquals(List.of("102", "201", "202"),
+                rooms.getValue().stream().map(Room::getRoomNumber).toList());
+    }
+
+    @Test
+    void createBatch_rejectsWhenEveryNumberExists() {
+        stubCreateBuilding();
+        when(roomRepository.findRoomNumbersByBuildingId(1L)).thenReturn(List.of("101", "102"));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> roomService.createBatch(batchForm(1, 1, 2, RoomType.STANDARD_4, new BigDecimal("2400000"))));
+        assertEquals(RoomService.BATCH_EMPTY, ex.getMessage());
+        verify(roomRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void createBatch_rejectsWhenRangeTooLarge() {
+        stubCreateBuilding();
+        RoomBatchForm form = batchForm(1, 10, 20, RoomType.STANDARD_6, new BigDecimal("1800000"));
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> roomService.createBatch(form));
+        assertEquals(RoomService.BATCH_TOO_LARGE, ex.getMessage());
+        verify(roomRepository, never()).saveAll(anyList());
+    }
+
+    @Test
     void delete_rejectsWhenOccupied() {
         when(roomRepository.findByIdWithBuilding(9L)).thenReturn(Optional.of(existingRoom()));
         when(bedRepository.countByRoomIdAndStatus(9L, BedStatus.OCCUPIED)).thenReturn(1L);
@@ -166,6 +219,18 @@ class RoomServiceTest {
         room.setPricePerTerm(new BigDecimal("1800000"));
         room.setStatus(RoomStatus.ACTIVE);
         return room;
+    }
+
+    private static RoomBatchForm batchForm(int from, int to, int perFloor, RoomType type, BigDecimal price) {
+        RoomBatchForm form = new RoomBatchForm();
+        form.setBuildingId(1L);
+        form.setFloorFrom(from);
+        form.setFloorTo(to);
+        form.setRoomsPerFloor(perFloor);
+        form.setRoomType(type);
+        form.setPricePerTerm(price);
+        form.setStatus(RoomStatus.ACTIVE);
+        return form;
     }
 
     private static RoomForm form(RoomType type, BigDecimal price) {

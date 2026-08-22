@@ -113,7 +113,7 @@ E:/lehai/Documents/Project/BTL_Java_Web_QlyKiTucXa/
     │   │   │   └── util/MoneyUtils.java, DateRanges.java, OccupyingStatuses.java
     │   │   ├── domain/                      # toàn bộ @Entity + enum
     │   │   ├── repository/
-    │   │   ├── dto/                         # form + view model
+    │   │   ├── dto/                         # form + view model (RoomForm, RoomBatchForm, …)
     │   │   ├── service/
     │   │   │   ├── AuthService.java
     │   │   │   ├── StudentProfileService.java

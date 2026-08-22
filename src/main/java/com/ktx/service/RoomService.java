@@ -3,9 +3,11 @@ package com.ktx.service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,8 @@ import com.ktx.domain.enums.BedStatus;
 import com.ktx.domain.enums.RoomStatus;
 import com.ktx.domain.enums.RoomType;
 import com.ktx.domain.enums.BuildingGenderPolicy;
+import com.ktx.dto.RoomBatchForm;
+import com.ktx.dto.RoomBatchResult;
 import com.ktx.dto.RoomForm;
 import com.ktx.dto.RoomRow;
 import com.ktx.repository.BedRepository;
@@ -37,6 +41,10 @@ public class RoomService {
             "Không chuyển bảo trì khi còn giường đang có người";
     public static final String CANNOT_DELETE_OCCUPIED = "Không xóa phòng còn giường đang có người";
     public static final String TYPE_LOCKED = "Không đổi loại phòng khi đã có giường";
+    public static final String FLOOR_RANGE_INVALID = "Tầng đến phải ≥ tầng từ";
+    public static final String BATCH_TOO_LARGE = "Tối đa 100 phòng mỗi lần sinh";
+    public static final String BATCH_EMPTY = "Không có phòng mới — mọi số trong dải đã tồn tại";
+    public static final int MAX_BATCH_ROOMS = 100;
 
     private final RoomRepository roomRepository;
     private final BuildingRepository buildingRepository;
@@ -134,6 +142,81 @@ public class RoomService {
         room = roomRepository.save(room);
         createBeds(room, capacity);
         return room;
+    }
+
+    @Transactional
+    public RoomBatchResult createBatch(RoomBatchForm form) {
+        Building building = buildingRepository.findById(form.getBuildingId())
+                .orElseThrow(() -> new BusinessException(BUILDING_NOT_FOUND));
+        int floorFrom = form.getFloorFrom();
+        int floorTo = form.getFloorTo();
+        int perFloor = form.getRoomsPerFloor();
+        if (floorTo < floorFrom) {
+            throw new BusinessException(FLOOR_RANGE_INVALID);
+        }
+        int planned = (floorTo - floorFrom + 1) * perFloor;
+        if (planned > MAX_BATCH_ROOMS) {
+            throw new BusinessException(BATCH_TOO_LARGE);
+        }
+        int capacity = capacityOf(form.getRoomType());
+        RoomStatus status = form.getStatus() == null ? RoomStatus.ACTIVE : form.getStatus();
+        Set<String> existing = new HashSet<>(roomRepository.findRoomNumbersByBuildingId(building.getId()));
+
+        List<Room> toCreate = new ArrayList<>();
+        List<String> skipped = new ArrayList<>();
+        for (int floor = floorFrom; floor <= floorTo; floor++) {
+            for (int seq = 1; seq <= perFloor; seq++) {
+                String number = roomNumberOf(floor, seq);
+                if (existing.contains(number)) {
+                    skipped.add(number);
+                    continue;
+                }
+                existing.add(number);
+                Room room = new Room();
+                room.setBuilding(building);
+                room.setRoomNumber(number);
+                room.setFloor(floor);
+                room.setRoomType(form.getRoomType());
+                room.setCapacity(capacity);
+                room.setPricePerTerm(form.getPricePerTerm());
+                room.setStatus(status);
+                toCreate.add(room);
+            }
+        }
+        if (toCreate.isEmpty()) {
+            throw new BusinessException(BATCH_EMPTY);
+        }
+
+        List<Room> saved = roomRepository.saveAll(toCreate);
+        List<Bed> beds = new ArrayList<>();
+        for (Room room : saved) {
+            for (int i = 1; i <= capacity; i++) {
+                Bed bed = new Bed();
+                bed.setRoom(room);
+                bed.setBedCode("G" + i);
+                bed.setStatus(BedStatus.VACANT);
+                bed.setVersion(0L);
+                beds.add(bed);
+            }
+        }
+        bedRepository.saveAll(beds);
+
+        RoomBatchResult result = new RoomBatchResult();
+        result.setBuildingId(building.getId());
+        result.setBuildingCode(building.getCode());
+        result.setCreated(saved.size());
+        result.setSkipped(skipped.size());
+        result.setBedsCreated(beds.size());
+        result.getSkippedNumbers().addAll(skipped);
+        Room first = saved.getFirst();
+        Room last = saved.get(saved.size() - 1);
+        result.setFirstDoorCode(building.getCode() + "-" + first.getRoomNumber());
+        result.setLastDoorCode(building.getCode() + "-" + last.getRoomNumber());
+        return result;
+    }
+
+    public static String roomNumberOf(int floor, int sequence) {
+        return String.valueOf(floor * 100 + sequence);
     }
 
     @Transactional
