@@ -24,4 +24,14 @@ public interface BedRepository extends JpaRepository<Bed, Long> {
     List<Bed> findByRoomIdOrderByBedCodeAsc(Long roomId);
 
     Optional<Bed> findByIdAndRoomId(Long id, Long roomId);
+
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT b FROM Bed b
+            JOIN FETCH b.room r
+            JOIN FETCH r.building
+            WHERE r.building.id = :buildingId
+            ORDER BY r.floor DESC, r.roomNumber ASC, b.bedCode ASC
+            """)
+    List<Bed> findByBuildingId(@org.springframework.data.repository.query.Param("buildingId") Long buildingId);
 }
+
