@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <div class="ktx-dialog-overlay">
+        <section class="ktx-dialog" role="dialog" aria-labelledby="batchDialogTitle">
+            <header class="ktx-dialog__head">
+                <div>
+                    <h2 id="batchDialogTitle">Thêm phòng hàng loạt</h2>
+                    <p>Sinh số phòng theo tầng: tầng 1 × 10 phòng → 101–110. Hệ thống tự tạo giường G1…Gn.</p>
+                </div>
+                <a class="ktx-dialog__close"
+                   th:href="${form.buildingId != null} ? @{/admin/rooms(buildingId=${form.buildingId})} : @{/admin/rooms}"
+                   aria-label="Đóng"><i class="bi bi-x-lg"></i></a>
+            </header>
+
+            <form class="ktx-dialog__form" id="batchForm"
+                  th:action="@{/admin/rooms/batch}" th:object="${form}" method="post" novalidate>
+                <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}">
+                    <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}">Lỗi</p>
+                </div>
+                <div class="ktx-dialog__grid">
+                    <div class="ktx-dialog__col">
+                        <div class="ktx-field">
+                            <label class="form-label" for="buildingId">Tòa nhà <span class="req">*</span></label>
+                            <div class="ktx-field__control">
+                                <i class="bi bi-building"></i>
+                                <select class="form-select" id="buildingId" th:field="*{buildingId}"
+                                        th:classappend="${#fields.hasErrors('buildingId')} ? 'is-invalid'">
+                                    <option value="">Chọn tòa Nam / Nữ</option>
+                                    <option th:each="b : ${buildings}" th:value="${b.id}"
+                                            th:text="${b.code} + ' — ' + ${b.name} + ' (' + (${b.genderPolicy.name() == 'MALE'} ? 'Nam' : 'Nữ') + ')'">A — Tòa A</option>
+                                </select>
+                            </div>
+                            <div class="form-text">Giới tính theo tòa. Không nhập cọc — cọc lúc lập hợp đồng.</div>
+                            <div class="invalid-feedback" th:errors="*{buildingId}"></div>
+                        </div>
+
+                        <div class="ktx-field-row">
+                            <div class="ktx-field">
+                                <label class="form-label" for="floorFrom">Từ tầng <span class="req">*</span></label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-layers"></i>
+                                    <input class="form-control" type="number" min="1" max="30" id="floorFrom"
+                                           th:field="*{floorFrom}"
+                                           th:classappend="${#fields.hasErrors('floorFrom')} ? 'is-invalid'"/>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{floorFrom}"></div>
+                            </div>
+                            <div class="ktx-field">
+                                <label class="form-label" for="floorTo">Đến tầng <span class="req">*</span></label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-layers-fill"></i>
+                                    <input class="form-control" type="number" min="1" max="30" id="floorTo"
+                                           th:field="*{floorTo}"
+                                           th:classappend="${#fields.hasErrors('floorTo') or #fields.hasErrors('floorRangeValid')} ? 'is-invalid'"/>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{floorTo}"></div>
+                                <div class="invalid-feedback" th:errors="*{floorRangeValid}"></div>
+                            </div>
+                        </div>
+
+                        <div class="ktx-field">
+                            <label class="form-label" for="roomsPerFloor">Số phòng mỗi tầng <span class="req">*</span></label>
+                            <div class="ktx-field__control">
+                                <i class="bi bi-hash"></i>
+                                <input class="form-control" type="number" min="1" max="20" id="roomsPerFloor"
+                                       th:field="*{roomsPerFloor}"
+                                       th:classappend="${#fields.hasErrors('roomsPerFloor')} ? 'is-invalid'"/>
+                            </div>
+                            <div class="form-text">Tầng 1, 10 phòng → 101–110. Tối đa 20 phòng/tầng, 100 phòng/lần.</div>
+                            <div class="invalid-feedback" th:errors="*{roomsPerFloor}"></div>
+                        </div>
+
+                        <div class="ktx-field-row">
+                            <div class="ktx-field">
+                                <label class="form-label" for="roomType">Loại phòng <span class="req">*</span></label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-grid-3x3-gap"></i>
+                                    <select class="form-select" id="roomType" th:field="*{roomType}"
+                                            th:classappend="${#fields.hasErrors('roomType')} ? 'is-invalid'">
+                                        <option th:each="t : ${roomTypes}" th:value="${t}"
+                                                th:text="${t.name() == 'STANDARD_4'} ? '4 giường · 2.400.000 đ/kỳ' : (${t.name() == 'STANDARD_6'} ? '6 giường · 1.800.000 đ/kỳ' : (${t.name() == 'STANDARD_8'} ? '8 giường · 1.200.000 đ/kỳ' : 'VIP · 4.000.000 đ/kỳ'))">6 giường</option>
+                                    </select>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{roomType}"></div>
+                            </div>
+                            <div class="ktx-field">
+                                <label class="form-label" for="status">Trạng thái <span class="req">*</span></label>
+                                <select class="form-select" id="status" th:field="*{status}"
+                                        th:classappend="${#fields.hasErrors('status')} ? 'is-invalid'">
+                                    <option th:each="s : ${roomStatuses}" th:value="${s}"
+                                            th:text="${s.name() == 'ACTIVE'} ? 'Hoạt động' : (${s.name() == 'MAINTENANCE'} ? 'Bảo trì' : 'Ngưng dùng')">Hoạt động</option>
+                                </select>
+                                <div class="invalid-feedback" th:errors="*{status}"></div>
+                            </div>
+                        </div>
+
+                        <div class="ktx-field">
+                            <label class="form-label" for="pricePerTerm">Giá / kỳ (đ) <span class="req">*</span></label>
+                            <div class="ktx-field__control">
+                                <i class="bi bi-currency-dollar"></i>
+                                <input class="form-control" type="number" min="0" step="1000" id="pricePerTerm"
+                                       th:field="*{pricePerTerm}"
+                                       th:classappend="${#fields.hasErrors('pricePerTerm')} ? 'is-invalid'"/>
+                            </div>
+                            <div class="form-text">Áp dụng cho cả dải. Có thể sửa; mặc định theo loại.</div>
+                            <div class="invalid-feedback" th:errors="*{pricePerTerm}"></div>
+                        </div>
+                    </div>
+
+                    <div class="ktx-dialog__col">
+                        <div class="ktx-room-preview" id="batchPreview">
+                            <span class="ktx-room-preview__label">Xem trước dải phòng</span>
+                            <span class="ktx-chip ktx-room-preview__chip" id="previewChip">A-101 → A-510</span>
+                            <p class="ktx-room-preview__meta" id="previewMeta">Chọn tòa và dải tầng.</p>
+                            <ul class="ktx-batch-ranges" id="previewRanges"></ul>
+                            <ul class="ktx-room-preview__beds" id="previewBeds"></ul>
+                            <p class="form-text mb-0">Số đã có trong tòa sẽ được bỏ qua khi lưu. Không upload ảnh.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="ktx-dialog__foot">
+                    <a class="btn btn-light"
+                       th:href="${form.buildingId != null} ? @{/admin/rooms(buildingId=${form.buildingId})} : @{/admin/rooms}">Hủy</a>
+                    <button type="submit" class="btn btn-primary" id="batchSubmit">Sinh danh sách phòng</button>
+                </footer>
+            </form>
+        </section>
+    </div>
+
+    <script th:inline="javascript">
+        const buildings = /*[[${buildingOptions}]]*/ [];
+        const prices = /*[[${defaultPrices}]]*/ { STANDARD_4: 2400000, STANDARD_6: 1800000, STANDARD_8: 1200000, VIP_AC: 4000000 };
+        const caps = /*[[${capacities}]]*/ { STANDARD_4: 4, STANDARD_6: 6, STANDARD_8: 8, VIP_AC: 2 };
+        const typeEl = document.getElementById('roomType');
+        const priceEl = document.getElementById('pricePerTerm');
+        const bldgEl = document.getElementById('buildingId');
+        const fromEl = document.getElementById('floorFrom');
+        const toEl = document.getElementById('floorTo');
+        const perEl = document.getElementById('roomsPerFloor');
+        const submitEl = document.getElementById('batchSubmit');
+        let lastType = typeEl && typeEl.value;
+
+        function buildingOf(id) {
+            return (buildings || []).find(b => String(b.id) === String(id));
+        }
+        function roomNumber(floor, seq) {
+            return String(floor * 100 + seq);
+        }
+        function renderPreview() {
+            const type = typeEl ? typeEl.value : 'STANDARD_6';
+            const cap = caps[type] || 6;
+            const b = buildingOf(bldgEl && bldgEl.value);
+            const code = b ? (b.code || '') : 'A';
+            const from = Math.max(1, Number(fromEl && fromEl.value) || 1);
+            const to = Math.max(from, Number(toEl && toEl.value) || from);
+            const per = Math.min(20, Math.max(1, Number(perEl && perEl.value) || 10));
+            const total = (to - from + 1) * per;
+            const beds = total * cap;
+            const first = code + '-' + roomNumber(from, 1);
+            const last = code + '-' + roomNumber(to, per);
+            const chip = document.getElementById('previewChip');
+            const meta = document.getElementById('previewMeta');
+            const ranges = document.getElementById('previewRanges');
+            const bedList = document.getElementById('previewBeds');
+            if (chip) chip.textContent = first + ' → ' + last;
+            const gender = b && b.genderPolicy === 'FEMALE' ? 'Tòa Nữ' : (b ? 'Tòa Nam' : 'Chưa chọn tòa');
+            if (meta) {
+                meta.textContent = gender + ' · ' + total + ' phòng · ' + beds + ' giường VACANT'
+                    + (total > 100 ? ' — vượt 100, thu hẹp dải' : '');
+            }
+            if (ranges) {
+                ranges.innerHTML = '';
+                const maxLines = 8;
+                for (let floor = from; floor <= to; floor++) {
+                    if (floor - from >= maxLines) {
+                        const more = document.createElement('li');
+                        more.textContent = '… +' + (to - floor + 1) + ' tầng';
+                        ranges.appendChild(more);
+                        break;
+                    }
+                    const li = document.createElement('li');
+                    li.textContent = code + '-' + roomNumber(floor, 1) + ' … ' + code + '-' + roomNumber(floor, per);
+                    ranges.appendChild(li);
+                }
+            }
+            if (bedList) {
+                bedList.innerHTML = '';
+                for (let i = 1; i <= cap; i++) {
+                    const li = document.createElement('li');
+                    li.textContent = 'G' + i;
+                    bedList.appendChild(li);
+                }
+            }
+            if (submitEl) {
+                submitEl.disabled = total > 100 || total < 1;
+            }
+        }
+        if (typeEl && priceEl) {
+            typeEl.addEventListener('change', () => {
+                const current = Number(priceEl.value);
+                const prevDefault = prices[lastType];
+                if (!current || current === prevDefault) {
+                    priceEl.value = prices[typeEl.value] || 1800000;
+                }
+                lastType = typeEl.value;
+                renderPreview();
+            });
+        }
+        [bldgEl, fromEl, toEl, perEl].forEach(el => el && el.addEventListener('input', renderPreview));
+        [bldgEl, fromEl, toEl, perEl].forEach(el => el && el.addEventListener('change', renderPreview));
+        renderPreview();
+    </script>
+</main>
+</body>
+</html>

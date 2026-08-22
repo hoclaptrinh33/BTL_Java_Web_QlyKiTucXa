@@ -249,7 +249,7 @@ View Thymeleaf; `*` = form POST.
 | Màn | View | Việc |
 | --- | --- | --- |
 | Dashboard hệ | `admin/dashboard.html` | 4 KPI + 2 chart Chart.js (occupancy theo tòa, nợ theo tháng) |
-| Tòa / phòng / giường / tài sản | `admin/buildings/*`, `rooms/*` | CRUD; đổi status giường; occupancy-drift |
+| Tòa / phòng / giường / tài sản | `admin/buildings/*`, `rooms/*` | CRUD; **Thêm hàng loạt** (`rooms/batch.html`) sinh dải tầng + preview mã cửa; đổi status giường; occupancy-drift |
 | Đợt / đơn | `admin/periods/*`, `applications.html` | Mở/đóng; lọc period |
 | Preview / run | `admin/allocations/*` | Bảng hạng — **màn cốt lõi** §24.8 |
 | Gán tay | `admin/allocations/manual.html` | SV + giường; chặn sai giới / MAINTENANCE |

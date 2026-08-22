@@ -31,6 +31,8 @@ import com.ktx.common.exception.DuplicateFieldException;
 import com.ktx.domain.Building;
 import com.ktx.domain.Room;
 import com.ktx.domain.enums.BuildingGenderPolicy;
+import com.ktx.dto.RoomBatchForm;
+import com.ktx.dto.RoomBatchResult;
 import com.ktx.dto.RoomForm;
 import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.UserRepository;
@@ -150,7 +152,62 @@ class AdminRoomControllerTest {
 
         mockMvc.perform(get("/admin/rooms").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Thêm phòng")));
+                .andExpect(content().string(containsString("Thêm phòng")))
+                .andExpect(content().string(containsString("Thêm hàng loạt")));
+    }
+
+    @Test
+    void batchFormRendersGenerator() throws Exception {
+        when(buildingService.listAll()).thenReturn(List.of(building()));
+        when(roomService.capacityOf(any())).thenReturn(6);
+
+        mockMvc.perform(get("/admin/rooms/batch").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Thêm phòng hàng loạt")))
+                .andExpect(content().string(containsString("Sinh danh sách phòng")))
+                .andExpect(content().string(containsString("name=\"_csrf\"")))
+                .andExpect(content().string(not(containsString("Tiền cọc"))));
+    }
+
+    @Test
+    void createBatchRedirectsToRoomList() throws Exception {
+        RoomBatchResult result = new RoomBatchResult();
+        result.setBuildingId(1L);
+        result.setBuildingCode("A");
+        result.setCreated(48);
+        result.setBedsCreated(288);
+        result.setSkipped(2);
+        result.getSkippedNumbers().add("101");
+        result.getSkippedNumbers().add("102");
+        result.setFirstDoorCode("A-103");
+        result.setLastDoorCode("A-510");
+        when(roomService.createBatch(any(RoomBatchForm.class))).thenReturn(result);
+
+        mockMvc.perform(post("/admin/rooms/batch").with(csrf()).with(user("admin").roles("ADMIN"))
+                        .param("buildingId", "1")
+                        .param("floorFrom", "1")
+                        .param("floorTo", "5")
+                        .param("roomsPerFloor", "10")
+                        .param("roomType", "STANDARD_6")
+                        .param("pricePerTerm", "1800000")
+                        .param("status", "ACTIVE"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/admin/rooms?buildingId=1"));
+        verify(roomService).createBatch(any(RoomBatchForm.class));
+    }
+
+    @Test
+    void createBatchWithoutCsrfIsRejected() throws Exception {
+        mockMvc.perform(post("/admin/rooms/batch").with(user("admin").roles("ADMIN"))
+                        .param("buildingId", "1")
+                        .param("floorFrom", "1")
+                        .param("floorTo", "5")
+                        .param("roomsPerFloor", "10")
+                        .param("roomType", "STANDARD_6")
+                        .param("pricePerTerm", "1800000")
+                        .param("status", "ACTIVE"))
+                .andExpect(status().isForbidden());
+        verify(roomService, never()).createBatch(any());
     }
 
     @Test

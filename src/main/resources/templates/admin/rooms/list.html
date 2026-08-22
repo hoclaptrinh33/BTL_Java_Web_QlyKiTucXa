@@ -10,13 +10,19 @@
                         th:text="${b.code} + ' — ' + ${b.name}">A</option>
             </select>
         </form>
-        <a class="btn btn-primary" th:href="@{/admin/rooms/new(buildingId=${buildingId})}">
-            <i class="bi bi-plus-lg"></i> Thêm phòng
-        </a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-outline-primary" th:href="@{/admin/rooms/batch(buildingId=${buildingId})}">
+                <i class="bi bi-collection"></i> Thêm hàng loạt
+            </a>
+            <a class="btn btn-primary" th:href="@{/admin/rooms/new(buildingId=${buildingId})}">
+                <i class="bi bi-plus-lg"></i> Thêm phòng
+            </a>
+        </div>
     </div>
 
     <section class="ktx-card" th:if="${rooms.empty}">
-        <p class="text-muted mb-3">Chưa có phòng. Thêm phòng theo tòa — hệ thống tự tạo giường G1…Gn.</p>
+        <p class="text-muted mb-3">Chưa có phòng. Thêm từng phòng hoặc sinh cả dải tầng — hệ thống tự tạo giường G1…Gn.</p>
+        <a class="btn btn-outline-primary me-2" th:href="@{/admin/rooms/batch(buildingId=${buildingId})}">Thêm hàng loạt</a>
         <a class="btn btn-primary" th:href="@{/admin/rooms/new(buildingId=${buildingId})}">Thêm phòng</a>
     </section>
 
