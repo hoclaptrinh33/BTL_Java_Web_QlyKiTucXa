@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    
+    <!-- Empty State (All Consistent) -->
+    <section class="ktx-card bg-success-subtle border-success text-success-emphasis p-5 text-center shadow-sm" style="border-radius: 16px;" th:if="${drifts.empty}">
+        <div class="mb-3">
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+        </div>
+        <h3 class="fw-bold">Dữ liệu chỗ ở đồng nhất!</h3>
+        <p class="mb-0 text-muted">Không phát hiện thấy bất kỳ sự lệch dữ liệu (occupancy drift) nào giữa cache của Giường và Hợp đồng lưu trú.</p>
+    </section>
+
+    <!-- Drift Detected Header Banner -->
+    <section class="ktx-card border border-danger-subtle bg-danger-subtle text-danger-emphasis p-4 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-3 shadow-sm" style="border-radius: 16px;" th:unless="${drifts.empty}">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Phát hiện lệch dữ liệu cache!</h4>
+            <p class="mb-0 text-muted">Có <strong th:text="${drifts.size()}">0</strong> giường bị lệch thông tin trạng thái hoặc mã hợp đồng lưu trú so với dữ liệu gốc.</p>
+        </div>
+        <div>
+            <form th:action="@{/admin/rooms/reconcile-all}" method="post">
+                <button type="submit" class="btn btn-danger py-2 px-3 fw-bold" onclick="return confirm('Bạn có chắc chắn muốn đồng bộ toàn bộ giường bị lệch dữ liệu?');">
+                    <i class="bi bi-arrow-repeat me-1"></i> Đồng bộ tất cả
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Drifts Table -->
+    <section class="ktx-card p-0 shadow-sm" th:unless="${drifts.empty}" style="border-radius: 16px; overflow: hidden;">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 ktx-table">
+                <thead>
+                <tr>
+                    <th>Giường</th>
+                    <th>Thực tế Cache Giường</th>
+                    <th>Kỳ vọng theo Hợp đồng</th>
+                    <th>Sinh viên lưu trú</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="d : ${drifts}">
+                    <!-- Giường details -->
+                    <td>
+                        <strong class="d-block" th:text="${d.buildingCode} + ' — Phòng ' + ${d.roomNumber}">A — Phòng 101</strong>
+                        <span class="ktx-chip text-uppercase" th:text="${d.bedCode}">G1</span>
+                    </td>
+                    <!-- Cache Status -->
+                    <td>
+                        <span class="ktx-pill" 
+                              th:classappend="${d.actualStatus == 'OCCUPIED'} ? 'is-mint' : (${d.actualStatus == 'MAINTENANCE'} ? 'is-rose' : 'bg-light text-muted')" 
+                              th:text="${d.actualStatus}">OCCUPIED</span>
+                        <div class="small text-muted mt-1" th:text="${d.actualContractId != null} ? 'HĐ ID: ' + ${d.actualContractId} : 'HĐ ID: —'">HĐ ID: 12</div>
+                    </td>
+                    <!-- Expected Status -->
+                    <td>
+                        <span class="ktx-pill" 
+                              th:classappend="${d.expectedStatus == 'OCCUPIED'} ? 'is-mint' : (${d.expectedStatus == 'MAINTENANCE'} ? 'is-rose' : 'bg-light text-muted')" 
+                              th:text="${d.expectedStatus}">OCCUPIED</span>
+                        <div class="small mt-1">
+                            <strong th:text="${d.expectedContractNo != '—'} ? 'HĐ: ' + ${d.expectedContractNo} : 'Không có HĐ'">HĐ: HD-001</strong>
+                        </div>
+                    </td>
+                    <!-- Student Details -->
+                    <td>
+                        <div th:if="${d.studentCode != '—'}">
+                            <strong class="d-block" th:text="${d.studentName}">Nguyễn Văn A</strong>
+                            <small class="text-muted" th:text="${d.studentCode}">D22CQCN001</small>
+                        </div>
+                        <div th:if="${d.studentCode == '—'}">
+                            <span class="text-muted">—</span>
+                        </div>
+                    </td>
+                    <!-- Individual action -->
+                    <td class="text-end">
+                        <form th:action="@{/admin/rooms/beds/{bedId}/reconcile(bedId=${d.bedId})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-warning py-1 px-2">
+                                <i class="bi bi-wrench-adjustable"></i> Sửa theo HĐ
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

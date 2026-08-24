@@ -39,6 +39,9 @@ import com.ktx.repository.RoomAssetRepository;
 import com.ktx.repository.RoomRepository;
 import com.ktx.repository.SystemConfigRepository;
 import com.ktx.repository.ContractRepository;
+import com.ktx.domain.Contract;
+import com.ktx.domain.enums.ContractStatus;
+import com.ktx.dto.OccupancyDriftRow;
 
 @ExtendWith(MockitoExtension.class)
 class RoomServiceTest {
@@ -251,5 +254,72 @@ class RoomServiceTest {
         form.setPricePerTerm(price);
         form.setStatus(RoomStatus.ACTIVE);
         return form;
+    }
+
+    @Test
+    void findOccupancyDrifts_detectsDrift() {
+        Building b = new Building();
+        b.setCode("A");
+        Room r = new Room();
+        r.setBuilding(b);
+        r.setRoomNumber("101");
+        
+        Bed bed = new Bed();
+        bed.setId(101L);
+        bed.setBedCode("G1");
+        bed.setRoom(r);
+        bed.setStatus(BedStatus.VACANT); // Cache says VACANT
+        bed.setCurrentContractId(null);
+
+        Contract c = new Contract();
+        c.setId(10L);
+        c.setContractNo("HD-001");
+        c.setBed(bed);
+        c.setStatus(ContractStatus.ACTIVE); // Source of truth says ACTIVE (Occupying)
+
+        when(bedRepository.findAllWithRoomAndBuilding()).thenReturn(List.of(bed));
+        when(contractRepository.findOccupyingWithDetails(any())).thenReturn(List.of(c));
+
+        List<OccupancyDriftRow> drifts = roomService.findOccupancyDrifts();
+
+        assertEquals(1, drifts.size());
+        OccupancyDriftRow drift = drifts.getFirst();
+        assertEquals(101L, drift.getBedId());
+        assertEquals("A", drift.getBuildingCode());
+        assertEquals("101", drift.getRoomNumber());
+        assertEquals("VACANT", drift.getActualStatus());
+        assertEquals("OCCUPIED", drift.getExpectedStatus());
+        assertEquals("HD-001", drift.getExpectedContractNo());
+    }
+
+    @Test
+    void reconcileOccupancy_updatesDriftsCorrectly() {
+        Building b = new Building();
+        b.setCode("A");
+        Room r = new Room();
+        r.setBuilding(b);
+        r.setRoomNumber("101");
+        
+        Bed bed = new Bed();
+        bed.setId(101L);
+        bed.setBedCode("G1");
+        bed.setRoom(r);
+        bed.setStatus(BedStatus.VACANT); // Cache says VACANT
+        bed.setCurrentContractId(null);
+
+        Contract c = new Contract();
+        c.setId(10L);
+        c.setContractNo("HD-001");
+        c.setBed(bed);
+        c.setStatus(ContractStatus.ACTIVE); // Source of truth says ACTIVE (Occupying)
+
+        when(bedRepository.findAll()).thenReturn(List.of(bed));
+        when(contractRepository.findOccupyingWithDetails(any())).thenReturn(List.of(c));
+
+        roomService.reconcileOccupancy();
+
+        assertEquals(BedStatus.OCCUPIED, bed.getStatus());
+        assertEquals(10L, bed.getCurrentContractId());
+        verify(bedRepository).saveAll(anyList());
     }
 }

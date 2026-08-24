@@ -37,6 +37,7 @@ import com.ktx.service.AssetService;
 import com.ktx.service.BedService;
 import com.ktx.service.BuildingService;
 import com.ktx.service.RoomService;
+import com.ktx.dto.OccupancyDriftRow;
 
 @Controller
 @RequestMapping("/admin/rooms")
@@ -428,5 +429,34 @@ public class AdminRoomController {
         model.addAttribute("pageTitle", title);
         model.addAttribute("pageSubtitle", subtitle);
         model.addAttribute("activeMenu", "rooms");
+    }
+
+    @GetMapping("/occupancy-drift")
+    public String listDrifts(Model model) {
+        page(model, "Đồng bộ lưu trú", "Phát hiện và xử lý lệch dữ liệu cache giường vs hợp đồng");
+        model.addAttribute("drifts", roomService.findOccupancyDrifts());
+        return "admin/rooms/occupancy-drift";
+    }
+
+    @PostMapping("/reconcile-all")
+    public String reconcileAll(RedirectAttributes redirectAttributes) {
+        try {
+            roomService.reconcileOccupancy();
+            redirectAttributes.addFlashAttribute("successMessage", "Đồng bộ toàn bộ dữ liệu chỗ ở thành công!");
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Đồng bộ thất bại: " + ex.getMessage());
+        }
+        return "redirect:/admin/rooms/occupancy-drift";
+    }
+
+    @PostMapping("/beds/{bedId}/reconcile")
+    public String reconcileSingle(@PathVariable Long bedId, RedirectAttributes redirectAttributes) {
+        try {
+            roomService.reconcileSingleBed(bedId);
+            redirectAttributes.addFlashAttribute("successMessage", "Đồng bộ giường thành công!");
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Đồng bộ thất bại: " + ex.getMessage());
+        }
+        return "redirect:/admin/rooms/occupancy-drift";
     }
 }
