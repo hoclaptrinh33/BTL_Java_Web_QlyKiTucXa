@@ -63,6 +63,9 @@ class StaffBuildingControllerTest {
     @MockitoBean
     private NotificationRepository notificationRepository;
 
+    @MockitoBean
+    private com.ktx.security.LoginAttemptService loginAttemptService;
+
     @Test
     void studentCannotAccessStaffRooms() throws Exception {
         mockMvc.perform(get("/staff/buildings/1/rooms").with(user("student").roles("STUDENT")))
@@ -82,6 +85,17 @@ class StaffBuildingControllerTest {
         mockMvc.perform(get("/staff/buildings/rooms").with(user("staffA").roles("STAFF")))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/staff/buildings/2/rooms"));
+    }
+
+    @Test
+    void redirectRooms_staffWithoutBuilding_forbidden() throws Exception {
+        Staff staff = new Staff();
+        staff.setAssignedBuilding(null);
+        when(staffRepository.findByUserUsername("staffA")).thenReturn(Optional.of(staff));
+
+        mockMvc.perform(get("/staff/buildings/rooms").with(user("staffA").roles("STAFF")))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/error/403"));
     }
 
     @Test

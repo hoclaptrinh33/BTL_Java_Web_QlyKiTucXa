@@ -37,7 +37,10 @@ public class StaffBuildingController {
     @GetMapping("/staff/buildings/rooms")
     public String redirectRooms(Principal principal) {
         Staff staff = staffRepository.findByUserUsername(principal.getName())
-                .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("Không tìm thấy thông tin cán bộ"));
+                .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException(StaffScope.DENIED_STAFF));
+        if (staff.getAssignedBuilding() == null) {
+            throw new org.springframework.security.access.AccessDeniedException(StaffScope.DENIED_STAFF);
+        }
         Long assignedBuildingId = staff.getAssignedBuilding().getId();
         return "redirect:/staff/buildings/" + assignedBuildingId + "/rooms";
     }
