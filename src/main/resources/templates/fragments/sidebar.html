@@ -40,6 +40,9 @@
             <a th:href="@{/admin/periods}" th:classappend="${activeMenu == 'periods'} ? 'is-active'">
                 <i class="bi bi-calendar-event"></i> <span>Đợt đăng ký</span>
             </a>
+            <a th:href="@{/admin/applications}" th:classappend="${activeMenu == 'applications'} ? 'is-active'">
+                <i class="bi bi-file-earmark-text"></i> <span>Đơn nguyện vọng</span>
+            </a>
             <a th:href="@{/admin/allocations}" th:classappend="${activeMenu == 'allocations'} ? 'is-active'">
                 <i class="bi bi-grid-3x3-gap"></i> <span>Phân bổ chỗ ở</span>
             </a>

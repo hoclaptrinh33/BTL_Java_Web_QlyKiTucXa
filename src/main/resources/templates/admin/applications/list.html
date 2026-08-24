@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+    <!-- Thông báo thành công/lỗi -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <span th:text="${successMessage}">Thành công</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span th:text="${errorMessage}">Lỗi</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Bộ lọc theo Đợt đăng ký -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" th:action="@{/admin/applications}" class="row align-items-center g-3">
+                <div class="col-md-6 col-lg-4">
+                    <label for="periodSelect" class="form-label fw-semibold text-secondary">Chọn đợt đăng ký nguyện vọng</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-calendar-event text-muted"></i></span>
+                        <select id="periodSelect" name="periodId" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- Chọn đợt đăng ký --</option>
+                            <option th:each="p : ${periods}"
+                                    th:value="${p.id}"
+                                    th:selected="${p.id == selectedPeriodId}"
+                                    th:text="${p.name + ' (' + p.academicYear + ')'}">
+                                Đợt tân sinh viên
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-8 d-flex align-items-end justify-content-md-end">
+                    <button type="submit" class="btn btn-primary px-4 d-md-none w-100">
+                        <i class="bi bi-funnel me-1"></i>Lọc danh sách
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Danh sách đơn nguyện vọng -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="bi bi-file-earmark-text me-2 text-primary"></i>Danh sách đơn đã nộp
+            </h5>
+            <span class="badge bg-secondary-subtle text-secondary" th:text="${#lists.size(applications)} + ' đơn đăng ký'">
+                0 đơn
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <!-- Nếu không chọn đợt hoặc đợt không có đơn -->
+            <div th:if="${#lists.isEmpty(applications)}" class="text-center py-5 text-muted">
+                <i class="bi bi-folder2-open fs-1 d-block mb-2 text-secondary"></i>
+                <p class="mb-0">Không tìm thấy đơn đăng ký nào cho đợt này.</p>
+            </div>
+
+            <!-- Bảng danh sách đơn -->
+            <div th:if="${!#lists.isEmpty(applications)}" class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4" style="width: 10%">Mã đơn</th>
+                            <th style="width: 25%">Sinh viên</th>
+                            <th style="width: 20%">Snapshot ưu tiên</th>
+                            <th style="width: 20%">Nguyện vọng</th>
+                            <th style="width: 15%">Thời gian nộp</th>
+                            <th style="width: 10%">Trạng thái</th>
+                            <th class="text-end pe-4" style="width: 10%">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="a : ${applications}">
+                            <td class="ps-4">
+                                <span class="fw-semibold text-secondary" th:text="'#' + ${a.id}">#123</span>
+                            </td>
+                            <td>
+                                <strong class="text-dark d-block" th:text="${a.student.fullName}">Nguyễn Văn A</strong>
+                                <small class="text-muted d-block">
+                                    MSV: <span th:text="${a.student.studentCode}">SV001</span> | 
+                                    Giới tính: <span th:text="${a.student.gender == T(com.ktx.domain.enums.Gender).MALE ? 'Nam' : 'Nữ'}">Nam</span>
+                                </small>
+                            </td>
+                            <td>
+                                <div class="mb-1">
+                                    <span class="badge bg-primary-subtle text-primary" th:text="${a.computedScore != null ? a.computedScore + 'đ' : '0đ'}">1200đ</span>
+                                </div>
+                                <div class="small text-muted" style="font-size: 0.75rem;">
+                                    Đối tượng: <span th:text="${a.prioritySnapshot.name() == 'POLICY' ? 'Chính sách' : (a.prioritySnapshot.name() == 'REMOTE_AREA' ? 'Vùng sâu' : 'Thông thường')}">Ưu tiên</span>
+                                    <span th:if="${a.previousStayGoodSnapshot}"> | Lịch sử: Tốt</span>
+                                    <span th:if="${!a.previousStayGoodSnapshot}"> | Lịch sử: Thường</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    Tòa: <span class="fw-semibold" th:text="${a.preferredBuilding != null ? a.preferredBuilding.name : 'Tự do'}">Tòa A</span>
+                                </div>
+                                <div class="small text-muted">
+                                    Phòng: <span th:text="${a.preferredRoomType != null ? (a.preferredRoomType.name() == 'STANDARD_4' ? 'Phòng 4 giường' : (a.preferredRoomType.name() == 'STANDARD_6' ? 'Phòng 6 giường' : (a.preferredRoomType.name() == 'STANDARD_8' ? 'Phòng 8 giường' : 'Phòng VIP'))) : 'Tự do'}">P4</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span th:text="${a.submittedAt != null ? #temporals.format(a.submittedAt, 'dd/MM/yyyy HH:mm') : 'Chưa nộp'}">
+                                    24/08/2026 12:00
+                                </span>
+                            </td>
+                            <td>
+                                <!-- Trạng thái đơn -->
+                                <span class="badge" th:classappend="${a.status.name() == 'SUBMITTED' ? 'bg-primary-subtle text-primary' : (a.status.name() == 'WITHDRAWN' ? 'bg-secondary-subtle text-secondary' : (a.status.name() == 'ALLOCATED' ? 'bg-success-subtle text-success' : (a.status.name() == 'REJECTED' ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-warning')))}"
+                                      th:text="${a.status.name() == 'SUBMITTED' ? 'Đã nộp' : (a.status.name() == 'WITHDRAWN' ? 'Đã rút' : (a.status.name() == 'ALLOCATED' ? 'Đã xếp giường' : (a.status.name() == 'REJECTED' ? 'Từ chối' : 'Danh sách chờ')))}">
+                                    Trạng thái
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <!-- Nút từ chối đơn nguyện vọng (Chỉ hiển thị cho các đơn SUBMITTED) -->
+                                <form th:if="${a.status.name() == 'SUBMITTED'}"
+                                      th:action="@{/admin/applications/{id}/reject(id=${a.id})}"
+                                      method="post"
+                                      onsubmit="return confirm('Bạn chắc chắn muốn từ chối đơn nguyện vọng này?');">
+                                    <input type="hidden" name="periodId" th:value="${selectedPeriodId}"/>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Từ chối</button>
+                                </form>
+                                <span th:if="${a.status.name() != 'SUBMITTED'}" class="text-muted small">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

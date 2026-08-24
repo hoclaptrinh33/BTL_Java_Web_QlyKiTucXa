@@ -23,6 +23,15 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
 
     long countByStatusIn(Collection<ContractStatus> statuses);
 
+    @Query("""
+            SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END
+            FROM Contract c
+            WHERE c.student.id = :studentId
+              AND c.status IN :statuses
+            """)
+    boolean existsByStudentIdAndStatusIn(@Param("studentId") Long studentId,
+            @Param("statuses") Collection<ContractStatus> statuses);
+
     @Query("SELECT c.student.id FROM Contract c WHERE c.status IN :statuses")
     List<Long> findStudentIdsByStatusIn(@Param("statuses") Collection<ContractStatus> statuses);
 

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+    <!-- Tiêu đề trang -->
+    <div class="mb-4">
+        <a th:href="@{/student/applications}" class="btn btn-link link-secondary p-0 mb-2 text-decoration-none">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
+        </a>
+        <h1 class="h3 mb-1 text-gray-800">Đăng ký nguyện vọng phòng ở</h1>
+        <p class="text-muted">Chọn tòa nhà và loại phòng mong muốn của bạn cho đợt đăng ký này</p>
+    </div>
+
+    <div class="row">
+        <!-- Cột trái: Form nhập -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold text-dark">
+                        <i class="bi bi-file-earmark-plus me-2 text-primary"></i>Thông tin đơn đăng ký
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/student/applications/new}" method="post" th:object="${form}">
+                        <!-- Hidden field cho periodId -->
+                        <input type="hidden" name="periodId" th:value="${period.id}"/>
+
+                        <!-- Tên đợt hiển thị tĩnh -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Đợt đăng ký áp dụng</label>
+                            <input type="text" class="form-control bg-light" th:value="${period.name}" readonly="readonly"/>
+                        </div>
+
+                        <!-- 1. Chọn tòa nhà nguyện vọng -->
+                        <div class="mb-3">
+                            <label for="preferredBuildingId" class="form-label fw-semibold">
+                                Tòa nhà nguyện vọng <span class="text-muted fw-normal">(Không bắt buộc)</span>
+                            </label>
+                            <select id="preferredBuildingId" name="preferredBuildingId" class="form-select">
+                                <option value="">-- Chọn tòa nhà mong muốn (Tùy chọn) --</option>
+                                <option th:each="b : ${buildings}" 
+                                        th:value="${b.id}" 
+                                        th:text="${b.name + ' (' + (b.genderPolicy.name() == 'MALE' ? 'Dành cho Nam' : 'Dành cho Nữ') + ')'}">
+                                    Tòa A
+                                </option>
+                            </select>
+                            <div class="form-text">Hệ thống chỉ hiển thị các tòa nhà phù hợp với giới tính của bạn.</div>
+                        </div>
+
+                        <!-- 2. Chọn loại phòng nguyện vọng -->
+                        <div class="mb-3">
+                            <label for="preferredRoomType" class="form-label fw-semibold">
+                                Loại phòng nguyện vọng <span class="text-muted fw-normal">(Không bắt buộc)</span>
+                            </label>
+                            <select id="preferredRoomType" name="preferredRoomType" class="form-select">
+                                <option value="">-- Chọn loại phòng mong muốn (Tùy chọn) --</option>
+                                <option th:each="t : ${roomTypes}" 
+                                        th:value="${t.name()}" 
+                                        th:text="${t.name() == 'STANDARD_4' ? 'Phòng 4 giường tiêu chuẩn' : (t.name() == 'STANDARD_6' ? 'Phòng 6 giường tiêu chuẩn' : (t.name() == 'STANDARD_8' ? 'Phòng 8 giường tiêu chuẩn' : 'Phòng VIP điều hòa'))}">
+                                    Phòng 4 giường
+                                </option>
+                            </select>
+                            <div class="form-text">Bạn có thể để trống nếu chấp nhận mọi loại phòng ký túc xá bố trí.</div>
+                        </div>
+
+                        <!-- 3. Ghi chú thêm -->
+                        <div class="mb-4">
+                            <label for="note" class="form-label fw-semibold">Ghi chú nguyện vọng</label>
+                            <textarea id="note" name="note" class="form-control" rows="4" maxlength="500" 
+                                      placeholder="Nhập thông tin ghi chú nguyện vọng (ở chung với ai, yêu cầu y tế đặc biệt nếu có...)"></textarea>
+                            <div class="form-text text-end">Tối đa 500 ký tự.</div>
+                        </div>
+
+                        <!-- Nút hành động -->
+                        <div class="d-flex gap-2 justify-content-end border-top pt-3">
+                            <a th:href="@{/student/applications}" class="btn btn-outline-secondary px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-send me-1"></i> Xác nhận nộp đơn
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Thông tin ưu tiên hiện tại sẽ được chụp snapshot -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 mb-4 bg-light-subtle">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold text-dark">
+                        <i class="bi bi-shield-check me-2 text-success"></i>Thông tin ưu tiên của bạn
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        Hệ thống sẽ thực hiện **chụp ảnh dữ liệu (Snapshot)** tại thời điểm bạn bấm nộp đơn để xếp thứ tự ưu tiên phân bổ giường.
+                    </p>
+                    
+                    <ul class="list-group list-group-flush rounded-3">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent">
+                            <span class="text-secondary small">Họ và tên</span>
+                            <strong class="text-dark" th:text="${student.fullName}">Nguyễn Văn A</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent">
+                            <span class="text-secondary small">Giới tính</span>
+                            <strong class="text-dark" th:text="${student.gender == T(com.ktx.domain.enums.Gender).MALE ? 'Nam' : 'Nữ'}">Nam</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent">
+                            <span class="text-secondary small">Đối tượng ưu tiên</span>
+                            <span class="badge bg-primary-subtle text-primary" 
+                                  th:text="${student.priorityCategory.name() == 'POLICY' ? 'Con chính sách (1000đ)' : (student.priorityCategory.name() == 'REMOTE_AREA' ? 'Vùng sâu, vùng xa (500đ)' : 'Thông thường (0đ)')}">
+                                Đối tượng
+                            </span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent">
+                            <span class="text-secondary small">Lịch sử lưu trú tốt</span>
+                            <span class="badge" th:classappend="${student.previousStayGood ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}"
+                                  th:text="${student.previousStayGood ? 'Đạt tiêu chuẩn (+200đ)' : 'Không đạt / Mới'}">
+                                Đạt
+                            </span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent">
+                            <span class="text-secondary small">Điểm rèn luyện</span>
+                            <strong class="text-dark" th:text="${student.conductScore != null ? student.conductScore + ' điểm' : '0 điểm'}">85 điểm</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="alert alert-info border-0 shadow-sm" role="alert">
+                <h6 class="alert-heading fw-bold"><i class="bi bi-info-circle-fill me-2"></i>Lưu ý quan trọng</h6>
+                <p class="mb-0 small">
+                    Đơn sau khi nộp sẽ ở trạng thái **Đã nộp**. Bạn có thể thực hiện **Rút đơn** bất cứ lúc nào trước khi cửa sổ đợt đăng ký bị đóng lại. Sau khi đợt đăng ký đóng cửa, thông tin nguyện vọng sẽ không thể thay đổi.
+                </p>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
