@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <div class="ktx-dialog-overlay">
+        <section class="ktx-dialog" role="dialog" aria-labelledby="userDialogTitle" style="max-width: 650px;">
+            <header class="ktx-dialog__head">
+                <div>
+                    <h2 id="userDialogTitle" th:text="${userForm.id != null} ? 'Sửa người dùng' : 'Thêm người dùng mới'">Thêm người dùng mới</h2>
+                    <p th:text="${userForm.id != null} ? 'Cập nhật thông tin cán bộ Ban quản lý.' : 'Tạo tài khoản Ban quản lý mới (ADMIN hoặc STAFF).'">
+                        Nhập thông tin người dùng.
+                    </p>
+                </div>
+                <a class="ktx-dialog__close" th:href="@{/admin/users}" aria-label="Đóng">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </header>
+
+            <form class="ktx-dialog__form" id="userForm"
+                  th:action="${userForm.id != null} ? @{/admin/users/{id}(id=${userForm.id})} : @{/admin/users}"
+                  th:object="${userForm}" method="post" novalidate>
+                
+                <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}">
+                    <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}">Lỗi</p>
+                </div>
+
+                <div class="ktx-dialog__grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <!-- Column 1 -->
+                    <div class="ktx-dialog__col">
+                        <!-- Tên đăng nhập -->
+                        <div class="ktx-field mb-3">
+                            <label class="form-label" for="username">Tên đăng nhập <span class="text-danger">*</span></label>
+                            <div class="ktx-field__control" style="position: relative;">
+                                <input class="form-control" id="username" th:field="*{username}"
+                                       th:classappend="${#fields.hasErrors('username')} ? 'is-invalid'"
+                                       placeholder="VD: staffB" th:disabled="${userForm.id != null}"/>
+                            </div>
+                            <div class="invalid-feedback" th:errors="*{username}"></div>
+                            <!-- Hidden input to pass username when editing because disabled input doesn't submit -->
+                            <input th:if="${userForm.id != null}" type="hidden" th:field="*{username}"/>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="ktx-field mb-3">
+                            <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
+                            <div class="ktx-field__control">
+                                <input class="form-control" type="email" id="email" th:field="*{email}"
+                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"
+                                       placeholder="email@example.com"/>
+                            </div>
+                            <div class="invalid-feedback" th:errors="*{email}"></div>
+                        </div>
+
+                        <!-- Mật khẩu (Chỉ hiện khi tạo mới) -->
+                        <div class="ktx-field mb-3" th:if="${userForm.id == null}">
+                            <label class="form-label" for="password">Mật khẩu <span class="text-danger">*</span></label>
+                            <div class="ktx-field__control">
+                                <input class="form-control" type="password" id="password" th:field="*{password}"
+                                       th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'"
+                                       placeholder="Tối thiểu 8 ký tự"/>
+                            </div>
+                            <div class="invalid-feedback" th:errors="*{password}"></div>
+                        </div>
+
+                        <!-- Trạng thái hoạt động -->
+                        <div class="form-check form-switch mb-3 mt-4">
+                            <input class="form-check-input" type="checkbox" role="switch" id="enabled" th:field="*{enabled}"/>
+                            <label class="form-check-label fw-bold" for="enabled">Kích hoạt tài khoản</label>
+                        </div>
+                    </div>
+
+                    <!-- Column 2 -->
+                    <div class="ktx-dialog__col">
+                        <!-- Vai trò -->
+                        <div class="ktx-field mb-3">
+                            <label class="form-label" for="roleSelect">Vai trò <span class="text-danger">*</span></label>
+                            <div class="ktx-field__control">
+                                <select class="form-select" id="roleSelect" th:field="*{role}"
+                                        th:classappend="${#fields.hasErrors('role')} ? 'is-invalid'">
+                                    <option th:value="${T(com.ktx.domain.enums.Role).ADMIN}" th:text="ADMIN">ADMIN</option>
+                                    <option th:value="${T(com.ktx.domain.enums.Role).STAFF}" th:text="STAFF">STAFF</option>
+                                </select>
+                            </div>
+                            <div class="invalid-feedback" th:errors="*{role}"></div>
+                        </div>
+
+                        <!-- STAFF Fields Group -->
+                        <div id="staffFields" style="display: none;">
+                            <!-- Họ tên -->
+                            <div class="ktx-field mb-3">
+                                <label class="form-label" for="fullName">Họ tên cán bộ <span class="text-danger">*</span></label>
+                                <div class="ktx-field__control">
+                                    <input class="form-control" id="fullName" th:field="*{fullName}"
+                                           th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'"
+                                           placeholder="Nhập họ tên..."/>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{fullName}"></div>
+                            </div>
+
+                            <!-- SĐT -->
+                            <div class="ktx-field mb-3">
+                                <label class="form-label" for="phone">Số điện thoại</label>
+                                <div class="ktx-field__control">
+                                    <input class="form-control" id="phone" th:field="*{phone}"
+                                           th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid'"
+                                           placeholder="Nhập SĐT..."/>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{phone}"></div>
+                            </div>
+
+                            <!-- Tòa nhà gán -->
+                            <div class="ktx-field mb-3">
+                                <label class="form-label" for="buildingSelect">Tòa nhà quản lý <span class="text-danger">*</span></label>
+                                <div class="ktx-field__control">
+                                    <select class="form-select" id="buildingSelect" th:field="*{assignedBuildingId}"
+                                            th:classappend="${#fields.hasErrors('assignedBuildingId')} ? 'is-invalid'">
+                                        <option value="">-- Chọn tòa nhà --</option>
+                                        <option th:each="b : ${buildings}" th:value="${b.id}"
+                                                th:text="${b.code} + ' — ' + ${b.name}">A — Tòa A</option>
+                                    </select>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{assignedBuildingId}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ktx-dialog__foot d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a class="btn btn-light" th:href="@{/admin/users}">Hủy</a>
+                    <button type="submit" class="btn btn-primary" th:text="${userForm.id != null} ? 'Cập nhật' : 'Lưu lại'">Lưu lại</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <!-- Script điều khiển ẩn hiện vùng nhập liệu của STAFF -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const roleSelect = document.getElementById("roleSelect");
+            const staffFields = document.getElementById("staffFields");
+            const buildingSelect = document.getElementById("buildingSelect");
+            const fullNameInput = document.getElementById("fullName");
+
+            function toggleStaffFields() {
+                if (roleSelect.value === "STAFF") {
+                    staffFields.style.display = "block";
+                    buildingSelect.setAttribute("required", "required");
+                    fullNameInput.setAttribute("required", "required");
+                } else {
+                    staffFields.style.display = "none";
+                    buildingSelect.removeAttribute("required");
+                    fullNameInput.removeAttribute("required");
+                    buildingSelect.value = "";
+                }
+            }
+
+            roleSelect.addEventListener("change", toggleStaffFields);
+            toggleStaffFields(); // Chạy lần đầu khi load trang
+        });
+    </script>
+</main>
+</body>
+</html>

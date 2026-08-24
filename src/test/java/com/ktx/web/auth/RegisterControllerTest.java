@@ -48,6 +48,12 @@ class RegisterControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private com.ktx.repository.StudentRepository studentRepository;
+
+    @MockitoBean
+    private com.ktx.security.LoginAttemptService loginAttemptService;
+
+    @MockitoBean
     private AuthService authService;
 
     @MockitoBean
