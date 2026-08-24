@@ -41,4 +41,14 @@ public interface RoomApplicationRepository extends JpaRepository<RoomApplication
             ORDER BY a.submittedAt DESC
             """)
     List<RoomApplication> findByPeriodIdWithDetails(@Param("periodId") Long periodId);
+
+    @Query("""
+            SELECT a FROM RoomApplication a
+            JOIN FETCH a.student s
+            LEFT JOIN FETCH a.preferredBuilding b
+            WHERE a.period.id = :periodId
+              AND a.status = :status
+            """)
+    List<RoomApplication> findByPeriodIdAndStatus(@Param("periodId") Long periodId,
+            @Param("status") com.ktx.domain.enums.ApplicationStatus status);
 }
