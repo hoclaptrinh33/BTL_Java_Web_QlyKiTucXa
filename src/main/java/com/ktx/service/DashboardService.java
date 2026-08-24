@@ -218,7 +218,7 @@ public class DashboardService {
         return Math.round(part * 1000.0 / whole) / 10.0;
     }
 
-    static String initials(String name) {
+    public static String initials(String name) {
         if (name == null || name.isBlank()) {
             return "SV";
         }

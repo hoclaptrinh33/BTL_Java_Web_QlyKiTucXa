@@ -69,20 +69,26 @@
                         <div class="d-inline-flex gap-1">
                             <!-- Nút Mở đợt cho đợt DRAFT -->
                             <form th:if="${p.status.name() == 'DRAFT'}" th:action="@{/admin/periods/{id}/open(id=${p.id})}" method="post"
-                                  onsubmit="return confirm('Bạn chắc chắn muốn mở đợt đăng ký này? Sinh viên sẽ có thể nộp đơn khi tới thời gian mở.');">
+                                  data-confirm="Bạn chắc chắn muốn mở đợt đăng ký này? Sinh viên sẽ có thể nộp đơn khi tới thời gian mở."
+                                  data-confirm-title="Mở đợt đăng ký"
+                                  data-confirm-type="info">
                                 <button type="submit" class="btn btn-sm btn-outline-success">Mở đợt</button>
                             </form>
 
                             <!-- Nút Đóng đợt cho đợt OPEN -->
                             <form th:if="${p.status.name() == 'OPEN'}" th:action="@{/admin/periods/{id}/close(id=${p.id})}" method="post"
-                                  onsubmit="return confirm('Bạn chắc chắn muốn đóng đợt đăng ký này? Sinh viên sẽ không thể nộp hoặc sửa đơn nữa.');">
+                                  data-confirm="Bạn chắc chắn muốn đóng đợt đăng ký này? Sinh viên sẽ không thể nộp hoặc sửa đơn nữa."
+                                  data-confirm-title="Đóng đợt đăng ký"
+                                  data-confirm-type="warning">
                                 <button type="submit" class="btn btn-sm btn-outline-warning">Đóng đợt</button>
                             </form>
 
                             <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/periods/{id}/edit(id=${p.id})}">Sửa</a>
 
                             <form th:action="@{/admin/periods/{id}/delete(id=${p.id})}" method="post" class="d-inline"
-                                  onsubmit="return confirm('Xóa đợt đăng ký này?');">
+                                  data-confirm="Xóa đợt đăng ký này?"
+                                  data-confirm-title="Xác nhận xóa đợt"
+                                  data-confirm-type="danger">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" th:disabled="${p.status.name() != 'DRAFT'}">Xóa</button>
                             </form>
                         </div>

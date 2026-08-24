@@ -120,7 +120,9 @@
                                 <form th:if="${a.status.name() == 'SUBMITTED'}"
                                       th:action="@{/admin/applications/{id}/reject(id=${a.id})}"
                                       method="post"
-                                      onsubmit="return confirm('Bạn chắc chắn muốn từ chối đơn nguyện vọng này?');">
+                                      data-confirm="Bạn chắc chắn muốn từ chối đơn nguyện vọng này?"
+                                      data-confirm-title="Xác nhận từ chối đơn"
+                                      data-confirm-type="danger">
                                     <input type="hidden" name="periodId" th:value="${selectedPeriodId}"/>
                                     <button type="submit" class="btn btn-sm btn-outline-danger">Từ chối</button>
                                 </form>

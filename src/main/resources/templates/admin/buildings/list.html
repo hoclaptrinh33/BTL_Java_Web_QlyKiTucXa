@@ -163,7 +163,10 @@
                                 <li><a class="dropdown-item" th:href="@{/admin/rooms(buildingId=${b.id})}"><i class="bi bi-door-closed me-2 text-muted"></i>Xem danh sách phòng</a></li>
                                 <li><hr class="dropdown-divider"/></li>
                                 <li>
-                                    <form th:action="@{/admin/buildings/{id}/delete(id=${b.id})}" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tòa này?');">
+                                    <form th:action="@{/admin/buildings/{id}/delete(id=${b.id})}" method="post"
+                                          data-confirm="Bạn có chắc chắn muốn xóa tòa này?"
+                                          data-confirm-title="Xác nhận xóa tòa nhà"
+                                          data-confirm-type="danger">
                                         <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash3 me-2"></i>Xóa tòa</button>
                                     </form>
                                 </li>
@@ -254,7 +257,10 @@
                                 <a class="bldg-action-icon" th:href="@{/admin/buildings/{id}/edit(id=${b.id})}" title="Chỉnh sửa">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
-                                <form th:action="@{/admin/buildings/{id}/delete(id=${b.id})}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tòa này?');">
+                                <form th:action="@{/admin/buildings/{id}/delete(id=${b.id})}" method="post" class="d-inline"
+                                      data-confirm="Bạn có chắc chắn muốn xóa tòa này?"
+                                      data-confirm-title="Xác nhận xóa tòa nhà"
+                                      data-confirm-type="danger">
                                     <button type="submit" class="bldg-action-icon is-delete" title="Xóa tòa">
                                         <i class="bi bi-trash3"></i>
                                     </button>

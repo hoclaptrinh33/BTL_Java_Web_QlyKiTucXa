@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
 <body>
-<main th:fragment="content" class="container-fluid py-4">
+<main th:fragment="content" class="py-4">
     <!-- Tiêu đề trang -->
     <div class="mb-4">
         <a th:href="@{/student/applications}" class="btn btn-link link-secondary p-0 mb-2 text-decoration-none">
@@ -14,13 +14,11 @@
     <div class="row">
         <!-- Cột trái: Form nhập -->
         <div class="col-lg-8 mb-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0 fw-bold text-dark">
-                        <i class="bi bi-file-earmark-plus me-2 text-primary"></i>Thông tin đơn đăng ký
-                    </h5>
+            <div class="ktx-card">
+                <div class="ktx-card__head mb-3">
+                    <h2><i class="bi bi-file-earmark-plus me-2 text-primary"></i>Thông tin đơn đăng ký</h2>
                 </div>
-                <div class="card-body">
+                <div>
                     <form th:action="@{/student/applications/new}" method="post" th:object="${form}">
                         <!-- Hidden field cho periodId -->
                         <input type="hidden" name="periodId" th:value="${period.id}"/>
@@ -73,8 +71,8 @@
 
                         <!-- Nút hành động -->
                         <div class="d-flex gap-2 justify-content-end border-top pt-3">
-                            <a th:href="@{/student/applications}" class="btn btn-outline-secondary px-4">Hủy bỏ</a>
-                            <button type="submit" class="btn btn-primary px-4">
+                            <a th:href="@{/student/applications}" class="btn btn-outline-secondary px-4" style="border-radius: 8px;">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-primary px-4" style="border-radius: 8px;">
                                 <i class="bi bi-send me-1"></i> Xác nhận nộp đơn
                             </button>
                         </div>
@@ -85,41 +83,40 @@
 
         <!-- Cột phải: Thông tin ưu tiên hiện tại sẽ được chụp snapshot -->
         <div class="col-lg-4">
-            <div class="card shadow-sm border-0 mb-4 bg-light-subtle">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0 fw-bold text-dark">
-                        <i class="bi bi-shield-check me-2 text-success"></i>Thông tin ưu tiên của bạn
-                    </h5>
+            <div class="ktx-card bg-light-subtle mb-4">
+                <div class="ktx-card__head mb-3">
+                    <h2><i class="bi bi-shield-check me-2 text-success"></i>Thông tin ưu tiên của bạn</h2>
                 </div>
-                <div class="card-body">
-                    <p class="text-muted small">
+                <div>
+                    <p class="text-muted small mb-3">
                         Hệ thống sẽ thực hiện **chụp ảnh dữ liệu (Snapshot)** tại thời điểm bạn bấm nộp đơn để xếp thứ tự ưu tiên phân bổ giường.
                     </p>
                     
-                    <ul class="list-group list-group-flush rounded-3">
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent">
+                    <ul class="list-group list-group-flush rounded-3 text-dark">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent border-light-subtle">
                             <span class="text-secondary small">Họ và tên</span>
                             <strong class="text-dark" th:text="${student.fullName}">Nguyễn Văn A</strong>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent border-light-subtle">
                             <span class="text-secondary small">Giới tính</span>
                             <strong class="text-dark" th:text="${student.gender == T(com.ktx.domain.enums.Gender).MALE ? 'Nam' : 'Nữ'}">Nam</strong>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent border-light-subtle">
                             <span class="text-secondary small">Đối tượng ưu tiên</span>
-                            <span class="badge bg-primary-subtle text-primary" 
-                                  th:text="${student.priorityCategory.name() == 'POLICY' ? 'Con chính sách (1000đ)' : (student.priorityCategory.name() == 'REMOTE_AREA' ? 'Vùng sâu, vùng xa (500đ)' : 'Thông thường (0đ)')}">
+                            <span class="ktx-pill" 
+                                  th:classappend="${student.priorityCategory.name() == 'POLICY' ? 'is-rose' : (student.priorityCategory.name() == 'REMOTE_AREA' ? 'is-peach' : 'is-muted')}"
+                                  th:text="${student.priorityCategory.name() == 'POLICY' ? 'Con chính sách (+1000đ)' : (student.priorityCategory.name() == 'REMOTE_AREA' ? 'Vùng sâu (+500đ)' : 'Thông thường (0đ)')}">
                                 Đối tượng
                             </span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent border-light-subtle">
                             <span class="text-secondary small">Lịch sử lưu trú tốt</span>
-                            <span class="badge" th:classappend="${student.previousStayGood ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}"
-                                  th:text="${student.previousStayGood ? 'Đạt tiêu chuẩn (+200đ)' : 'Không đạt / Mới'}">
+                            <span class="ktx-pill" th:classappend="${student.previousStayGood ? 'is-mint' : 'is-muted'}"
+                                  th:text="${student.previousStayGood ? 'Đạt tiêu chuẩn (+200đ)' : 'Chưa ghi nhận'}">
                                 Đạt
                             </span>
                         </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent border-0">
                             <span class="text-secondary small">Điểm rèn luyện</span>
                             <strong class="text-dark" th:text="${student.conductScore != null ? student.conductScore + ' điểm' : '0 điểm'}">85 điểm</strong>
                         </li>
@@ -127,7 +124,7 @@
                 </div>
             </div>
 
-            <div class="alert alert-info border-0 shadow-sm" role="alert">
+            <div class="alert alert-info border-0 shadow-sm" style="border-radius: 12px;" role="alert">
                 <h6 class="alert-heading fw-bold"><i class="bi bi-info-circle-fill me-2"></i>Lưu ý quan trọng</h6>
                 <p class="mb-0 small">
                     Đơn sau khi nộp sẽ ở trạng thái **Đã nộp**. Bạn có thể thực hiện **Rút đơn** bất cứ lúc nào trước khi cửa sổ đợt đăng ký bị đóng lại. Sau khi đợt đăng ký đóng cửa, thông tin nguyện vọng sẽ không thể thay đổi.

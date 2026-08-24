@@ -1,10 +1,231 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
 <body>
-<main th:fragment="content">
-    <section class="ktx-card">
-        <h2 class="h5 mb-2">Cổng sinh viên</h2>
-        <p class="text-muted mb-0">Khung trang chủ. Phòng đang ở, đơn đăng ký và hóa đơn sẽ có ở các issue sau.</p>
+<main th:fragment="content" class="ktx-dash">
+    <!-- 1. KPI Grid for Student -->
+    <section class="ktx-kpi-grid">
+        <!-- KPI 1: Điểm rèn luyện -->
+        <article class="ktx-kpi">
+            <span class="ktx-kpi__icon is-lilac"><i class="bi bi-shield-check"></i></span>
+            <p class="ktx-kpi__label">Điểm rèn luyện KTX</p>
+            <p class="ktx-kpi__value" th:text="${student.conductScore != null ? student.conductScore : 0}">0</p>
+            <p class="ktx-kpi__meta">
+                <span class="badge rounded-pill bg-success-subtle text-success" th:if="${student.conductScore != null && student.conductScore >= 80}">Tốt / Xuất sắc</span>
+                <span class="badge rounded-pill bg-warning-subtle text-warning" th:if="${student.conductScore != null && student.conductScore >= 50 && student.conductScore < 80}">Trung bình / Khá</span>
+                <span class="badge rounded-pill bg-danger-subtle text-danger" th:if="${student.conductScore == null || student.conductScore < 50}">Cảnh báo vi phạm</span>
+            </p>
+        </article>
+
+        <!-- KPI 2: Phòng hiện tại -->
+        <article class="ktx-kpi">
+            <span class="ktx-kpi__icon is-sky"><i class="bi bi-door-closed"></i></span>
+            <p class="ktx-kpi__label">Phòng lưu trú</p>
+            <p class="ktx-kpi__value" th:text="${activeContract != null ? activeContract.bed.room.building.name + '-' + activeContract.bed.room.name : 'Chưa nhận'}">Chưa nhận</p>
+            <p class="ktx-kpi__meta" th:text="${activeContract != null ? 'Giường số: ' + activeContract.bed.bedCode : 'Chưa có phòng ở'}">Giường số: —</p>
+        </article>
+
+        <!-- KPI 3: Đơn đăng ký -->
+        <article class="ktx-kpi">
+            <span class="ktx-kpi__icon is-mint"><i class="bi bi-file-earmark-text"></i></span>
+            <p class="ktx-kpi__label">Tổng đơn đăng ký</p>
+            <p class="ktx-kpi__value" th:text="${totalAppsCount}">0</p>
+            <p class="ktx-kpi__meta">Hồ sơ nguyện vọng của bạn</p>
+        </article>
+
+        <!-- KPI 4: Hóa đơn chưa thanh toán -->
+        <article class="ktx-kpi">
+            <span class="ktx-kpi__icon is-peach"><i class="bi bi-credit-card"></i></span>
+            <p class="ktx-kpi__label">Hóa đơn cần thanh toán</p>
+            <p class="ktx-kpi__value" th:text="${unpaidCount > 0 ? #numbers.formatInteger(totalUnpaidAmount, 1, 'POINT') + ' đ' : '0 đ'}">0 đ</p>
+            <p class="ktx-kpi__meta" th:text="${unpaidCount + ' hóa đơn chưa đóng'}">0 hóa đơn chưa đóng</p>
+        </article>
+    </section>
+
+    <!-- 2. Main Content Grid (Left & Right columns) -->
+    <section class="ktx-dash-bottom mt-4">
+        <!-- LEFT COLUMN: Hồ sơ & Bạn cùng phòng -->
+        <div class="d-flex flex-column gap-4">
+            
+            <!-- Hồ sơ sinh viên -->
+            <article class="ktx-card">
+                <div class="ktx-card__head mb-3">
+                    <h2>Hồ sơ sinh viên</h2>
+                </div>
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <span class="ktx-avatar" style="width: 56px; height: 56px; font-size: 1.5rem;" th:text="${initials}">SV</span>
+                    <div>
+                        <h3 class="h5 mb-1 text-dark" th:text="${student.fullName}">Nguyễn Văn A</h3>
+                        <span class="ktx-chip" th:text="${student.studentCode}">D22CQCN001</span>
+                    </div>
+                </div>
+                <div class="row g-3 small">
+                    <div class="col-6">
+                        <div class="text-muted">Khoa / Bộ môn</div>
+                        <strong class="text-dark" th:text="${student.facultyCode != null ? student.facultyCode : '—'}">Công nghệ thông tin</strong>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted">Lớp học</div>
+                        <strong class="text-dark" th:text="${student.classCode != null ? student.classCode : '—'}">D22CN01</strong>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted">Số điện thoại</div>
+                        <strong class="text-dark" th:text="${student.phone != null ? student.phone : '—'}">0123456789</strong>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted">Diện ưu tiên</div>
+                        <div>
+                            <span class="ktx-pill" th:classappend="'is-' + ${student.priorityCategory.name() == 'POLICY' ? 'rose' : (student.priorityCategory.name() == 'REMOTE_AREA' ? 'peach' : 'muted')}"
+                                  th:text="${student.priorityCategory.name() == 'POLICY' ? 'Chính sách' : (student.priorityCategory.name() == 'REMOTE_AREA' ? 'Vùng sâu' : 'Không')}">
+                                Thường
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Bạn cùng phòng -->
+            <article class="ktx-card">
+                <div class="ktx-card__head mb-3">
+                    <h2>Bạn cùng phòng</h2>
+                </div>
+                
+                <!-- Nếu chưa nhận phòng -->
+                <div class="text-center py-4 text-muted" th:if="${activeContract == null}">
+                    <i class="bi bi-people fs-2 text-secondary mb-2 d-block"></i>
+                    <p class="mb-0">Bạn chưa nhận phòng, không có thông tin bạn cùng phòng.</p>
+                </div>
+
+                <!-- Nếu đã nhận phòng -->
+                <div class="table-responsive" th:if="${activeContract != null}">
+                    <table class="table table-hover align-middle mb-0 ktx-table">
+                        <thead>
+                            <tr>
+                                <th>Thành viên</th>
+                                <th>Giường</th>
+                                <th>Lớp</th>
+                                <th>Liên hệ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dòng của chính mình -->
+                            <tr class="table-light">
+                                <td>
+                                    <div class="ktx-person">
+                                        <span class="ktx-avatar ktx-avatar--sm" th:text="${initials}">SV</span>
+                                        <span>
+                                            <strong th:text="${student.fullName}">Bạn</strong>
+                                            <small class="text-primary fw-semibold">Bạn</small>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td><span class="ktx-chip" th:text="${activeContract.bed.bedCode}">G1</span></td>
+                                <td th:text="${student.classCode != null ? student.classCode : '—'}">—</td>
+                                <td th:text="${student.phone != null ? student.phone : '—'}">—</td>
+                            </tr>
+                            <!-- Dòng của bạn cùng phòng -->
+                            <tr th:each="r : ${roommates}">
+                                <td>
+                                    <div class="ktx-person">
+                                        <span class="ktx-avatar ktx-avatar--sm" th:text="${T(com.ktx.service.DashboardService).initials(r.student.fullName)}">SV</span>
+                                        <span>
+                                            <strong th:text="${r.student.fullName}">Bạn cùng phòng</strong>
+                                            <small th:text="${r.student.studentCode}">D22CN002</small>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td><span class="ktx-chip" th:text="${r.bed.bedCode}">G2</span></td>
+                                <td th:text="${r.student.classCode != null ? r.student.classCode : '—'}">—</td>
+                                <td th:text="${r.student.phone != null ? r.student.phone : '—'}">—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </div>
+
+        <!-- RIGHT COLUMN: Lịch sử đơn & Hóa đơn -->
+        <div class="d-flex flex-column gap-4 ktx-dash-side w-100">
+            <!-- Đơn đăng ký gần đây -->
+            <article class="ktx-card ktx-table-card">
+                <div class="ktx-card__head">
+                    <h2>Nguyện vọng đăng ký gần đây</h2>
+                    <a th:href="@{/student/applications}">Xem tất cả</a>
+                </div>
+                <div class="table-responsive" th:if="${!recentApplications.empty}">
+                    <table class="table table-hover align-middle mb-0 ktx-table">
+                        <thead>
+                            <tr>
+                                <th>Đợt đăng ký</th>
+                                <th>Nguyện vọng</th>
+                                <th>Điểm</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="a : ${recentApplications}">
+                                <td>
+                                    <strong class="text-dark" th:text="${a.period.name}">Đợt tuyển sinh</strong>
+                                    <div class="small text-muted" th:text="${#temporals.format(a.submittedAt, 'dd/MM/yyyy HH:mm')}">24/08/2026</div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <i class="bi bi-building me-1 text-secondary"></i>
+                                        <span th:text="${a.preferredBuilding != null ? a.preferredBuilding.name : 'Tự do'}">Tòa</span>
+                                    </div>
+                                    <div class="small text-muted" th:text="${a.preferredRoomType != null ? (a.preferredRoomType.name() == 'STANDARD_4' ? 'Phòng 4 giường' : (a.preferredRoomType.name() == 'STANDARD_6' ? 'Phòng 6 giường' : (a.preferredRoomType.name() == 'STANDARD_8' ? 'Phòng 8 giường' : 'Phòng VIP'))) : 'Tự do'}">Loại</div>
+                                </td>
+                                <td><span class="ktx-pill is-violet" th:text="${a.computedScore != null ? a.computedScore + 'đ' : '0đ'}">0đ</span></td>
+                                <td>
+                                    <span class="ktx-pill" th:classappend="${a.status.name() == 'SUBMITTED' ? 'is-violet' : (a.status.name() == 'WITHDRAWN' ? 'is-muted' : (a.status.name() == 'ALLOCATED' ? 'is-mint' : (a.status.name() == 'REJECTED' ? 'is-rose' : 'is-peach')))}"
+                                          th:text="${a.status.name() == 'SUBMITTED' ? 'Đã nộp' : (a.status.name() == 'WITHDRAWN' ? 'Đã rút' : (a.status.name() == 'ALLOCATED' ? 'Đã xếp' : (a.status.name() == 'REJECTED' ? 'Từ chối' : 'Chờ duyệt')))}">
+                                        Trạng thái
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="ktx-empty" th:if="${recentApplications.empty}">Bạn chưa nộp đơn đăng ký nguyện vọng nào.</p>
+            </article>
+
+            <!-- Hóa đơn gần đây -->
+            <article class="ktx-card ktx-table-card">
+                <div class="ktx-card__head">
+                    <h2>Hóa đơn của bạn</h2>
+                </div>
+                <div class="table-responsive" th:if="${!invoices.empty}">
+                    <table class="table table-hover align-middle mb-0 ktx-table">
+                        <thead>
+                            <tr>
+                                <th>Mã hóa đơn</th>
+                                <th>Loại phí</th>
+                                <th>Hạn đóng</th>
+                                <th>Số tiền</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="i : ${invoices}">
+                                <td><span class="ktx-chip" th:text="${i.invoiceNo}">HD-00001</span></td>
+                                <td>
+                                    <strong class="text-dark" th:text="${i.invoiceType.name() == 'ROOM_FEE' ? 'Tiền phòng' : (i.invoiceType.name() == 'DEPOSIT' ? 'Tiền cọc' : 'Điện nước & Phụ phí')}">Loại phí</strong>
+                                    <div class="small text-muted" th:text="${i.billingMonth != null ? #temporals.format(i.billingMonth, 'MM/yyyy') : '—'}">Tháng</div>
+                                </td>
+                                <td th:text="${#temporals.format(i.dueDate, 'dd/MM/yyyy')}">24/08/2026</td>
+                                <td><strong class="text-dark" th:text="${#numbers.formatInteger(i.total, 1, 'POINT')} + ' đ'">0 đ</strong></td>
+                                <td>
+                                    <span class="ktx-pill" th:classappend="${i.status.name() == 'PAID' ? 'is-mint' : (i.status.name() == 'OVERDUE' ? 'is-rose' : 'is-peach')}"
+                                          th:text="${i.status.name() == 'PAID' ? 'Đã đóng' : (i.status.name() == 'OVERDUE' ? 'Quá hạn' : 'Chưa đóng')}">
+                                        Trạng thái
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="ktx-empty" th:if="${invoices.empty}">Bạn không có hóa đơn nào.</p>
+            </article>
+        </div>
     </section>
 </main>
 </body>

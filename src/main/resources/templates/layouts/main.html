@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.12.4/dist/sweetalert2.min.css"/>
     <link rel="stylesheet" th:href="@{/css/ktx.css}"/>
 </head>
 <body>
@@ -39,5 +40,53 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.12.4/dist/sweetalert2.all.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Intercept form submissions that have data-confirm
+    document.addEventListener('submit', function(e) {
+        const form = e.target;
+        if (form.hasAttribute('data-confirm') && !form.dataset.confirmed) {
+            e.preventDefault();
+            const message = form.getAttribute('data-confirm');
+            const title = form.getAttribute('data-confirm-title') || 'Xác nhận';
+            const type = form.getAttribute('data-confirm-type') || 'warning'; // warning, danger, success, info
+            const confirmText = form.getAttribute('data-confirm-button') || 'Đồng ý';
+            const cancelText = form.getAttribute('data-cancel-button') || 'Hủy bỏ';
+
+            let confirmColor = '#6D5EF5'; // Violet
+            if (type === 'danger') {
+                confirmColor = '#F43F5E'; // Rose
+            } else if (type === 'success') {
+                confirmColor = '#22C55E'; // Mint
+            } else if (type === 'warning') {
+                confirmColor = '#F97316'; // Peach
+            }
+
+            Swal.fire({
+                title: title,
+                text: message,
+                icon: type,
+                showCancelButton: true,
+                confirmButtonColor: confirmColor,
+                cancelButtonColor: '#64748B', // Muted
+                confirmButtonText: confirmText,
+                cancelButtonText: cancelText,
+                reverseButtons: true,
+                customClass: {
+                    popup: 'swal2-ktx-popup',
+                    title: 'swal2-ktx-title',
+                    htmlContainer: 'swal2-ktx-text'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.dataset.confirmed = 'true';
+                    form.submit();
+                }
+            });
+        }
+    });
+});
+</script>
 </body>
 </html>

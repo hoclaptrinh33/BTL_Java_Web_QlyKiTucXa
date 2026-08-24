@@ -49,6 +49,15 @@ class SecurityConfigTest {
     private com.ktx.repository.StudentRepository studentRepository;
 
     @MockitoBean
+    private com.ktx.repository.ContractRepository contractRepository;
+
+    @MockitoBean
+    private com.ktx.repository.RoomApplicationRepository roomApplicationRepository;
+
+    @MockitoBean
+    private com.ktx.repository.InvoiceRepository invoiceRepository;
+
+    @MockitoBean
     private com.ktx.security.LoginAttemptService loginAttemptService;
 
     @MockitoBean

@@ -1765,3 +1765,32 @@ a:focus-visible {
 @media (max-width: 991.98px) {
     .ktx-kpi-grid, .ktx-dash-mid, .ktx-dash-bottom { grid-template-columns: 1fr; }
 }
+
+/* —— SweetAlert2 Custom Styling —— */
+.swal2-popup.swal2-ktx-popup {
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif !important;
+    border-radius: 16px !important;
+    padding: 2rem 1.5rem !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid var(--line) !important;
+}
+
+.swal2-title.swal2-ktx-title {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    color: var(--ink) !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.swal2-html-container.swal2-ktx-text {
+    font-size: 0.95rem !important;
+    color: var(--muted) !important;
+    line-height: 1.5 !important;
+}
+
+.swal2-confirm, .swal2-cancel {
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    padding: 0.6rem 1.5rem !important;
+    border-radius: 8px !important;
+}
