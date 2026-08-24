@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <!-- Top Action bar -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <p class="text-muted mb-0">
+            Quản trị viên có toàn quyền; Cán bộ quản lý (STAFF) bắt buộc chọn tòa nhà gán quản lý.
+        </p>
+        <div>
+            <a th:href="@{/admin/users/new}" class="btn btn-primary">
+                <i class="bi bi-person-plus"></i> Thêm người dùng
+            </a>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <section class="ktx-card" th:if="${users.empty}">
+        <p class="text-muted mb-0">Chưa có người dùng Ban quản lý nào trong hệ thống.</p>
+    </section>
+
+    <!-- Users Table -->
+    <section class="ktx-card p-0" th:unless="${users.empty}">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 ktx-table">
+                <thead>
+                <tr>
+                    <th>Tên đăng nhập</th>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>Số điện thoại</th>
+                    <th>Vai trò</th>
+                    <th>Tòa nhà gán</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end" style="min-width: 260px;">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="u : ${users}">
+                    <td><span class="ktx-chip" th:text="${u.username}">admin</span></td>
+                    <td th:text="${u.fullName != null ? u.fullName : '—'}">Nguyễn Văn A</td>
+                    <td th:text="${u.email}">admin@example.com</td>
+                    <td th:text="${u.phone != null ? u.phone : '—'}">0987654321</td>
+                    <td>
+                        <span class="ktx-pill is-violet" th:if="${u.role.name() == 'ADMIN'}">ADMIN</span>
+                        <span class="ktx-pill is-sky" th:if="${u.role.name() == 'STAFF'}">STAFF</span>
+                    </td>
+                    <td>
+                        <!-- If STAFF has building assigned -->
+                        <span th:if="${u.role.name() == 'STAFF' && u.assignedBuildingCode != null}" 
+                              class="ktx-pill is-violet" 
+                              th:text="'Tòa ' + ${u.assignedBuildingCode}">Tòa A</span>
+                        <span th:if="${u.role.name() == 'ADMIN'}">—</span>
+                    </td>
+                    <td>
+                        <span class="ktx-pill is-mint" th:if="${u.enabled}">Hoạt động</span>
+                        <span class="ktx-pill is-rose" th:unless="${u.enabled}">Bị khóa</span>
+                    </td>
+                    <td class="text-end">
+                        <div class="d-inline-flex gap-2">
+                            <!-- Sửa -->
+                            <a th:href="@{/admin/users/{id}/edit(id=${u.id})}" class="btn btn-sm btn-outline-primary py-1 px-2">
+                                <i class="bi bi-pencil"></i> Sửa
+                            </a>
+
+                            <!-- Toggle Status Form -->
+                            <form th:action="@{/admin/users/{id}/toggle-status(id=${u.id})}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm py-1 px-2"
+                                        th:classappend="${u.enabled} ? 'btn-outline-warning' : 'btn-outline-success'">
+                                    <i class="bi" th:classappend="${u.enabled} ? 'bi-lock' : 'bi-unlock'"></i>
+                                    <span th:text="${u.enabled} ? 'Khóa' : 'Mở'">Khóa</span>
+                                </button>
+                            </form>
+
+                            <!-- Đổi mật khẩu Trigger -->
+                            <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2" 
+                                    data-bs-toggle="modal" th:data-bs-target="'#resetPwdModal-' + ${u.id}">
+                                <i class="bi bi-key"></i> Mật khẩu
+                            </button>
+                        </div>
+
+                        <!-- Reset Password Modal -->
+                        <div class="modal fade text-start" th:id="'resetPwdModal-' + ${u.id}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+                                <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+                                    <form th:action="@{/admin/users/{id}/reset-password(id=${u.id})}" method="post">
+                                        <div class="modal-header border-bottom-0 pb-0">
+                                            <h5 class="modal-title fw-bold">Đặt lại mật khẩu</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body py-3">
+                                            <p class="text-muted small mb-3">Đặt lại mật khẩu mới cho tài khoản <strong th:text="${u.username}">admin</strong>.</p>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold">Mật khẩu mới (tối thiểu 8 ký tự)</label>
+                                                <input type="password" name="newPassword" class="form-control" placeholder="Nhập mật khẩu mới..." required minlength="8" />
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-top-0 pt-0">
+                                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                                            <button type="submit" class="btn btn-danger">Xác nhận</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>
