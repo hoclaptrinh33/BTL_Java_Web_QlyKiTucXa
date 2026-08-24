@@ -318,4 +318,73 @@ class AllocationEngineTest {
         assertEquals(AllocationResult.SKIPPED, items.get(1).getResult());
         assertEquals("SKIPPED_ALREADY_HOUSED", items.get(1).getReason());
     }
+
+    @Test
+    void testRoommatesClusteringFaculty() {
+        mockSystemConfigs("SOFT");
+
+        Building b = new Building(); b.setId(1L); b.setGenderPolicy(BuildingGenderPolicy.MALE);
+        
+        Room rA = new Room(); rA.setId(1L); rA.setBuilding(b); rA.setRoomType(RoomType.STANDARD_4); rA.setStatus(RoomStatus.ACTIVE); rA.setRoomNumber("101");
+        Room rB = new Room(); rB.setId(2L); rB.setBuilding(b); rB.setRoomType(RoomType.STANDARD_4); rB.setStatus(RoomStatus.ACTIVE); rB.setRoomNumber("102");
+
+        Bed bedA1 = new Bed(); bedA1.setId(1L); bedA1.setRoom(rA); bedA1.setStatus(BedStatus.VACANT); bedA1.setBedCode("G1");
+        Bed bedA2 = new Bed(); bedA2.setId(2L); bedA2.setRoom(rA); bedA2.setStatus(BedStatus.VACANT); bedA2.setBedCode("G2");
+        Bed bedB1 = new Bed(); bedB1.setId(3L); bedB1.setRoom(rB); bedB1.setStatus(BedStatus.VACANT); bedB1.setBedCode("G1");
+
+        Student s1 = new Student(); s1.setId(1L); s1.setGender(Gender.MALE); s1.setBlockedFromHousing(false); s1.setClassCode("IT-01"); s1.setFacultyCode("IT");
+        Student s2 = new Student(); s2.setId(2L); s2.setGender(Gender.MALE); s2.setBlockedFromHousing(false); s2.setClassCode("IT-02"); s2.setFacultyCode("IT");
+
+        RoomApplication a1 = new RoomApplication();
+        a1.setStudent(s1);
+        a1.setPrioritySnapshot(PriorityCategory.NONE);
+        a1.setPreviousStayGoodSnapshot(false);
+        a1.setSubmittedAt(LocalDateTime.now());
+
+        RoomApplication a2 = new RoomApplication();
+        a2.setStudent(s2);
+        a2.setPrioritySnapshot(PriorityCategory.NONE);
+        a2.setPreviousStayGoodSnapshot(false);
+        a2.setSubmittedAt(LocalDateTime.now().plusSeconds(1));
+
+        when(roomApplicationRepository.findByPeriodIdAndStatus(1L, ApplicationStatus.SUBMITTED)).thenReturn(List.of(a1, a2));
+        when(bedRepository.findAllWithRoomAndBuilding()).thenReturn(List.of(bedA1, bedA2, bedB1));
+        when(contractRepository.findOccupyingWithDetails(any())).thenReturn(Collections.emptyList());
+
+        AllocationRunResult result = engine.plan(1L);
+        List<AllocationItem> items = result.getItems();
+
+        assertEquals(s1.getId(), items.get(0).getStudent().getId());
+        assertEquals(bedA1.getId(), items.get(0).getBed().getId());
+
+        assertEquals(s2.getId(), items.get(1).getStudent().getId());
+        assertEquals(bedA2.getId(), items.get(1).getBed().getId());
+    }
+
+    @Test
+    void testFallbackConfigs() {
+        when(systemConfigRepository.findById("alloc.weight.policy")).thenReturn(Optional.empty());
+        when(systemConfigRepository.findById("alloc.weight.remote")).thenReturn(Optional.empty());
+        when(systemConfigRepository.findById("alloc.weight.prev_good")).thenReturn(Optional.empty());
+        when(systemConfigRepository.findById("alloc.preference.mode")).thenReturn(Optional.empty());
+
+        Student sA = new Student(); sA.setId(1L); sA.setBlockedFromHousing(false);
+
+        RoomApplication aA = new RoomApplication();
+        aA.setStudent(sA);
+        aA.setPrioritySnapshot(PriorityCategory.POLICY);
+        aA.setPreviousStayGoodSnapshot(true);
+        aA.setSubmittedAt(LocalDateTime.now());
+
+        when(roomApplicationRepository.findByPeriodIdAndStatus(1L, ApplicationStatus.SUBMITTED))
+                .thenReturn(List.of(aA));
+        when(bedRepository.findAllWithRoomAndBuilding()).thenReturn(Collections.emptyList());
+        when(contractRepository.findOccupyingWithDetails(any())).thenReturn(Collections.emptyList());
+
+        AllocationRunResult result = engine.plan(1L);
+        List<AllocationItem> items = result.getItems();
+
+        assertEquals(1, items.size());
+        assertEquals(1200, items.get(0).getScore());
+    }
 }

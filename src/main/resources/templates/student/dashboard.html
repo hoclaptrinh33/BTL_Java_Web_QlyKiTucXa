@@ -20,7 +20,7 @@
         <article class="ktx-kpi">
             <span class="ktx-kpi__icon is-sky"><i class="bi bi-door-closed"></i></span>
             <p class="ktx-kpi__label">Phòng lưu trú</p>
-            <p class="ktx-kpi__value" th:text="${activeContract != null ? activeContract.bed.room.building.name + '-' + activeContract.bed.room.name : 'Chưa nhận'}">Chưa nhận</p>
+            <p class="ktx-kpi__value" th:text="${activeContract != null ? activeContract.bed.room.building.name + '-' + activeContract.bed.room.roomNumber : 'Chưa nhận'}">Chưa nhận</p>
             <p class="ktx-kpi__meta" th:text="${activeContract != null ? 'Giường số: ' + activeContract.bed.bedCode : 'Chưa có phòng ở'}">Giường số: —</p>
         </article>
 
@@ -74,8 +74,8 @@
                     <div class="col-6">
                         <div class="text-muted">Diện ưu tiên</div>
                         <div>
-                            <span class="ktx-pill" th:classappend="'is-' + ${student.priorityCategory.name() == 'POLICY' ? 'rose' : (student.priorityCategory.name() == 'REMOTE_AREA' ? 'peach' : 'muted')}"
-                                  th:text="${student.priorityCategory.name() == 'POLICY' ? 'Chính sách' : (student.priorityCategory.name() == 'REMOTE_AREA' ? 'Vùng sâu' : 'Không')}">
+                            <span class="ktx-pill" th:classappend="'is-' + ${(student.priorityCategory != null && student.priorityCategory.name() == 'POLICY') ? 'rose' : ((student.priorityCategory != null && student.priorityCategory.name() == 'REMOTE_AREA') ? 'peach' : 'muted')}"
+                                  th:text="${(student.priorityCategory != null && student.priorityCategory.name() == 'POLICY') ? 'Chính sách' : ((student.priorityCategory != null && student.priorityCategory.name() == 'REMOTE_AREA') ? 'Vùng sâu' : 'Không')}">
                                 Thường
                             </span>
                         </div>

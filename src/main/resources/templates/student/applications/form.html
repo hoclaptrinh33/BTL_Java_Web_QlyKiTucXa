@@ -104,8 +104,8 @@
                         <li class="list-group-item d-flex justify-content-between align-items-center py-2 bg-transparent border-light-subtle">
                             <span class="text-secondary small">Đối tượng ưu tiên</span>
                             <span class="ktx-pill" 
-                                  th:classappend="${student.priorityCategory.name() == 'POLICY' ? 'is-rose' : (student.priorityCategory.name() == 'REMOTE_AREA' ? 'is-peach' : 'is-muted')}"
-                                  th:text="${student.priorityCategory.name() == 'POLICY' ? 'Con chính sách (+1000đ)' : (student.priorityCategory.name() == 'REMOTE_AREA' ? 'Vùng sâu (+500đ)' : 'Thông thường (0đ)')}">
+                                  th:classappend="${(student.priorityCategory != null && student.priorityCategory.name() == 'POLICY') ? 'is-rose' : ((student.priorityCategory != null && student.priorityCategory.name() == 'REMOTE_AREA') ? 'is-peach' : 'is-muted')}"
+                                  th:text="${(student.priorityCategory != null && student.priorityCategory.name() == 'POLICY') ? 'Con chính sách (+1000đ)' : ((student.priorityCategory != null && student.priorityCategory.name() == 'REMOTE_AREA') ? 'Vùng sâu (+500đ)' : 'Thông thường (0đ)')}">
                                 Đối tượng
                             </span>
                         </li>
