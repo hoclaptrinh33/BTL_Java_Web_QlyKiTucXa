@@ -35,6 +35,10 @@ import com.ktx.repository.ContractRepository;
 import com.ktx.domain.Contract;
 import com.ktx.common.util.OccupyingStatuses;
 import com.ktx.dto.OccupancyDriftRow;
+import com.ktx.dto.RoomDiagramDto;
+import com.ktx.dto.BedDiagramDto;
+import java.util.TreeMap;
+import java.util.Comparator;
 
 @Service
 public class RoomService {
@@ -485,5 +489,81 @@ public class RoomService {
         if (modified) {
             bedRepository.save(bed);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Integer, List<RoomDiagramDto>> getRoomDiagramGroupByFloor(Long buildingId) {
+        Building building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new BusinessException(BUILDING_NOT_FOUND));
+
+        List<Bed> beds = bedRepository.findByBuildingId(buildingId);
+
+        List<Contract> contracts = contractRepository.findOccupyingContractsByBuildingId(buildingId, OccupyingStatuses.OCCUPYING);
+
+        Map<Long, String> contractToStudentCode = new HashMap<>();
+        for (Contract contract : contracts) {
+            if (contract.getStudent() != null) {
+                contractToStudentCode.put(contract.getId(), contract.getStudent().getStudentCode());
+            }
+        }
+
+        Map<Long, List<Bed>> bedsByRoom = new HashMap<>();
+        for (Bed bed : beds) {
+            bedsByRoom.computeIfAbsent(bed.getRoom().getId(), k -> new ArrayList<>()).add(bed);
+        }
+
+        List<Room> rooms = roomRepository.findByBuildingIdWithBuilding(buildingId);
+
+        List<RoomDiagramDto> roomDtos = new ArrayList<>();
+        for (Room room : rooms) {
+            RoomDiagramDto roomDto = new RoomDiagramDto();
+            roomDto.setId(room.getId());
+            roomDto.setRoomNumber(room.getRoomNumber());
+            roomDto.setDoorCode(room.getBuilding().getCode() + "-" + room.getRoomNumber());
+            roomDto.setFloor(room.getFloor());
+            roomDto.setRoomType(room.getRoomType());
+            roomDto.setTypeLabel(typeLabel(room.getRoomType()));
+            roomDto.setStatus(room.getStatus());
+            roomDto.setCapacity(room.getCapacity());
+
+            List<Bed> roomBeds = bedsByRoom.getOrDefault(room.getId(), List.of());
+            List<BedDiagramDto> bedDtos = new ArrayList<>();
+            long occupiedCount = 0;
+
+            for (Bed bed : roomBeds) {
+                BedDiagramDto bedDto = new BedDiagramDto();
+                bedDto.setId(bed.getId());
+                bedDto.setBedCode(bed.getBedCode());
+                bedDto.setStatus(bed.getStatus());
+                bedDto.setVersion(bed.getVersion());
+
+                if (bed.getStatus() == BedStatus.OCCUPIED) {
+                    bedDto.setStatusClass("occupied");
+                    occupiedCount++;
+                    String mssv = contractToStudentCode.get(bed.getCurrentContractId());
+                    if (mssv != null) {
+                        bedDto.setStudentCode(mssv);
+                        bedDto.setShortStudentCode(mssv.length() > 5 ? mssv.substring(mssv.length() - 5) : mssv);
+                    }
+                } else if (bed.getStatus() == BedStatus.VACANT) {
+                    bedDto.setStatusClass("vacant");
+                } else {
+                    bedDto.setStatusClass("draft");
+                }
+
+                bedDtos.add(bedDto);
+            }
+
+            roomDto.setOccupiedCount(occupiedCount);
+            roomDto.setBeds(bedDtos);
+            roomDtos.add(roomDto);
+        }
+
+        Map<Integer, List<RoomDiagramDto>> groupedByFloor = new TreeMap<>(Comparator.reverseOrder());
+        for (RoomDiagramDto dto : roomDtos) {
+            groupedByFloor.computeIfAbsent(dto.getFloor(), k -> new ArrayList<>()).add(dto);
+        }
+
+        return groupedByFloor;
     }
 }

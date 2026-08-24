@@ -60,6 +60,9 @@ class AdminRoomControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private com.ktx.security.LoginAttemptService loginAttemptService;
+
+    @MockitoBean
     private RoomService roomService;
 
     @MockitoBean

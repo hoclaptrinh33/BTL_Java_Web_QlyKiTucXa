@@ -36,6 +36,9 @@ class AdminDashboardControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private com.ktx.security.LoginAttemptService loginAttemptService;
+
+    @MockitoBean
     private DashboardService dashboardService;
     @MockitoBean
     private StudentService studentService;

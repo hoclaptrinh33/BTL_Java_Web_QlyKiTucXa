@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <div class="row g-4">
+        <!-- Cột trái: Thông tin chỉ đọc của cán bộ -->
+        <div class="col-md-6">
+            <section class="ktx-card">
+                <h2 class="h5 mb-4">Thông tin cán bộ quản lý</h2>
+                <div class="table-responsive">
+                    <table class="table table-borderless align-middle mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted py-2" style="width: 40%;">Tên đăng nhập</td>
+                                <td class="py-2"><span class="ktx-chip" th:text="${staff.user.username}">staff</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Địa chỉ Email</td>
+                                <td class="py-2" th:text="${staff.user.email}">staff@example.com</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Tòa nhà quản lý</td>
+                                <td class="py-2">
+                                    <span class="badge bg-secondary" th:text="${staff.assignedBuilding.name}">Tòa nhà A</span>
+                                    <span class="ktx-chip" th:text="${staff.assignedBuilding.code}">A</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Vai trò</td>
+                                <td class="py-2">
+                                    <span class="badge bg-primary">NHÂN VIÊN BAN QUẢN LÝ</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-2">Ngày tạo tài khoản</td>
+                                <td class="py-2 text-muted" th:text="${#temporals.format(staff.user.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026 00:00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- Cột phải: Form cập nhật thông tin -->
+        <div class="col-md-6">
+            <section class="ktx-card">
+                <h2 class="h5 mb-4">Cập nhật thông tin cá nhân</h2>
+                <form th:action="@{/staff/profile}" th:object="${profileForm}" method="post">
+                    <div class="mb-3">
+                        <label for="fullName" class="form-label fw-semibold">Họ và tên</label>
+                        <input type="text" class="form-control" id="fullName" th:field="*{fullName}"
+                               th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'" placeholder="Nhập họ và tên cán bộ"/>
+                        <div class="invalid-feedback" th:errors="*{fullName}"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="phone" class="form-label fw-semibold">Số điện thoại liên hệ</label>
+                        <input type="text" class="form-control" id="phone" th:field="*{phone}"
+                               th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid'" placeholder="Nhập số điện thoại"/>
+                        <div class="invalid-feedback" th:errors="*{phone}"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary px-4">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>
