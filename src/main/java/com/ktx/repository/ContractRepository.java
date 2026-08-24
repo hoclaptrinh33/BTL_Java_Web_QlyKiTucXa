@@ -25,4 +25,15 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
 
     @Query("SELECT c.student.id FROM Contract c WHERE c.status IN :statuses")
     List<Long> findStudentIdsByStatusIn(@Param("statuses") Collection<ContractStatus> statuses);
+
+    @Query("""
+            SELECT c FROM Contract c
+            JOIN FETCH c.student
+            WHERE c.bed.room.building.id = :buildingId
+              AND c.status IN :statuses
+            """)
+    List<Contract> findOccupyingContractsByBuildingId(
+            @Param("buildingId") Long buildingId,
+            @Param("statuses") java.util.Collection<com.ktx.domain.enums.ContractStatus> statuses);
 }
+
