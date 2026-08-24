@@ -38,6 +38,7 @@ import com.ktx.repository.BuildingRepository;
 import com.ktx.repository.RoomAssetRepository;
 import com.ktx.repository.RoomRepository;
 import com.ktx.repository.SystemConfigRepository;
+import com.ktx.repository.ContractRepository;
 
 @ExtendWith(MockitoExtension.class)
 class RoomServiceTest {
@@ -52,13 +53,15 @@ class RoomServiceTest {
     private RoomAssetRepository roomAssetRepository;
     @Mock
     private SystemConfigRepository systemConfigRepository;
+    @Mock
+    private ContractRepository contractRepository;
 
     private RoomService roomService;
 
     @BeforeEach
     void setUp() {
         roomService = new RoomService(roomRepository, buildingRepository, bedRepository, roomAssetRepository,
-                systemConfigRepository);
+                systemConfigRepository, contractRepository);
     }
 
     @Test

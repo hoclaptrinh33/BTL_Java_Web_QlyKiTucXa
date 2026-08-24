@@ -11,6 +11,7 @@ import com.ktx.repository.NotificationRepository;
         AdminRoomController.class,
         AdminStudentController.class,
         AdminPlaceholderController.class,
+        AdminProfileController.class,
         AdminUserController.class
 })
 public class AdminMenuAdvice {

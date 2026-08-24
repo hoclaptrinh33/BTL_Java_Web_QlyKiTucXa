@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <div class="mb-4">
+        <h1 class="h4 mb-1" th:text="'Sơ đồ phòng — Tòa ' + ${building.code}">Sơ đồ phòng — Tòa A</h1>
+        <p class="text-muted mb-0" th:text="${pageSubtitle}">Tòa A — Danh sách phòng và giường theo tầng</p>
+    </div>
+
+    <!-- Empty State -->
+    <section class="ktx-card" th:if="${floors.isEmpty()}">
+        <div class="text-center py-4">
+            <i class="bi bi-door-closed text-muted" style="font-size: 2.5rem;"></i>
+            <p class="text-muted mt-2 mb-0">Tòa nhà này hiện chưa được cấu hình phòng ở.</p>
+        </div>
+    </section>
+
+    <!-- Floors & Rooms Diagram -->
+    <div th:unless="${floors.isEmpty()}">
+        <!-- Chú thích màu sắc -->
+        <div class="d-flex gap-3 mb-4 flex-wrap align-items-center">
+            <span class="text-muted small">Chú thích:</span>
+            <div class="d-flex align-items-center gap-1">
+                <span class="ktx-pill is-mint">Trống</span>
+                <span class="small text-muted">Giường trống sẵn sàng phục vụ</span>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <span class="ktx-pill is-rose">MSSV</span>
+                <span class="small text-muted">Giường đang có người ở (MSSV)</span>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <span class="ktx-pill is-peach">Hỏng</span>
+                <span class="small text-muted">Giường đang bảo trì</span>
+            </div>
+        </div>
+
+        <div th:each="entry : ${floors}" class="mb-5">
+            <div class="border-bottom pb-2 mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-layers text-primary"></i>
+                <h2 class="h5 mb-0" th:text="'Tầng ' + ${entry.key}">Tầng 1</h2>
+                <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary" 
+                      th:text="${entry.value.size()} + ' phòng'">10 phòng</span>
+            </div>
+
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+                <div class="col" th:each="room : ${entry.value}">
+                    <div class="ktx-card h-100 d-flex flex-column justify-content-between">
+                        <!-- Room Header -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="ktx-chip" th:text="${room.doorCode}">A-101</span>
+                                <small class="text-muted ms-2" th:text="${room.typeLabel}">6 giường</small>
+                            </div>
+                            <div>
+                                <span class="badge rounded-pill bg-light text-dark border px-2 py-1" 
+                                      th:text="${room.occupiedCount} + '/' + ${room.capacity} + ' giường ở'">3/6 giường ở</span>
+                            </div>
+                        </div>
+
+                        <!-- Beds List -->
+                        <div class="d-flex flex-wrap gap-2">
+                            <div th:each="bed : ${room.beds}" 
+                                 class="p-2 border rounded d-flex flex-column align-items-center justify-content-center text-center" 
+                                 style="min-width: 76px; flex: 1 1 0px; background: var(--canvas);">
+                                <strong style="font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;" 
+                                        th:text="${bed.bedCode}">G1</strong>
+                                
+                                <!-- Vacant -->
+                                <span th:if="${bed.status.name() == 'VACANT'}" 
+                                      class="ktx-pill is-mint mt-1">Trống</span>
+                                
+                                <!-- Occupied -->
+                                <span th:if="${bed.status.name() == 'OCCUPIED'}" 
+                                      class="ktx-pill is-rose mt-1" 
+                                      th:text="${bed.shortStudentCode}" 
+                                      th:title="${bed.studentCode}">CN001</span>
+                                
+                                <!-- Maintenance -->
+                                <span th:if="${bed.status.name() == 'MAINTENANCE'}" 
+                                      class="ktx-pill is-peach mt-1">Hỏng</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

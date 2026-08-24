@@ -22,13 +22,22 @@ import com.ktx.service.BuildingService;
 import com.ktx.service.DashboardService;
 import com.ktx.service.RoomService;
 import com.ktx.service.StudentService;
+import com.ktx.web.ErrorPageController;
+import com.ktx.web.HomeController;
+import com.ktx.web.admin.AdminDashboardController;
+import com.ktx.web.auth.LoginController;
+import com.ktx.web.auth.RegisterController;
+import com.ktx.web.staff.StaffDashboardController;
+import com.ktx.web.student.StudentDashboardController;
 
-@WebMvcTest({
-    com.ktx.web.admin.AdminDashboardController.class,
-    com.ktx.web.staff.StaffDashboardController.class,
-    com.ktx.web.auth.LoginController.class,
-    com.ktx.web.HomeController.class,
-    com.ktx.web.ErrorPageController.class
+@WebMvcTest(controllers = {
+    HomeController.class,
+    LoginController.class,
+    RegisterController.class,
+    ErrorPageController.class,
+    AdminDashboardController.class,
+    StaffDashboardController.class,
+    StudentDashboardController.class
 })
 @Import({SecurityConfig.class, LoginSuccessHandler.class, LoginFailureHandler.class, KtxUserDetailsService.class})
 class SecurityConfigTest {
