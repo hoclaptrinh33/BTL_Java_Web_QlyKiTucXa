@@ -162,4 +162,30 @@ class UserServiceTest {
         assertEquals(Role.ADMIN, user.getRole());
         verify(staffRepository).delete(staff);
     }
+
+    @Test
+    void createBqlUser_studentRole_throwsException() {
+        BqlUserForm form = new BqlUserForm();
+        form.setUsername("sv1");
+        form.setEmail("sv1@example.com");
+        form.setPassword("password123");
+        form.setRole(Role.STUDENT);
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> userService.createBqlUser(form));
+        assertTrue(ex.getMessage().contains("ADMIN hoặc STAFF"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void createBqlUser_nullPassword_throwsException() {
+        BqlUserForm form = new BqlUserForm();
+        form.setUsername("adminB");
+        form.setEmail("adminb@example.com");
+        form.setPassword(null);
+        form.setRole(Role.ADMIN);
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> userService.createBqlUser(form));
+        assertTrue(ex.getMessage().contains("8 ký tự"));
+        verify(userRepository, never()).save(any());
+    }
 }

@@ -47,6 +47,9 @@ class AdminUserControllerTest {
     @MockitoBean
     private NotificationRepository notificationRepository;
 
+    @MockitoBean
+    private com.ktx.security.LoginAttemptService loginAttemptService;
+
     @Test
     void studentCannotAccessUserManagement() throws Exception {
         mockMvc.perform(get("/admin/users").with(user("student").roles("STUDENT")))

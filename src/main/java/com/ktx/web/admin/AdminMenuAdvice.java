@@ -10,7 +10,8 @@ import com.ktx.repository.NotificationRepository;
         AdminBuildingController.class,
         AdminRoomController.class,
         AdminStudentController.class,
-        AdminPlaceholderController.class
+        AdminPlaceholderController.class,
+        AdminUserController.class
 })
 public class AdminMenuAdvice {
 

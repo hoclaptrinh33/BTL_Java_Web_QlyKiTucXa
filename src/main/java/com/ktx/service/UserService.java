@@ -108,6 +108,9 @@ public class UserService {
 
     @Transactional
     public void createBqlUser(BqlUserForm form) {
+        assertBqlRole(form.getRole());
+        assertPassword(form.getPassword());
+
         if (userRepository.existsByUsername(form.getUsername())) {
             throw new BusinessException("Tên đăng nhập đã được sử dụng");
         }
@@ -123,7 +126,7 @@ public class UserService {
         User user = new User();
         user.setUsername(form.getUsername());
         user.setEmail(form.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(form.getPassword()));
+        user.setPasswordHash(passwordEncoder.encode(form.getPassword().trim()));
         user.setRole(form.getRole());
         user.setEnabled(form.isEnabled());
         user.setCreatedAt(now);
@@ -145,6 +148,8 @@ public class UserService {
 
     @Transactional
     public void updateBqlUser(Long userId, BqlUserForm form) {
+        assertBqlRole(form.getRole());
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy người dùng"));
 
@@ -202,6 +207,18 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(newPassword.trim()));
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
+    }
+
+    private static void assertBqlRole(Role role) {
+        if (role != Role.ADMIN && role != Role.STAFF) {
+            throw new BusinessException("Chỉ được tạo tài khoản ADMIN hoặc STAFF");
+        }
+    }
+
+    private static void assertPassword(String password) {
+        if (password == null || password.trim().length() < 8) {
+            throw new BusinessException("Mật khẩu phải từ 8 ký tự trở lên");
+        }
     }
 
     @Transactional(readOnly = true)
