@@ -17,4 +17,6 @@ public interface RoomApplicationRepository extends JpaRepository<RoomApplication
             ORDER BY a.submittedAt DESC
             """)
     List<RoomApplication> findRecent(Pageable pageable);
+
+    boolean existsByPeriodId(Long periodId);
 }

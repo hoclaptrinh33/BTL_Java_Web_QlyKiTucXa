@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <div class="ktx-dialog-overlay">
+        <section class="ktx-dialog" style="max-width: 800px;" role="dialog" aria-labelledby="periodDialogTitle">
+            <header class="ktx-dialog__head">
+                <div>
+                    <h2 id="periodDialogTitle" th:text="${periodId != null} ? 'Sửa đợt đăng ký' : 'Thêm đợt đăng ký mới'">Thêm đợt đăng ký mới</h2>
+                    <p>Mở, đóng đợt nộp đơn và quản lý thời gian kỳ học.</p>
+                </div>
+                <a class="ktx-dialog__close" th:href="@{/admin/periods}" aria-label="Đóng">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </header>
+
+            <form class="ktx-dialog__form" id="periodForm"
+                  th:action="${periodId != null} ? @{/admin/periods/{id}/edit(id=${periodId})} : @{/admin/periods}"
+                  th:object="${form}" method="post" novalidate>
+                
+                <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}">
+                    <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}">Lỗi</p>
+                </div>
+
+                <div class="ktx-dialog__grid">
+                    <div class="ktx-dialog__col">
+                        <div class="ktx-field">
+                            <label class="form-label" for="name">Tên đợt đăng ký <span class="req">*</span></label>
+                            <div class="ktx-field__control">
+                                <i class="bi bi-tag"></i>
+                                <input class="form-control" id="name" th:field="*{name}"
+                                       th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                                       maxlength="120" placeholder="VD: Đợt tân sinh viên 2026"/>
+                            </div>
+                            <div class="invalid-feedback" th:errors="*{name}"></div>
+                        </div>
+
+                        <div class="ktx-field">
+                            <label class="form-label" for="periodType">Loại đợt <span class="req">*</span></label>
+                            <div class="ktx-field__control">
+                                <i class="bi bi-layers"></i>
+                                <select class="form-select" id="periodType" th:field="*{periodType}"
+                                        th:classappend="${#fields.hasErrors('periodType')} ? 'is-invalid'">
+                                    <option value="">Chọn loại đợt</option>
+                                    <option th:value="FRESHMAN">Tân sinh viên</option>
+                                    <option th:value="NEW_ACADEMIC_YEAR">Năm học mới</option>
+                                    <option th:value="SUMMER">Hè</option>
+                                </select>
+                            </div>
+                            <div class="invalid-feedback" th:errors="*{periodType}"></div>
+                        </div>
+
+                        <div class="ktx-field">
+                            <label class="form-label" for="academicYear">Năm học <span class="req">*</span></label>
+                            <div class="ktx-field__control">
+                                <i class="bi bi-calendar-event"></i>
+                                <input class="form-control" id="academicYear" th:field="*{academicYear}"
+                                       th:classappend="${#fields.hasErrors('academicYear')} ? 'is-invalid'"
+                                       maxlength="20" placeholder="VD: 2026-2027"/>
+                            </div>
+                            <div class="invalid-feedback" th:errors="*{academicYear}"></div>
+                        </div>
+
+                        <div class="ktx-field" th:if="${periodId != null}">
+                            <label class="form-label" for="status">Trạng thái</label>
+                            <div class="ktx-field__control">
+                                <i class="bi bi-activity"></i>
+                                <select class="form-select" id="status" th:field="*{status}"
+                                        th:classappend="${#fields.hasErrors('status')} ? 'is-invalid'">
+                                    <option th:value="DRAFT">Nháp (DRAFT)</option>
+                                    <option th:value="OPEN">Mở (OPEN)</option>
+                                    <option th:value="CLOSED">Đóng (CLOSED)</option>
+                                    <option th:value="ALLOCATING" th:disabled="${form.status.name() == 'DRAFT'}">Đang phân bổ (ALLOCATING)</option>
+                                    <option th:value="COMPLETED" th:disabled="${form.status.name() == 'DRAFT'}">Hoàn thành (COMPLETED)</option>
+                                </select>
+                            </div>
+                            <div class="invalid-feedback" th:errors="*{status}"></div>
+                        </div>
+                    </div>
+
+                    <div class="ktx-dialog__col">
+                        <div class="card p-3 mb-3 bg-light border-0">
+                            <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-clock"></i> Cửa sổ nộp đơn đăng ký</h6>
+                            
+                            <div class="ktx-field mb-2">
+                                <label class="form-label" for="openAt">Thời gian mở nhận đơn <span class="req">*</span></label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-calendar-check"></i>
+                                    <input class="form-control" type="datetime-local" id="openAt" th:field="*{openAt}"
+                                           th:classappend="${#fields.hasErrors('openAt')} ? 'is-invalid'"/>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{openAt}"></div>
+                            </div>
+
+                            <div class="ktx-field mb-0">
+                                <label class="form-label" for="closeAt">Thời gian đóng nhận đơn <span class="req">*</span></label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-calendar-x"></i>
+                                    <input class="form-control" type="datetime-local" id="closeAt" th:field="*{closeAt}"
+                                           th:classappend="${#fields.hasErrors('closeAt')} ? 'is-invalid'"/>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{closeAt}"></div>
+                            </div>
+                        </div>
+
+                        <div class="card p-3 bg-light border-0">
+                            <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-calendar3"></i> Khoảng thời gian kỳ học</h6>
+                            
+                            <div class="ktx-field mb-2">
+                                <label class="form-label" for="termStart">Ngày bắt đầu kỳ học <span class="req">*</span></label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-calendar-range"></i>
+                                    <input class="form-control" type="date" id="termStart" th:field="*{termStart}"
+                                           th:classappend="${#fields.hasErrors('termStart')} ? 'is-invalid'"/>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{termStart}"></div>
+                            </div>
+
+                            <div class="ktx-field mb-0">
+                                <label class="form-label" for="termEnd">Ngày kết thúc kỳ học <span class="req">*</span></label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-calendar-range-fill"></i>
+                                    <input class="form-control" type="date" id="termEnd" th:field="*{termEnd}"
+                                           th:classappend="${#fields.hasErrors('termEnd')} ? 'is-invalid'"/>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{termEnd}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ktx-dialog__actions mt-3">
+                    <a class="btn btn-outline-secondary" th:href="@{/admin/periods}">Hủy</a>
+                    <button type="submit" class="btn btn-primary btn-ktx-submit">
+                        <i class="bi bi-check-lg"></i> Lưu lại
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+</main>
+</body>
+</html>
