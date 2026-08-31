@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+        <h1 class="h3 mb-0" th:text="${pageTitle}">Đợt đăng ký</h1>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-primary" th:href="@{/admin/periods/new}">
+                <i class="bi bi-plus-lg"></i> Thêm đợt đăng ký
+            </a>
+        </div>
+    </div>
+
+    <section class="ktx-card" th:if="${periods.empty}">
+        <p class="text-muted mb-3">Chưa có đợt đăng ký nào. Vui lòng tạo mới để bắt đầu nhận đơn đăng ký chỗ ở.</p>
+        <a class="btn btn-primary" th:href="@{/admin/periods/new}">Thêm đợt đăng ký</a>
+    </section>
+
+    <section class="ktx-card p-0" th:unless="${periods.empty}">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 ktx-table">
+                <thead>
+                <tr>
+                    <th>Tên đợt</th>
+                    <th>Loại đợt</th>
+                    <th>Năm học</th>
+                    <th>Cửa sổ nộp đơn</th>
+                    <th>Thời gian kỳ học</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${periods}">
+                    <td>
+                        <strong th:text="${p.name}">Đợt tân SV 2026</strong>
+                        <small class="d-block text-muted" th:text="'Người tạo: ' + ${p.createdBy.username}">admin</small>
+                    </td>
+                    <td>
+                        <span th:if="${p.periodType.name() == 'FRESHMAN'}">Tân sinh viên</span>
+                        <span th:if="${p.periodType.name() == 'NEW_ACADEMIC_YEAR'}">Năm học mới</span>
+                        <span th:if="${p.periodType.name() == 'SUMMER'}">Hè</span>
+                    </td>
+                    <td><span class="ktx-chip" th:text="${p.academicYear}">2026-2027</span></td>
+                    <td>
+                        <div class="small">
+                            Mở: <span th:text="${#temporals.format(p.openAt, 'dd/MM/yyyy HH:mm')}">24/08/2026 09:00</span>
+                        </div>
+                        <div class="small text-muted">
+                            Đóng: <span th:text="${#temporals.format(p.closeAt, 'dd/MM/yyyy HH:mm')}">31/08/2026 17:00</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="small">
+                            Bắt đầu: <span th:text="${#temporals.format(p.termStart, 'dd/MM/yyyy')}">01/09/2026</span>
+                        </div>
+                        <div class="small text-muted">
+                            Kết thúc: <span th:text="${#temporals.format(p.termEnd, 'dd/MM/yyyy')}">15/01/2027</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="ktx-status"
+                              th:classappend="${p.status.name() == 'OPEN' ? 'is-active' : (p.status.name() == 'DRAFT' ? 'is-inactive' : (p.status.name() == 'CLOSED' ? 'is-occupied' : 'is-maintenance'))}"
+                              th:text="${p.status.name() == 'DRAFT' ? 'Nháp' : (p.status.name() == 'OPEN' ? 'Mở cửa' : (p.status.name() == 'CLOSED' ? 'Đóng cửa' : (p.status.name() == 'ALLOCATING' ? 'Đang phân bổ' : 'Hoàn thành')))}">
+                            Nháp
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <div class="d-inline-flex gap-1">
+                            <!-- Nút Mở đợt cho đợt DRAFT -->
+                            <form th:if="${p.status.name() == 'DRAFT'}" th:action="@{/admin/periods/{id}/open(id=${p.id})}" method="post"
+                                  data-confirm="Bạn chắc chắn muốn mở đợt đăng ký này? Sinh viên sẽ có thể nộp đơn khi tới thời gian mở."
+                                  data-confirm-title="Mở đợt đăng ký"
+                                  data-confirm-type="info">
+                                <button type="submit" class="btn btn-sm btn-outline-success">Mở đợt</button>
+                            </form>
+
+                            <!-- Nút Đóng đợt cho đợt OPEN -->
+                            <form th:if="${p.status.name() == 'OPEN'}" th:action="@{/admin/periods/{id}/close(id=${p.id})}" method="post"
+                                  data-confirm="Bạn chắc chắn muốn đóng đợt đăng ký này? Sinh viên sẽ không thể nộp hoặc sửa đơn nữa."
+                                  data-confirm-title="Đóng đợt đăng ký"
+                                  data-confirm-type="warning">
+                                <button type="submit" class="btn btn-sm btn-outline-warning">Đóng đợt</button>
+                            </form>
+
+                            <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/periods/{id}/edit(id=${p.id})}">Sửa</a>
+
+                            <form th:action="@{/admin/periods/{id}/delete(id=${p.id})}" method="post" class="d-inline"
+                                  data-confirm="Xóa đợt đăng ký này?"
+                                  data-confirm-title="Xác nhận xóa đợt"
+                                  data-confirm-type="danger">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" th:disabled="${p.status.name() != 'DRAFT'}">Xóa</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

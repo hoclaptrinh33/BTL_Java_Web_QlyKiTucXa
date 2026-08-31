@@ -19,8 +19,11 @@
             <p class="mb-0 text-muted">Có <strong th:text="${drifts.size()}">0</strong> giường bị lệch thông tin trạng thái hoặc mã hợp đồng lưu trú so với dữ liệu gốc.</p>
         </div>
         <div>
-            <form th:action="@{/admin/rooms/reconcile-all}" method="post">
-                <button type="submit" class="btn btn-danger py-2 px-3 fw-bold" onclick="return confirm('Bạn có chắc chắn muốn đồng bộ toàn bộ giường bị lệch dữ liệu?');">
+            <form th:action="@{/admin/rooms/reconcile-all}" method="post"
+                  data-confirm="Bạn có chắc chắn muốn đồng bộ toàn bộ giường bị lệch dữ liệu?"
+                  data-confirm-title="Xác nhận đồng bộ"
+                  data-confirm-type="danger">
+                <button type="submit" class="btn btn-danger py-2 px-3 fw-bold">
                     <i class="bi bi-arrow-repeat me-1"></i> Đồng bộ tất cả
                 </button>
             </form>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-4">
+    <!-- Tiêu đề trang -->
+    <div class="mb-4">
+        <h1 class="h3 mb-1 text-gray-800">Đăng ký phòng ở</h1>
+        <p class="text-muted">Xem danh sách đợt đăng ký đang mở và theo dõi các đơn nguyện vọng của bạn</p>
+    </div>
+
+    <!-- Thông báo lỗi/thành công từ flash attributes -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" style="border-radius: 12px;" role="alert">
+        <i class="bi bi-check-circle-fill me-2 text-success"></i>
+        <span th:text="${successMessage}">Thành công</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" style="border-radius: 12px;" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>
+        <span th:text="${errorMessage}">Lỗi</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- PHẦN 1: ĐỢT ĐĂNG KÝ ĐANG MỞ -->
+    <div class="ktx-card mb-4">
+        <div class="ktx-card__head mb-3">
+            <h2 class="text-primary"><i class="bi bi-calendar-check me-2"></i>Các đợt đăng ký đang mở</h2>
+        </div>
+        <div>
+            <!-- Nếu không có đợt nào đang mở -->
+            <div th:if="${#lists.isEmpty(openPeriods)}" class="text-center py-4 text-muted">
+                <i class="bi bi-calendar-x fs-1 d-block mb-2 text-secondary"></i>
+                <p class="mb-0">Hiện tại không có đợt đăng ký nào mở nhận đơn.</p>
+            </div>
+
+            <!-- Danh sách các đợt đang mở -->
+            <div th:if="${!#lists.isEmpty(openPeriods)}" class="row row-cols-1 row-cols-md-2 g-3">
+                <div class="col" th:each="p : ${openPeriods}">
+                    <div class="ktx-card h-100 d-flex flex-column border border-light-subtle">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h3 class="h6 fw-bold text-dark mb-0" th:text="${p.name}">Đợt tuyển sinh mới</h3>
+                            <span class="ktx-pill is-mint"
+                                  th:text="${p.periodType.name() == 'FRESHMAN' ? 'Tân sinh viên' : (p.periodType.name() == 'NEW_ACADEMIC_YEAR' ? 'Năm học mới' : 'Hè')}">
+                                Loại đợt
+                            </span>
+                        </div>
+
+                        <div class="small mb-3 text-secondary mt-2">
+                            <div class="mb-1">
+                                <i class="bi bi-clock me-1 text-muted"></i> Mở nhận đơn: 
+                                <strong class="text-dark" th:text="${#temporals.format(p.openAt, 'dd/MM/yyyy HH:mm')}">24/08/2026 08:00</strong>
+                            </div>
+                            <div class="mb-1">
+                                <i class="bi bi-clock-history me-1 text-muted"></i> Hạn cuối nộp: 
+                                <strong class="text-dark" th:text="${#temporals.format(p.closeAt, 'dd/MM/yyyy HH:mm')}">31/08/2026 17:00</strong>
+                            </div>
+                            <div>
+                                <i class="bi bi-calendar3 me-1 text-muted"></i> Thời gian học kỳ: 
+                                <strong class="text-dark" th:text="${#temporals.format(p.termStart, 'dd/MM/yyyy')}">...</strong> - 
+                                <strong class="text-dark" th:text="${#temporals.format(p.termEnd, 'dd/MM/yyyy')}">...</strong>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto pt-3 border-top border-light-subtle">
+                            <!-- Trường hợp 1: Sinh viên bị cấm ở hoặc điểm rèn luyện = 0 -->
+                            <div th:if="${isBlocked}" class="alert alert-warning py-2 mb-0 small border-0">
+                                <i class="bi bi-shield-x me-1"></i> Bạn đã bị cấm đăng ký chỗ ở ký túc xá.
+                            </div>
+                            <div th:if="${!isBlocked && isConductZero}" class="alert alert-warning py-2 mb-0 small border-0">
+                                <i class="bi bi-exclamation-triangle me-1"></i> Điểm rèn luyện bằng 0, không thể đăng ký.
+                            </div>
+
+                            <!-- Trường hợp 2: Sinh viên có hợp đồng chiếm chỗ -->
+                            <div th:if="${!isBlocked && !isConductZero && hasOccupyingContract}" class="alert alert-info py-2 mb-0 small border-0">
+                                <i class="bi bi-info-circle me-1"></i> Bạn đang có hợp đồng lưu trú hiện tại, không thể nộp thêm.
+                            </div>
+
+                            <!-- Trường hợp 3: Sinh viên bình thường -->
+                            <th:block th:if="${!isBlocked && !isConductZero && !hasOccupyingContract}">
+                                <!-- Đã nộp đơn trong đợt này -->
+                                <div th:if="${#lists.toList(applications).?[period.id == __${p.id}__].size() > 0}" 
+                                     class="alert alert-success py-2 mb-0 small border-0 d-flex align-items-center">
+                                    <i class="bi bi-check-circle-fill me-2 text-success"></i> Bạn đã nộp đơn nguyện vọng cho đợt này.
+                                </div>
+                                <!-- Chưa nộp đơn -->
+                                <a th:if="${#lists.toList(applications).?[period.id == __${p.id}__].size() == 0}"
+                                   th:href="@{/student/applications/new(periodId=${p.id})}"
+                                   class="btn btn-sm btn-primary w-100 py-2 fw-semibold">
+                                    <i class="bi bi-file-earmark-plus me-1"></i> Nộp đơn nguyện vọng
+                                </a>
+                            </th:block>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PHẦN 2: LỊCH SỬ ĐƠN NGUYỆN VỌNG -->
+    <div class="ktx-card">
+        <div class="ktx-card__head mb-3">
+            <h2><i class="bi bi-file-earmark-text me-2"></i>Lịch sử đơn đăng ký</h2>
+        </div>
+        <div class="p-0">
+            <!-- Nếu không có đơn nào -->
+            <div th:if="${#lists.isEmpty(applications)}" class="text-center py-5 text-muted">
+                <i class="bi bi-folder2-open fs-1 d-block mb-2 text-secondary"></i>
+                <p class="mb-0">Bạn chưa từng nộp đơn đăng ký nguyện vọng nào.</p>
+            </div>
+
+            <!-- Bảng danh sách đơn đã nộp -->
+            <div th:if="${!#lists.isEmpty(applications)}" class="table-responsive">
+                <table class="table table-hover align-middle mb-0 ktx-table">
+                    <thead>
+                        <tr>
+                            <th class="ps-4" style="width: 25%">Đợt đăng ký</th>
+                            <th style="width: 25%">Nguyện vọng</th>
+                            <th style="width: 15%">Thời gian nộp</th>
+                            <th style="width: 15%">Điểm ưu tiên</th>
+                            <th style="width: 10%">Trạng thái</th>
+                            <th class="text-end pe-4" style="width: 10%">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="a : ${applications}">
+                            <td class="ps-4">
+                                <strong class="text-dark" th:text="${a.period.name}">Đợt tuyển sinh</strong>
+                                <div class="small text-muted" th:text="${a.period.academicYear}">2026-2027</div>
+                            </td>
+                            <td>
+                                <div>
+                                    <i class="bi bi-building me-1 text-secondary"></i>
+                                    <span th:text="${a.preferredBuilding != null ? a.preferredBuilding.name : 'Tự do'}">Tòa nhà</span>
+                                </div>
+                                <div class="small text-muted">
+                                    <i class="bi bi-door-closed me-1"></i> Loại phòng: 
+                                    <span th:text="${a.preferredRoomType != null ? (a.preferredRoomType.name() == 'STANDARD_4' ? 'Phòng 4 giường' : (a.preferredRoomType.name() == 'STANDARD_6' ? 'Phòng 6 giường' : (a.preferredRoomType.name() == 'STANDARD_8' ? 'Phòng 8 giường' : 'Phòng VIP'))) : 'Tự do'}">Loại phòng</span>
+                                </div>
+                            </td>
+                            <td th:text="${a.submittedAt != null ? #temporals.format(a.submittedAt, 'dd/MM/yyyy HH:mm') : 'Chưa nộp'}">
+                                24/08/2026 12:00
+                            </td>
+                            <td>
+                                <div class="d-inline-flex align-items-center mb-1">
+                                    <span class="ktx-pill is-violet" th:text="${a.computedScore != null ? a.computedScore + 'đ' : '0đ'}">1200đ</span>
+                                </div>
+                                <div class="small text-muted" style="font-size: 0.75rem;">
+                                    <span th:text="${a.prioritySnapshot.name() == 'POLICY' ? 'Chính sách' : (a.prioritySnapshot.name() == 'REMOTE_AREA' ? 'Vùng sâu' : 'Không')}">Ưu tiên</span>
+                                    <span th:if="${a.previousStayGoodSnapshot}"> | Lịch sử tốt</span>
+                                </div>
+                            </td>
+                            <td>
+                                <!-- Trạng thái đơn -->
+                                <span class="ktx-pill" th:classappend="${a.status.name() == 'SUBMITTED' ? 'is-violet' : (a.status.name() == 'WITHDRAWN' ? 'is-muted' : (a.status.name() == 'ALLOCATED' ? 'is-mint' : (a.status.name() == 'REJECTED' ? 'is-rose' : 'is-peach')))}"
+                                      th:text="${a.status.name() == 'SUBMITTED' ? 'Đã nộp' : (a.status.name() == 'WITHDRAWN' ? 'Đã rút' : (a.status.name() == 'ALLOCATED' ? 'Đã xếp' : (a.status.name() == 'REJECTED' ? 'Từ chối' : 'Danh sách chờ')))}">
+                                    Trạng thái
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <!-- Nút rút đơn (Chỉ hiển thị khi đơn đang SUBMITTED và đợt đăng ký chưa bị CLOSED) -->
+                                <form th:if="${a.status.name() == 'SUBMITTED' && a.period.status.name() != 'CLOSED'}"
+                                      th:action="@{/student/applications/{id}/withdraw(id=${a.id})}"
+                                      method="post"
+                                      data-confirm="Bạn chắc chắn muốn rút đơn đăng ký nguyện vọng này? Hàng đợi phân bổ của bạn sẽ bị hủy bỏ."
+                                      data-confirm-title="Xác nhận rút đơn"
+                                      data-confirm-type="warning">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger fw-semibold px-3" style="border-radius: 8px;">Rút đơn</button>
+                                </form>
+                                <span th:if="${a.status.name() != 'SUBMITTED' || a.period.status.name() == 'CLOSED'}" class="text-muted small">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

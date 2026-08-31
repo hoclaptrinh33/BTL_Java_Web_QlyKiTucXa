@@ -7,12 +7,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class AdminPlaceholderController {
 
-    @GetMapping("/admin/periods")
-    public String periods(Model model) {
-        return page(model, "periods", "Đợt đăng ký", "Mở, đóng đợt nộp đơn ở KTX",
-                "Sinh viên chỉ nộp đơn trong đợt OPEN.");
-    }
-
     @GetMapping("/admin/allocations")
     public String allocations(Model model) {
         return page(model, "allocations", "Phân bổ chỗ ở", "Xem trước và chốt giường theo điểm ưu tiên",

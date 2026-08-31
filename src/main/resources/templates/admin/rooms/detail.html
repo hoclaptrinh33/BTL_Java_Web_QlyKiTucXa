@@ -103,7 +103,9 @@
                            th:href="@{/admin/rooms/{id}(id=${room.id}, assetId=${a.id})}">Sửa</a>
                         <form th:action="@{/admin/rooms/{id}/assets/{assetId}/delete(id=${room.id}, assetId=${a.id})}"
                               method="post" class="d-inline"
-                              onsubmit="return confirm('Xóa tài sản này?');">
+                              data-confirm="Xóa tài sản này?"
+                              data-confirm-title="Xác nhận xóa tài sản"
+                              data-confirm-type="danger">
                             <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
                         </form>
                     </td>
