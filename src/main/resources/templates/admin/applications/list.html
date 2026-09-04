@@ -82,7 +82,7 @@
                                 <strong class="text-dark d-block" th:text="${a.student.fullName}">Nguyễn Văn A</strong>
                                 <small class="text-muted d-block">
                                     MSV: <span th:text="${a.student.studentCode}">SV001</span> | 
-                                    Giới tính: <span th:text="${a.student.gender == T(com.ktx.domain.enums.Gender).MALE ? 'Nam' : 'Nữ'}">Nam</span>
+                                    Giới tính: <span th:text="${a.student.gender != null ? (a.student.gender == T(com.ktx.domain.enums.Gender).MALE ? 'Nam' : 'Nữ') : '-'}">Nam</span>
                                 </small>
                             </td>
                             <td>
@@ -90,9 +90,9 @@
                                     <span class="badge bg-primary-subtle text-primary" th:text="${a.computedScore != null ? a.computedScore + 'đ' : '0đ'}">1200đ</span>
                                 </div>
                                 <div class="small text-muted" style="font-size: 0.75rem;">
-                                    Đối tượng: <span th:text="${a.prioritySnapshot.name() == 'POLICY' ? 'Chính sách' : (a.prioritySnapshot.name() == 'REMOTE_AREA' ? 'Vùng sâu' : 'Thông thường')}">Ưu tiên</span>
-                                    <span th:if="${a.previousStayGoodSnapshot}"> | Lịch sử: Tốt</span>
-                                    <span th:if="${!a.previousStayGoodSnapshot}"> | Lịch sử: Thường</span>
+                                    Đối tượng: <span th:text="${a.prioritySnapshot != null ? (a.prioritySnapshot.name() == 'POLICY' ? 'Chính sách' : (a.prioritySnapshot.name() == 'REMOTE_AREA' ? 'Vùng sâu' : 'Thông thường')) : 'Thông thường'}">Ưu tiên</span>
+                                    <span th:if="${a.previousStayGoodSnapshot != null and a.previousStayGoodSnapshot}"> | Lịch sử: Tốt</span>
+                                    <span th:if="${a.previousStayGoodSnapshot == null or !a.previousStayGoodSnapshot}"> | Lịch sử: Thường</span>
                                 </div>
                             </td>
                             <td>
@@ -110,14 +110,14 @@
                             </td>
                             <td>
                                 <!-- Trạng thái đơn -->
-                                <span class="badge" th:classappend="${a.status.name() == 'SUBMITTED' ? 'bg-primary-subtle text-primary' : (a.status.name() == 'WITHDRAWN' ? 'bg-secondary-subtle text-secondary' : (a.status.name() == 'ALLOCATED' ? 'bg-success-subtle text-success' : (a.status.name() == 'REJECTED' ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-warning')))}"
-                                      th:text="${a.status.name() == 'SUBMITTED' ? 'Đã nộp' : (a.status.name() == 'WITHDRAWN' ? 'Đã rút' : (a.status.name() == 'ALLOCATED' ? 'Đã xếp giường' : (a.status.name() == 'REJECTED' ? 'Từ chối' : 'Danh sách chờ')))}">
+                                <span class="badge" th:classappend="${a.status != null ? (a.status.name() == 'SUBMITTED' ? 'bg-primary-subtle text-primary' : (a.status.name() == 'WITHDRAWN' ? 'bg-secondary-subtle text-secondary' : (a.status.name() == 'ALLOCATED' ? 'bg-success-subtle text-success' : (a.status.name() == 'REJECTED' ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-warning')))) : 'bg-secondary'}"
+                                      th:text="${a.status != null ? (a.status.name() == 'SUBMITTED' ? 'Đã nộp' : (a.status.name() == 'WITHDRAWN' ? 'Đã rút' : (a.status.name() == 'ALLOCATED' ? 'Đã xếp giường' : (a.status.name() == 'REJECTED' ? 'Từ chối' : 'Danh sách chờ')))) : '-'}">
                                     Trạng thái
                                 </span>
                             </td>
                             <td class="text-end pe-4">
                                 <!-- Nút từ chối đơn nguyện vọng (Chỉ hiển thị cho các đơn SUBMITTED) -->
-                                <form th:if="${a.status.name() == 'SUBMITTED'}"
+                                <form th:if="${a.status != null and a.status.name() == 'SUBMITTED'}"
                                       th:action="@{/admin/applications/{id}/reject(id=${a.id})}"
                                       method="post"
                                       data-confirm="Bạn chắc chắn muốn từ chối đơn nguyện vọng này?"
@@ -126,7 +126,7 @@
                                     <input type="hidden" name="periodId" th:value="${selectedPeriodId}"/>
                                     <button type="submit" class="btn btn-sm btn-outline-danger">Từ chối</button>
                                 </form>
-                                <span th:if="${a.status.name() != 'SUBMITTED'}" class="text-muted small">-</span>
+                                <span th:if="${a.status == null or a.status.name() != 'SUBMITTED'}" class="text-muted small">-</span>
                             </td>
                         </tr>
                     </tbody>

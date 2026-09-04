@@ -218,23 +218,30 @@ public class AllocationEngineImpl implements AllocationEngine {
 
     private final Comparator<ScoredApplication> scoredAppComparator = Comparator
             .comparingInt(ScoredApplication::score).reversed()
-            .thenComparing(sa -> sa.app().getSubmittedAt())
-            .thenComparing(sa -> sa.app().getStudent().getId());
+            .thenComparing(sa -> sa.app().getSubmittedAt(), Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(sa -> sa.app().getStudent() != null ? sa.app().getStudent().getId() : Long.MAX_VALUE);
 
     private Comparator<Bed> roomAwareComparator(Student sv, OccupancySnapshot snap) {
         return Comparator
                 .comparingInt((Bed b) -> roomBonus(b.getRoom(), sv, snap)).reversed()
-                .thenComparing(b -> parseRoomNumber(b.getRoom().getRoomNumber()))
-                .thenComparing(Bed::getBedCode)
-                .thenComparing(Bed::getId);
+                .thenComparing(b -> parseRoomNumber(b.getRoom()))
+                .thenComparing(b -> b.getBedCode() == null ? "" : b.getBedCode())
+                .thenComparing(b -> b.getId() == null ? 0L : b.getId());
     }
 
     private int roomBonus(Room r, Student sv, OccupancySnapshot snap) {
-        boolean sameClass = snap.occupants(r).stream()
-                .anyMatch(o -> eq(sv.getClassCode(), o.getClassCode()));
-        boolean sameFac = snap.occupants(r).stream()
-                .anyMatch(o -> eq(sv.getFacultyCode(), o.getFacultyCode()));
-        int pack = snap.occupants(r).size() * 5;
+        if (r == null || sv == null) {
+            return 0;
+        }
+        var occupants = snap.occupants(r);
+        if (occupants == null || occupants.isEmpty()) {
+            return 0;
+        }
+        boolean sameClass = occupants.stream()
+                .anyMatch(o -> o != null && eq(sv.getClassCode(), o.getClassCode()));
+        boolean sameFac = occupants.stream()
+                .anyMatch(o -> o != null && eq(sv.getFacultyCode(), o.getFacultyCode()));
+        int pack = occupants.size() * 5;
         if (sameClass) return 100 + pack;
         if (sameFac) return 40 + pack;
         return pack;
@@ -253,8 +260,11 @@ public class AllocationEngineImpl implements AllocationEngine {
         }
     }
 
-    private RoomSort parseRoomNumber(String raw) {
-        String s = raw == null ? "" : raw;
+    private RoomSort parseRoomNumber(Room r) {
+        if (r == null || r.getRoomNumber() == null) {
+            return new RoomSort(NON_NUMERIC_LAST, "");
+        }
+        String s = r.getRoomNumber().trim();
         try {
             return new RoomSort(Integer.parseInt(s), s);
         } catch (NumberFormatException e) {

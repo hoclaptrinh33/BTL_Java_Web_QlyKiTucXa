@@ -91,8 +91,11 @@ public class OccupancySnapshotImpl implements OccupancySnapshot {
     @Override
     public Collection<Student> occupants(Room r) {
         List<Student> students = new ArrayList<>();
+        if (r == null || r.getId() == null) {
+            return students;
+        }
         for (Bed b : allBeds) {
-            if (b.getRoom() != null && b.getRoom().getId().equals(r.getId())) {
+            if (b.getRoom() != null && b.getRoom().getId() != null && b.getRoom().getId().equals(r.getId())) {
                 Student s = bedOccupants.get(b.getId());
                 if (s != null) {
                     students.add(s);

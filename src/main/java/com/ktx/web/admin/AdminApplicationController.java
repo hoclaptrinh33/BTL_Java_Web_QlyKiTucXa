@@ -2,7 +2,6 @@ package com.ktx.web.admin;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +14,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.ktx.common.exception.BusinessException;
 import com.ktx.domain.RegistrationPeriod;
 import com.ktx.domain.RoomApplication;
-import com.ktx.repository.RegistrationPeriodRepository;
+import com.ktx.service.RegistrationPeriodService;
 import com.ktx.service.RoomApplicationService;
 
 @Controller
@@ -23,18 +22,17 @@ import com.ktx.service.RoomApplicationService;
 public class AdminApplicationController {
 
     private final RoomApplicationService roomApplicationService;
-    private final RegistrationPeriodRepository periodRepository;
+    private final RegistrationPeriodService periodService;
 
-    @Autowired
     public AdminApplicationController(RoomApplicationService roomApplicationService,
-                                      RegistrationPeriodRepository periodRepository) {
+                                      RegistrationPeriodService periodService) {
         this.roomApplicationService = roomApplicationService;
-        this.periodRepository = periodRepository;
+        this.periodService = periodService;
     }
 
     @GetMapping
     public String list(@RequestParam(value = "periodId", required = false) Long periodId, Model model) {
-        List<RegistrationPeriod> periods = periodRepository.findAllWithCreator();
+        List<RegistrationPeriod> periods = periodService.listAll();
         
         Long selectedPeriodId = periodId;
         if (selectedPeriodId == null && !periods.isEmpty()) {
@@ -55,14 +53,16 @@ public class AdminApplicationController {
     }
 
     @PostMapping("/{id}/reject")
-    public String reject(@PathVariable("id") Long id, @RequestParam("periodId") Long periodId, RedirectAttributes redirectAttributes) {
+    public String reject(@PathVariable("id") Long id,
+                         @RequestParam(value = "periodId", required = false) Long periodId,
+                         RedirectAttributes redirectAttributes) {
         try {
             roomApplicationService.rejectApplication(id);
             redirectAttributes.addFlashAttribute("successMessage", "Đã từ chối đơn đăng ký thành công");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/admin/applications?periodId=" + periodId;
+        return "redirect:/admin/applications" + (periodId != null ? "?periodId=" + periodId : "");
     }
 
     private static void page(Model model, String title, String subtitle) {
