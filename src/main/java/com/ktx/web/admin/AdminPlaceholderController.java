@@ -31,12 +31,6 @@ public class AdminPlaceholderController {
                 "Sinh viên tạo ticket cho phòng mình.");
     }
 
-    @GetMapping("/admin/violations")
-    public String violations(Model model) {
-        return page(model, "violations", "Báo cáo vi phạm", "Biên bản và điểm rèn luyện KTX",
-                "0 điểm thì sinh viên bị chặn nộp đơn ở mới.");
-    }
-
     @GetMapping("/admin/check-in-out")
     public String checkInOut(Model model) {
         return page(model, "checkin", "Lịch sử ra vào", "Check-in / check-out theo hợp đồng",

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <section class="ktx-card mb-4">
+        <h2 class="h5 mb-3">Ghi nhận vi phạm</h2>
+        <p class="text-muted mb-3">Prefill mặc định: LATE_RETURN 5, ILLEGAL_COOKING 20, DISTURBANCE 25, DAMAGE 50.</p>
+        <form th:action="@{/admin/violations}" method="post" th:object="${form}">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Sinh viên</label>
+                    <select class="form-select" th:field="*{studentId}">
+                        <option value="">-- Chọn sinh viên --</option>
+                        <option th:each="sv : ${students}" th:value="${sv.id}"
+                                th:text="${sv.studentCode + ' - ' + sv.fullName + ' (' + (sv.conductScore != null ? sv.conductScore : 0) + 'đ)'}">
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Loại vi phạm</label>
+                    <select class="form-select" th:field="*{violationType}" id="violationType">
+                        <option th:each="vt : ${violationTypes}" th:value="${vt.name()}" th:text="${vt.name()}"
+                                th:attr="data-severity=${typePresets[vt] != null ? typePresets[vt].severity.name() : ''},data-points=${typePresets[vt] != null ? typePresets[vt].pointsDeducted : ''},data-action=${typePresets[vt] != null ? typePresets[vt].action.name() : ''}">
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Mức độ</label>
+                    <select class="form-select" th:field="*{severity}" id="severity">
+                        <option th:each="s : ${severities}" th:value="${s.name()}" th:text="${s.name()}"></option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Điểm trừ</label>
+                    <input class="form-control" type="number" min="0" th:field="*{pointsDeducted}" id="pointsDeducted"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Hành động</label>
+                    <select class="form-select" th:field="*{action}" id="action">
+                        <option th:each="a : ${actions}" th:value="${a.name()}" th:text="${a.name()}"></option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Thời điểm</label>
+                    <input class="form-control" type="datetime-local"
+                           th:field="*{occurredAt}"
+                           th:value="${form.occurredAt != null ? #temporals.format(form.occurredAt, 'yyyy-MM-dd''T''HH:mm') : ''}"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Mô tả</label>
+                    <input class="form-control" th:field="*{description}" placeholder="Chi tiết vi phạm..."/>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <button class="btn btn-primary" type="submit">Lưu vi phạm</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="ktx-card mb-4">
+        <h2 class="h5 mb-3">Reset điểm đầu kỳ</h2>
+        <p class="text-muted mb-3">Reset về <strong th:text="${initialConduct}">100</strong> điểm và gỡ cờ chặn nộp đơn.</p>
+        <form th:action="@{/admin/violations/reset-score}" method="post" class="row g-2">
+            <div class="col-md-5">
+                <select class="form-select" name="studentId" required>
+                    <option value="">-- Chọn sinh viên --</option>
+                    <option th:each="sv : ${students}" th:value="${sv.id}" th:text="${sv.studentCode + ' - ' + sv.fullName}"></option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-primary" type="submit">Reset điểm</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="ktx-card p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 ktx-table">
+                <thead>
+                <tr>
+                    <th>Thời điểm</th>
+                    <th>Sinh viên</th>
+                    <th>Loại</th>
+                    <th>Severity</th>
+                    <th class="text-end">Điểm trừ</th>
+                    <th>Action</th>
+                    <th>Ghi nhận bởi</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(violations)}">
+                    <td colspan="7" class="text-muted text-center py-4">Chưa có biên bản vi phạm.</td>
+                </tr>
+                <tr th:each="v : ${violations}">
+                    <td th:text="${#temporals.format(v.occurredAt, 'dd/MM/yyyy HH:mm')}">01/01/2026 08:00</td>
+                    <td>
+                        <div th:text="${v.student.studentCode}">D22CQCN001</div>
+                        <small class="text-muted" th:text="${v.student.fullName}">Nguyễn Văn A</small>
+                        <div class="small text-danger" th:if="${(v.student.conductScore != null ? v.student.conductScore : 0) < warnThreshold}">
+                            Cảnh cáo: dưới ngưỡng <span th:text="${warnThreshold}">50</span>
+                        </div>
+                    </td>
+                    <td th:text="${v.violationType.name()}">LATE_RETURN</td>
+                    <td th:text="${v.severity.name()}">MINOR</td>
+                    <td class="text-end" th:text="${v.pointsDeducted}">5</td>
+                    <td th:text="${v.action.name()}">WARNING</td>
+                    <td th:text="${v.recordedBy.username}">admin</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const typeSelect = document.getElementById('violationType');
+            const severitySelect = document.getElementById('severity');
+            const pointsInput = document.getElementById('pointsDeducted');
+            const actionSelect = document.getElementById('action');
+            if (!typeSelect || !severitySelect || !pointsInput || !actionSelect) return;
+            const applyPreset = () => {
+                const selected = typeSelect.options[typeSelect.selectedIndex];
+                const severity = selected.getAttribute('data-severity');
+                const points = selected.getAttribute('data-points');
+                const action = selected.getAttribute('data-action');
+                if (severity) severitySelect.value = severity;
+                if (points) pointsInput.value = points;
+                if (action) actionSelect.value = action;
+            };
+            typeSelect.addEventListener('change', applyPreset);
+            applyPreset();
+        });
+    </script>
+</main>
+</body>
+</html>
