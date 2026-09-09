@@ -585,42 +585,108 @@ a:focus-visible {
     padding: 1.35rem 1.5rem 2rem;
 }
 
+.ktx-portal {
+    min-height: 100vh;
+    background: var(--canvas);
+    display: flex;
+    flex-direction: column;
+}
+
 .ktx-portal .ktx-topbar--portal {
     position: sticky;
     top: 0;
-    z-index: 20;
+    z-index: 1020;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    padding: 0.75rem 1.5rem;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.02);
 }
 
-.ktx-portal-nav a,
-.ktx-portal-nav .dropdown-toggle {
-    margin-left: 0.75rem;
-    padding: 0.4rem 0.75rem;
-    color: var(--muted);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.92rem;
-    border-radius: 8px;
-    transition: all 0.15s ease;
+.ktx-portal-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.ktx-portal-link {
     display: inline-flex;
     align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.85rem;
+    color: var(--ink-secondary, #475569);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.88rem;
+    border-radius: 9px;
+    border: 0;
+    background: transparent;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    line-height: 1.4;
 }
 
-.ktx-portal-nav a:hover,
-.ktx-portal-nav .dropdown-toggle:hover {
+.ktx-portal-link i {
+    font-size: 1rem;
+}
+
+.ktx-portal-link:hover,
+.ktx-portal-link:focus {
     color: var(--violet);
     background: var(--violet-soft);
 }
 
-.ktx-portal-nav a.is-active,
-.ktx-portal-nav .dropdown-toggle.is-active {
+.ktx-portal-link.is-active {
     color: var(--violet);
     background: var(--violet-soft);
+    font-weight: 700;
 }
 
-.ktx-portal-body {
-    max-width: 1140px;
-    margin: 0 auto;
-    padding: 1.5rem 1.25rem 2.5rem;
+.dropdown-menu-portal {
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+    padding: 0.5rem;
+    min-width: 225px;
+    animation: portalDropdownFade 0.15s ease-out;
+}
+
+@keyframes portalDropdownFade {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-menu-portal .dropdown-item {
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--ink);
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
+    transition: all 0.15s ease;
+}
+
+.dropdown-menu-portal .dropdown-item:hover {
+    background: var(--violet-soft);
+    color: var(--violet);
+}
+
+.dropdown-menu-portal .dropdown-item.active,
+.dropdown-menu-portal .dropdown-item:active {
+    background: var(--violet-soft);
+    color: var(--violet);
+    font-weight: 600;
+}
+
+.ktx-portal-main {
+    flex: 1;
+    min-width: 0;
 }
 
 .ktx-error-page {

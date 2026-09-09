@@ -15,7 +15,7 @@
     <link rel="stylesheet" th:href="@{/css/ktx.css}"/>
 </head>
 <body>
-<div class="ktx-shell" sec:authorize="isAuthenticated()">
+<div class="ktx-shell" sec:authorize="hasAnyRole('ADMIN','STAFF')">
     <aside class="ktx-sidebar d-none d-lg-flex">
         <div th:replace="~{fragments/sidebar :: inner}"></div>
     </aside>
@@ -31,6 +31,15 @@
             <div th:replace="${content}"></div>
         </div>
     </div>
+</div>
+<div class="ktx-portal" sec:authorize="hasRole('STUDENT')">
+    <header th:replace="~{fragments/navbar :: navbar-student}"></header>
+    <main class="ktx-portal-main">
+        <div class="container-xl py-4">
+            <div th:replace="~{fragments/alerts :: alerts}"></div>
+            <div th:replace="${content}"></div>
+        </div>
+    </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.12.4/dist/sweetalert2.all.min.js"></script>

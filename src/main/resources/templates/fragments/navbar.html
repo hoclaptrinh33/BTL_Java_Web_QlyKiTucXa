@@ -51,51 +51,120 @@
 </header>
 
 <header class="ktx-topbar ktx-topbar--portal" th:fragment="navbar-student">
-    <a class="ktx-brand" th:href="@{/student/dashboard}">
-        <i class="bi bi-buildings"></i>
-        <span>
-            <strong>DormManage</strong>
-            <small>Cổng sinh viên</small>
-        </span>
-    </a>
-    <nav class="ktx-portal-nav d-none d-md-flex align-items-center">
-        <a th:href="@{/student/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
-            <i class="bi bi-grid me-1"></i>Tổng quan
+    <div class="d-flex align-items-center gap-3">
+        <button class="btn ktx-icon-btn d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#studentNavMenu" aria-expanded="false" aria-label="Menu">
+            <i class="bi bi-list"></i>
+        </button>
+        <a class="ktx-brand" th:href="@{/student/dashboard}">
+            <i class="bi bi-buildings"></i>
+            <span>
+                <strong>DormManage</strong>
+                <small>Cổng sinh viên</small>
+            </span>
         </a>
-        <a th:href="@{/student/applications}" th:classappend="${activeMenu == 'applications'} ? 'is-active'">
-            <i class="bi bi-file-earmark-text me-1"></i>Đăng ký phòng
+    </div>
+
+    <!-- Desktop Horizontal Menu -->
+    <nav class="ktx-portal-nav d-none d-lg-flex align-items-center">
+        <!-- 1. Tổng quan -->
+        <a class="ktx-portal-link" th:href="@{/student/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
+            <i class="bi bi-house"></i>
+            <span>Tổng quan</span>
         </a>
+
+        <!-- 2. Đăng ký chỗ ở (Dropdown) -->
         <div class="dropdown">
-            <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"
-               th:classappend="${activeMenu == 'contract'} ? 'is-active'">
-                <i class="bi bi-door-closed me-1"></i>Chỗ ở & Hợp đồng
-            </a>
-            <ul class="dropdown-menu shadow-sm">
-                <li><a class="dropdown-item py-2" th:href="@{/student/contract}"><i class="bi bi-file-text me-2 text-primary"></i>Hợp đồng lưu trú</a></li>
-                <li><a class="dropdown-item py-2" th:href="@{/student/renewals}"><i class="bi bi-calendar-plus me-2 text-success"></i>Gia hạn hợp đồng</a></li>
-                <li><hr class="dropdown-divider"/></li>
-                <li><a class="dropdown-item py-2" th:href="@{/student/room-change}"><i class="bi bi-arrow-left-right me-2 text-warning"></i>Xin chuyển phòng</a></li>
-                <li><a class="dropdown-item py-2" th:href="@{/student/return-room}"><i class="bi bi-box-arrow-left me-2 text-danger"></i>Xin trả phòng</a></li>
+            <button class="ktx-portal-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                    th:classappend="${activeMenu == 'applications' or activeMenu == 'applications-new'} ? 'is-active'">
+                <i class="bi bi-calendar-event"></i>
+                <span>Đăng ký chỗ ở</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-portal shadow-sm">
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/student/applications}" th:classappend="${activeMenu == 'applications'} ? 'active'">
+                        <i class="bi bi-card-checklist me-2 text-primary"></i>Các đợt mở &amp; Đơn ở
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/student/applications/new}" th:classappend="${activeMenu == 'applications-new'} ? 'active'">
+                        <i class="bi bi-pencil-square me-2 text-success"></i>Nộp đơn nguyện vọng
+                    </a>
+                </li>
             </ul>
         </div>
-        <a th:href="@{/student/invoices}" th:classappend="${activeMenu == 'invoices'} ? 'is-active'">
-            <i class="bi bi-credit-card me-1"></i>Hóa đơn
-        </a>
+
+        <!-- 3. Hợp đồng & Lưu trú (Dropdown) -->
         <div class="dropdown">
-            <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"
-               th:classappend="${activeMenu == 'support' or activeMenu == 'violations'} ? 'is-active'">
-                <i class="bi bi-life-preserver me-1"></i>Tiện ích & Kỷ luật
-            </a>
-            <ul class="dropdown-menu shadow-sm">
-                <li><a class="dropdown-item py-2" th:href="@{/student/tickets}"><i class="bi bi-tools me-2 text-warning"></i>Báo hỏng & Sửa chữa</a></li>
-                <li><a class="dropdown-item py-2" th:href="@{/student/violations}"><i class="bi bi-shield-exclamation me-2 text-danger"></i>Vi phạm & Điểm rèn luyện</a></li>
+            <button class="ktx-portal-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                    th:classappend="${activeMenu == 'contract' or activeMenu == 'renewals' or activeMenu == 'room-change' or activeMenu == 'return-room'} ? 'is-active'">
+                <i class="bi bi-file-earmark-text"></i>
+                <span>Hợp đồng &amp; Lưu trú</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-portal shadow-sm">
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/student/contract}" th:classappend="${activeMenu == 'contract'} ? 'active'">
+                        <i class="bi bi-file-text me-2 text-primary"></i>Hợp đồng lưu trú
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/student/renewals}" th:classappend="${activeMenu == 'renewals'} ? 'active'">
+                        <i class="bi bi-calendar-plus me-2 text-success"></i>Gia hạn hợp đồng
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"/></li>
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/student/room-change}" th:classappend="${activeMenu == 'room-change'} ? 'active'">
+                        <i class="bi bi-arrow-left-right me-2 text-warning"></i>Đơn xin chuyển phòng
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/student/return-room}" th:classappend="${activeMenu == 'return-room'} ? 'active'">
+                        <i class="bi bi-box-arrow-left me-2 text-danger"></i>Đơn xin trả phòng
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 4. Thanh toán -->
+        <a class="ktx-portal-link" th:href="@{/student/invoices}" th:classappend="${activeMenu == 'invoices'} ? 'is-active'">
+            <i class="bi bi-receipt"></i>
+            <span>Hóa đơn</span>
+        </a>
+
+        <!-- 5. Vận hành & Sự cố (Dropdown) -->
+        <div class="dropdown">
+            <button class="ktx-portal-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                    th:classappend="${activeMenu == 'tickets' or activeMenu == 'tickets-new' or activeMenu == 'violations'} ? 'is-active'">
+                <i class="bi bi-tools"></i>
+                <span>Vận hành &amp; Sự cố</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-portal shadow-sm">
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/student/tickets}" th:classappend="${activeMenu == 'tickets'} ? 'active'">
+                        <i class="bi bi-list-task me-2 text-warning"></i>Danh sách báo hỏng
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/student/tickets/new}" th:classappend="${activeMenu == 'tickets-new'} ? 'active'">
+                        <i class="bi bi-plus-circle me-2 text-success"></i>Tạo phiếu báo hỏng
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"/></li>
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/student/violations}" th:classappend="${activeMenu == 'violations'} ? 'active'">
+                        <i class="bi bi-shield-exclamation me-2 text-danger"></i>Vi phạm &amp; Rèn luyện
+                    </a>
+                </li>
             </ul>
         </div>
     </nav>
+
+    <!-- User Account Dropdown -->
     <div class="dropdown ms-auto">
-        <button class="ktx-user" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <button class="ktx-user" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                th:classappend="${activeMenu == 'profile' or activeMenu == 'password'} ? 'is-active'">
             <span class="ktx-avatar" sec:authentication="name">SV</span>
-            <span class="ktx-user__meta">
+            <span class="ktx-user__meta d-none d-sm-inline-flex">
                 <strong sec:authentication="name">user</strong>
                 <small>Sinh viên</small>
             </span>
@@ -103,12 +172,12 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
             <li>
-                <a class="dropdown-item py-2" th:href="@{/student/profile}">
+                <a class="dropdown-item py-2" th:href="@{/student/profile}" th:classappend="${activeMenu == 'profile'} ? 'active'">
                     <i class="bi bi-person me-2"></i>Thông tin cá nhân
                 </a>
             </li>
             <li>
-                <a class="dropdown-item py-2" th:href="@{/student/password}">
+                <a class="dropdown-item py-2" th:href="@{/student/password}" th:classappend="${activeMenu == 'password'} ? 'active'">
                     <i class="bi bi-shield-lock me-2"></i>Đổi mật khẩu
                 </a>
             </li>
@@ -121,6 +190,52 @@
                 </form>
             </li>
         </ul>
+    </div>
+
+    <!-- Mobile Collapse Menu -->
+    <div class="collapse w-100 d-lg-none mt-2 pt-2 border-top" id="studentNavMenu">
+        <div class="d-flex flex-column gap-1">
+            <a class="ktx-portal-link" th:href="@{/student/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
+                <i class="bi bi-house"></i> <span>Tổng quan</span>
+            </a>
+            <div class="fw-bold px-3 py-1 text-muted small text-uppercase">Đăng ký chỗ ở</div>
+            <a class="ktx-portal-link ps-4" th:href="@{/student/applications}" th:classappend="${activeMenu == 'applications'} ? 'is-active'">
+                <i class="bi bi-card-checklist"></i> <span>Các đợt mở &amp; Đơn ở</span>
+            </a>
+            <a class="ktx-portal-link ps-4" th:href="@{/student/applications/new}" th:classappend="${activeMenu == 'applications-new'} ? 'is-active'">
+                <i class="bi bi-pencil-square"></i> <span>Nộp đơn nguyện vọng</span>
+            </a>
+
+            <div class="fw-bold px-3 py-1 text-muted small text-uppercase mt-2">Hợp đồng &amp; Lưu trú</div>
+            <a class="ktx-portal-link ps-4" th:href="@{/student/contract}" th:classappend="${activeMenu == 'contract'} ? 'is-active'">
+                <i class="bi bi-file-text"></i> <span>Hợp đồng lưu trú</span>
+            </a>
+            <a class="ktx-portal-link ps-4" th:href="@{/student/renewals}" th:classappend="${activeMenu == 'renewals'} ? 'is-active'">
+                <i class="bi bi-calendar-plus"></i> <span>Gia hạn hợp đồng</span>
+            </a>
+            <a class="ktx-portal-link ps-4" th:href="@{/student/room-change}" th:classappend="${activeMenu == 'room-change'} ? 'is-active'">
+                <i class="bi bi-arrow-left-right"></i> <span>Đơn xin chuyển phòng</span>
+            </a>
+            <a class="ktx-portal-link ps-4" th:href="@{/student/return-room}" th:classappend="${activeMenu == 'return-room'} ? 'is-active'">
+                <i class="bi bi-box-arrow-left"></i> <span>Đơn xin trả phòng</span>
+            </a>
+
+            <div class="fw-bold px-3 py-1 text-muted small text-uppercase mt-2">Thanh toán</div>
+            <a class="ktx-portal-link ps-4" th:href="@{/student/invoices}" th:classappend="${activeMenu == 'invoices'} ? 'is-active'">
+                <i class="bi bi-receipt"></i> <span>Hóa đơn &amp; Tiền phòng</span>
+            </a>
+
+            <div class="fw-bold px-3 py-1 text-muted small text-uppercase mt-2">Vận hành &amp; Sự cố</div>
+            <a class="ktx-portal-link ps-4" th:href="@{/student/tickets}" th:classappend="${activeMenu == 'tickets'} ? 'is-active'">
+                <i class="bi bi-tools"></i> <span>Danh sách báo hỏng</span>
+            </a>
+            <a class="ktx-portal-link ps-4" th:href="@{/student/tickets/new}" th:classappend="${activeMenu == 'tickets-new'} ? 'is-active'">
+                <i class="bi bi-plus-circle"></i> <span>Tạo phiếu báo hỏng</span>
+            </a>
+            <a class="ktx-portal-link ps-4" th:href="@{/student/violations}" th:classappend="${activeMenu == 'violations'} ? 'is-active'">
+                <i class="bi bi-shield-exclamation"></i> <span>Vi phạm &amp; Rèn luyện</span>
+            </a>
+        </div>
     </div>
 </header>
 </body>
