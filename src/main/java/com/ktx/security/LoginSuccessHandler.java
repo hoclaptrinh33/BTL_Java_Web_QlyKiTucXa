@@ -1,8 +1,8 @@
 package com.ktx.security;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,9 +26,15 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     }
 
     public String resolveTarget(Authentication authentication) {
-        Set<String> roles = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toSet());
+        if (authentication == null || authentication.getAuthorities() == null) {
+            return "/login";
+        }
+        Set<String> roles = new HashSet<>();
+        for (GrantedAuthority a : authentication.getAuthorities()) {
+            if (a != null && a.getAuthority() != null) {
+                roles.add(a.getAuthority());
+            }
+        }
         if (roles.contains("ROLE_ADMIN")) {
             return "/admin/dashboard";
         }

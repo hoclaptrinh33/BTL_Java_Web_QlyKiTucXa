@@ -274,7 +274,11 @@ public class BuildingService {
             rows.add(row);
         }
 
-        rows.sort(Comparator.comparing(BuildingRowDto::getCode, String.CASE_INSENSITIVE_ORDER));
+        rows.sort((r1, r2) -> {
+            String c1 = (r1 != null && r1.getCode() != null) ? r1.getCode() : "";
+            String c2 = (r2 != null && r2.getCode() != null) ? r2.getCode() : "";
+            return String.CASE_INSENSITIVE_ORDER.compare(c1, c2);
+        });
         return rows;
     }
 

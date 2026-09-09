@@ -153,7 +153,11 @@ public class DashboardService {
         snap.setOccupancyPercent(percent(occupied, occupied + vacant));
 
         byBuilding.values().stream()
-                .sorted(Comparator.comparing(BuildingOccupancy::getCode, String.CASE_INSENSITIVE_ORDER))
+                .sorted((b1, b2) -> {
+                    String c1 = (b1 != null && b1.getCode() != null) ? b1.getCode() : "";
+                    String c2 = (b2 != null && b2.getCode() != null) ? b2.getCode() : "";
+                    return String.CASE_INSENSITIVE_ORDER.compare(c1, c2);
+                })
                 .forEach(row -> {
                     row.setOccupancyPercent(percent(row.getOccupied(), row.getOccupied() + row.getVacant()));
                     snap.getBuildings().add(row);

@@ -73,8 +73,14 @@ public class StaffScope {
     }
 
     private static boolean hasRole(Authentication auth, String role) {
-        return auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(role::equals);
+        if (auth == null || auth.getAuthorities() == null) {
+            return false;
+        }
+        for (GrantedAuthority a : auth.getAuthorities()) {
+            if (a != null && role.equals(a.getAuthority())) {
+                return true;
+            }
+        }
+        return false;
     }
 }
