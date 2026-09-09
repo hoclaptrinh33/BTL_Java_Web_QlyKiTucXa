@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <!-- Bộ lọc theo Đợt đăng ký -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" th:action="@{/admin/allocations}" class="row align-items-center g-3">
+                <div class="col-md-6 col-lg-5">
+                    <label for="periodSelect" class="form-label fw-semibold text-secondary">Chọn đợt phân bổ chỗ ở</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-calendar-event text-muted"></i></span>
+                        <select id="periodSelect" name="periodId" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- Chọn đợt đăng ký --</option>
+                            <option th:each="p : ${periods}"
+                                    th:value="${p.id}"
+                                    th:selected="${p.id == selectedPeriodId}"
+                                    th:text="${p.name + ' (' + p.academicYear + ') - ' + (p.status != null ? p.status.name() : '')}">
+                                Đợt tân sinh viên
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-7 d-flex align-items-end justify-content-md-end">
+                    <a th:href="@{/admin/periods}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-gear me-1"></i>Quản lý các đợt
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Thông tin đợt được chọn -->
+    <div th:if="${selectedPeriod != null}" class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="card-title mb-1 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-grid-3x3-gap text-primary"></i>
+                    <span th:text="${selectedPeriod.name}">Đợt Tân SV 2026-2027</span>
+                    <span class="badge" th:classappend="${selectedPeriod.status != null ? (selectedPeriod.status.name() == 'OPEN' ? 'bg-success' : (selectedPeriod.status.name() == 'CLOSED' ? 'bg-secondary' : (selectedPeriod.status.name() == 'ALLOCATING' ? 'bg-warning text-dark' : 'bg-primary'))) : 'bg-secondary'}"
+                          th:text="${selectedPeriod.status}">Trạng thái</span>
+                </h5>
+                <small class="text-muted">
+                    Năm học: <strong th:text="${selectedPeriod.academicYear}">2026-2027</strong> |
+                    Loại đợt: <span th:text="${selectedPeriod.periodType}">FALL</span> |
+                    Thời gian nộp: <span th:text="${#temporals.format(selectedPeriod.openAt, 'dd/MM/yyyy HH:mm')}">01/08</span> – <span th:text="${#temporals.format(selectedPeriod.closeAt, 'dd/MM/yyyy HH:mm')}">15/08</span>
+                </small>
+            </div>
+            <div>
+                <!-- Nút Dry-run Preview -->
+                <form th:action="@{/admin/allocations/periods/{id}/preview(id=${selectedPeriod.id})}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-primary px-4 shadow-sm"
+                            th:disabled="${submittedCount == 0}">
+                        <i class="bi bi-play-circle me-1"></i>Xem trước phân bổ (Dry-run)
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="card-body bg-light-subtle py-3 border-top">
+            <div class="row g-3">
+                <div class="col-sm-6 col-md-3">
+                    <div class="p-3 bg-white rounded-3 border">
+                        <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.75rem;">Đơn hợp lệ chờ xếp</small>
+                        <div class="fs-4 fw-bold text-primary mt-1" th:text="${submittedCount}">0</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                    <div class="p-3 bg-white rounded-3 border">
+                        <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.75rem;">Kỳ lưu trú</small>
+                        <div class="fw-semibold text-dark mt-1" style="font-size: 0.95rem;">
+                            <span th:text="${#temporals.format(selectedPeriod.termStart, 'dd/MM/yyyy')}">01/09</span> – 
+                            <span th:text="${#temporals.format(selectedPeriod.termEnd, 'dd/MM/yyyy')}">31/01</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                    <div class="p-3 bg-white rounded-3 border">
+                        <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.75rem;">Quy tắc phân bổ</small>
+                        <div class="fw-semibold text-dark mt-1" style="font-size: 0.95rem;">
+                            Greedy · Ưu tiên + Điểm nộp sớm
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                    <div class="p-3 bg-white rounded-3 border">
+                        <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.75rem;">Chế độ nguyện vọng</small>
+                        <div class="fw-semibold text-dark mt-1" style="font-size: 0.95rem;">
+                            SOFT (Nới tòa → Loại phòng)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lịch sử các lần chạy Preview / Commit của đợt -->
+    <div th:if="${selectedPeriod != null}" class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="bi bi-clock-history me-2 text-primary"></i>Lịch sử các lần chạy phân bổ
+            </h5>
+            <span class="badge bg-secondary-subtle text-secondary" th:text="${#lists.size(runs)} + ' lượt chạy'">0 lượt</span>
+        </div>
+        <div class="card-body p-0">
+            <div th:if="${#lists.isEmpty(runs)}" class="text-center py-5 text-muted">
+                <i class="bi bi-journal-x fs-1 d-block mb-2 text-secondary"></i>
+                <p class="mb-2">Chưa có lượt phân bổ nào cho đợt đăng ký này.</p>
+                <form th:action="@{/admin/allocations/periods/{id}/preview(id=${selectedPeriod.id})}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-primary" th:disabled="${submittedCount == 0}">
+                        <i class="bi bi-play-fill me-1"></i>Chạy xem trước ngay
+                    </button>
+                </form>
+            </div>
+
+            <div th:if="${!#lists.isEmpty(runs)}" class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4" style="width: 10%">Mã lượt</th>
+                            <th style="width: 15%">Loại</th>
+                            <th style="width: 15%">Trạng thái</th>
+                            <th style="width: 25%">Thời gian & Người chạy</th>
+                            <th style="width: 25%">Tóm tắt kết quả</th>
+                            <th class="text-end pe-4" style="width: 10%">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${runs}">
+                            <td class="ps-4">
+                                <strong class="text-secondary" th:text="'#' + ${r.id}">#1</strong>
+                            </td>
+                            <td>
+                                <span th:if="${r.dryRun}" class="badge bg-info-subtle text-info-emphasis border border-info-subtle">
+                                    <i class="bi bi-eye me-1"></i>Dry-run (Xem trước)
+                                </span>
+                                <span th:unless="${r.dryRun}" class="badge bg-success-subtle text-success-emphasis border border-success-subtle">
+                                    <i class="bi bi-check-circle me-1"></i>Commit (Chính thức)
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge" th:classappend="${r.status != null ? (r.status.name() == 'COMPLETED' ? 'bg-success-subtle text-success' : (r.status.name() == 'COMMITTED' ? 'bg-primary-subtle text-primary' : (r.status.name() == 'DISCARDED' ? 'bg-secondary-subtle text-secondary' : 'bg-warning-subtle text-warning'))) : 'bg-secondary'}"
+                                      th:text="${r.status}">COMPLETED</span>
+                            </td>
+                            <td>
+                                <div>
+                                    <i class="bi bi-clock me-1 text-muted"></i>
+                                    <span th:text="${r.startedAt != null ? #temporals.format(r.startedAt, 'dd/MM/yyyy HH:mm:ss') : '-'}">01/01/2026</span>
+                                </div>
+                                <small class="text-muted" th:if="${r.runBy != null}">
+                                    Bởi: <span th:text="${r.runBy.username}">Admin</span>
+                                </small>
+                            </td>
+                            <td>
+                                <span class="text-secondary small" th:text="${r.seedNote}">Tóm tắt</span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <a th:href="@{/admin/allocations/runs/{id}(id=${r.id})}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-table me-1"></i>Xem bảng hạng
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thông báo nếu chưa có đợt nào -->
+    <div th:if="${selectedPeriod == null}" class="text-center py-5 text-muted">
+        <i class="bi bi-folder-x fs-1 d-block mb-3 text-secondary"></i>
+        <h5 class="fw-bold">Chưa chọn đợt đăng ký nào</h5>
+        <p>Vui lòng chọn một đợt đăng ký từ danh sách phía trên để bắt đầu phân bổ chỗ ở.</p>
+    </div>
+
+</main>
+</body>
+</html>
