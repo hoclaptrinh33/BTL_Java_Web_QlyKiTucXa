@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-3">
+    <!-- Tiêu đề & Hành động nhanh -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800">Hợp đồng lưu trú</h1>
+            <p class="text-muted mb-0">Hồ sơ pháp lý, thông tin phòng ở và quy chế bàn giao chỗ ở KTX</p>
+        </div>
+        <div class="d-flex gap-2" th:if="${contract != null}">
+            <a th:href="@{/student/renewals}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                <i class="bi bi-calendar-plus me-1"></i>Xin gia hạn
+            </a>
+            <a th:href="@{/student/room-change}" class="btn btn-outline-warning btn-sm rounded-pill px-3">
+                <i class="bi bi-arrow-left-right me-1"></i>Xin đổi phòng
+            </a>
+            <a th:href="@{/student/return-room}" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                <i class="bi bi-box-arrow-left me-1"></i>Xin trả phòng
+            </a>
+        </div>
+    </div>
+
+    <!-- NẾU CHƯA CÓ HỢP ĐỒNG -->
+    <div class="ktx-card text-center py-5" th:if="${contract == null}">
+        <div class="mb-3">
+            <span class="d-inline-flex p-3 rounded-circle bg-light text-secondary">
+                <i class="bi bi-file-earmark-x fs-1"></i>
+            </span>
+        </div>
+        <h2 class="h5 fw-bold text-dark">Bạn hiện chưa có hợp đồng phòng ở nào</h2>
+        <p class="text-muted max-w-md mx-auto mb-4" style="max-width: 480px;">
+            Hợp đồng sẽ được tự động tạo và kích hoạt khi Ban quản lý ký túc xá hoàn tất xếp chỗ ở theo nguyện vọng đăng ký của bạn.
+        </p>
+        <a th:href="@{/student/applications}" class="btn btn-primary rounded-pill px-4">
+            <i class="bi bi-file-earmark-text me-1"></i>Xem các đợt mở đăng ký
+        </a>
+    </div>
+
+    <!-- NẾU ĐÃ CÓ HỢP ĐỒNG -->
+    <div th:if="${contract != null}">
+        <!-- Thẻ KPI tóm tắt hợp đồng -->
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-4">
+            <div class="col">
+                <div class="ktx-card h-100 p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 rounded-3 bg-primary-subtle text-primary fs-4"><i class="bi bi-file-earmark-check"></i></div>
+                        <div>
+                            <div class="text-muted small">Số hợp đồng</div>
+                            <div class="fw-bold text-dark" th:text="${contract.contractNo}">HD-001</div>
+                            <span class="badge bg-success-subtle text-success mt-1">Đang hiệu lực</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="ktx-card h-100 p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 rounded-3 bg-info-subtle text-info fs-4"><i class="bi bi-door-open"></i></div>
+                        <div>
+                            <div class="text-muted small">Phòng & Giường</div>
+                            <div class="fw-bold text-dark" th:text="${contract.bed.room.building.name + ' - Phòng ' + contract.bed.room.roomNumber}">Tòa A - 101</div>
+                            <div class="small text-muted" th:text="${'Giường: ' + contract.bed.bedCode}">G1</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="ktx-card h-100 p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 rounded-3 bg-warning-subtle text-warning fs-4"><i class="bi bi-calendar-range"></i></div>
+                        <div>
+                            <div class="text-muted small">Thời hạn kỳ lưu trú</div>
+                            <div class="fw-bold text-dark" th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy')} + ' - ' + ${#temporals.format(contract.endDate, 'dd/MM/yyyy')}">...</div>
+                            <div class="small text-muted">Học kỳ chuẩn (5 tháng)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="ktx-card h-100 p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 rounded-3 bg-success-subtle text-success fs-4"><i class="bi bi-cash-coin"></i></div>
+                        <div>
+                            <div class="text-muted small">Tiền phòng & Tiền cọc</div>
+                            <div class="fw-bold text-dark" th:text="${#numbers.formatInteger(contract.roomFee, 1, 'POINT')} + ' đ/kỳ'">1.200.000 đ</div>
+                            <div class="small text-muted" th:text="${'Cọc: ' + #numbers.formatInteger(contract.depositAmount, 1, 'POINT') + ' đ (50%)'}">Cọc: 600.000 đ</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Cột trái: Chi tiết hợp đồng & Nghĩa vụ -->
+            <div class="col-lg-8">
+                <div class="ktx-card mb-4">
+                    <div class="ktx-card__head mb-3">
+                        <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-info-circle me-2 text-primary"></i>Nội dung thỏa thuận lưu trú</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-borderless small mb-0">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted" style="width: 25%;">Bên cho thuê (BQL):</td>
+                                    <td class="fw-semibold text-dark">Ban Quản lý Ký túc xá Sinh viên</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Sinh viên thuê:</td>
+                                    <td class="fw-semibold text-dark" th:text="${student.fullName + ' — MSSV: ' + student.studentCode + ' (Lớp: ' + (student.classCode != null ? student.classCode : '—') + ')'}">...</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Vị trí chỗ ở:</td>
+                                    <td class="fw-semibold text-dark" th:text="${contract.bed.room.building.name + ' · Tầng ' + contract.bed.room.floor + ' · Phòng ' + contract.bed.room.roomNumber + ' · Giường ' + contract.bed.bedCode}">...</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Loại phòng:</td>
+                                    <td class="fw-semibold text-dark" th:text="${contract.bed.room.roomType != null ? (contract.bed.room.roomType.name() == 'STANDARD_4' ? 'Tiêu chuẩn 4 người' : (contract.bed.room.roomType.name() == 'STANDARD_6' ? 'Tiêu chuẩn 6 người' : 'Phòng VIP')) : 'Tiêu chuẩn'}">...</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Quy chế cọc:</td>
+                                    <td class="text-dark">Tiền cọc bằng 50% giá phòng/kỳ. Sẽ được hoàn trả vào tài khoản sinh viên khi bàn giao phòng và hoàn tất thủ tục checkout.</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Chi phí điện nước:</td>
+                                    <td class="text-dark">Điện nước tính theo công tơ thực tế của phòng, biểu giá lũy tiến bậc thang nhà nước, chia đều theo số lượng thành viên thực tế sinh hoạt trong tháng.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tài sản bàn giao -->
+                <div class="ktx-card">
+                    <div class="ktx-card__head mb-3">
+                        <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-box-seam me-2 text-primary"></i>Danh mục trang thiết bị bàn giao</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle ktx-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Trang thiết bị</th>
+                                    <th>Khu vực</th>
+                                    <th>Số lượng</th>
+                                    <th>Tình trạng bàn giao</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><i class="bi bi-laptop me-2 text-secondary"></i>Bàn ghế học cá nhân</td>
+                                    <td>Vị trí giường</td>
+                                    <td>1 bộ</td>
+                                    <td><span class="badge bg-success-subtle text-success">Hoạt động tốt</span></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bi bi-layers me-2 text-secondary"></i>Giường tầng & Giáp giường</td>
+                                    <td>Vị trí giường</td>
+                                    <td>1 chiếc</td>
+                                    <td><span class="badge bg-success-subtle text-success">Hoạt động tốt</span></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bi bi-snow me-2 text-secondary"></i>Điều hòa nhiệt độ</td>
+                                    <td>Dùng chung phòng</td>
+                                    <td>1 máy</td>
+                                    <td><span class="badge bg-success-subtle text-success">Hoạt động tốt</span></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bi bi-water me-2 text-secondary"></i>Bình nước nóng / Thiết bị vệ sinh</td>
+                                    <td>Phòng tắm</td>
+                                    <td>1 bộ</td>
+                                    <td><span class="badge bg-success-subtle text-success">Hoạt động tốt</span></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bi bi-lightning-charge me-2 text-secondary"></i>Công tơ điện tử & Đồng hồ nước</td>
+                                    <td>Cửa phòng</td>
+                                    <td>1 hệ thống</td>
+                                    <td><span class="badge bg-success-subtle text-success">Đã kiểm định</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cột phải: Hướng dẫn & Liên hệ -->
+            <div class="col-lg-4">
+                <div class="ktx-card mb-4">
+                    <div class="ktx-card__head mb-3">
+                        <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-shield-check me-2 text-success"></i>Nội quy phòng ở</h2>
+                    </div>
+                    <ul class="list-unstyled small d-flex flex-column gap-2 mb-0 text-muted">
+                        <li class="d-flex align-items-start gap-2">
+                            <i class="bi bi-check2-circle text-success mt-1"></i>
+                            <span>Giữ gìn vệ sinh chung, không làm hư hại thiết bị phòng.</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-2">
+                            <i class="bi bi-check2-circle text-success mt-1"></i>
+                            <span>Nghiêm cấm nấu ăn bằng bếp điện/bếp gas trong phòng (trừ khu tự nấu).</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-2">
+                            <i class="bi bi-check2-circle text-success mt-1"></i>
+                            <span>Giờ giới nghiêm đóng cổng KTX: <strong>23:00 hàng ngày</strong>.</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-2">
+                            <i class="bi bi-check2-circle text-success mt-1"></i>
+                            <span>Thanh toán hóa đơn điện nước trước ngày 15 hàng tháng để tránh phí phạt.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="ktx-card">
+                    <div class="ktx-card__head mb-3">
+                        <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-telephone me-2 text-primary"></i>Liên hệ hỗ trợ tòa nhà</h2>
+                    </div>
+                    <div class="small">
+                        <div class="mb-2"><strong class="text-dark">Ban Quản lý Tòa:</strong> <span th:text="${contract.bed.room.building.name}">Tòa A</span></div>
+                        <div class="mb-2"><strong class="text-dark">Hotline bảo vệ / Kỹ thuật:</strong> 024.3754.7511</div>
+                        <div class="mb-3"><strong class="text-dark">Email BQL:</strong> bqlktx@university.edu.vn</div>
+                        <a th:href="@{/student/tickets/new}" class="btn btn-outline-primary btn-sm w-100 rounded-pill">
+                            <i class="bi bi-tools me-1"></i>Báo hỏng đồ đạc trong phòng
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

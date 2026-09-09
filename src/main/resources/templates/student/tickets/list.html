@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-3">
+    <!-- Tiêu đề & Nút tạo mới -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800">Yêu cầu sửa chữa & Báo hỏng</h1>
+            <p class="text-muted mb-0">Tiếp nhận và theo dõi tiến độ sửa chữa trang thiết bị điện, nước, cơ sở vật chất phòng</p>
+        </div>
+        <div>
+            <a th:href="@{/student/tickets/new}" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-plus-lg me-1"></i>Báo hỏng thiết bị mới
+            </a>
+        </div>
+    </div>
+
+    <!-- 3 Thẻ trạng thái ticket -->
+    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+        <div class="col">
+            <div class="ktx-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-circle bg-warning-subtle text-warning fs-3"><i class="bi bi-hourglass-split"></i></div>
+                    <div>
+                        <div class="text-muted small">Đang chờ xử lý</div>
+                        <div class="h4 fw-bold text-dark mb-0" th:text="${countWaiting}">1</div>
+                        <div class="small text-muted">Đội kỹ thuật tiếp nhận trong 24h</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="ktx-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-circle bg-info-subtle text-info fs-3"><i class="bi bi-wrench-adjustable"></i></div>
+                    <div>
+                        <div class="text-muted small">Đang sửa chữa</div>
+                        <div class="h4 fw-bold text-dark mb-0" th:text="${countInProgress}">1</div>
+                        <div class="small text-muted">Thợ đang kiểm tra tại phòng</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="ktx-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-circle bg-success-subtle text-success fs-3"><i class="bi bi-check-circle"></i></div>
+                    <div>
+                        <div class="text-muted small">Đã hoàn thành</div>
+                        <div class="h4 fw-bold text-dark mb-0" th:text="${countCompleted}">2</div>
+                        <div class="small text-muted">Đã nghiệm thu / đã đóng</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách ticket -->
+    <div class="ktx-card">
+        <div class="ktx-card__head mb-3">
+            <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-tools me-2 text-primary"></i>Danh sách yêu cầu sửa chữa đã gửi</h2>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle ktx-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Mã sự cố</th>
+                        <th>Danh mục / Thiết bị</th>
+                        <th>Nội dung mô tả</th>
+                        <th>Mức độ</th>
+                        <th>Ngày gửi</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(tickets)}">
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox fs-3 d-block mb-1"></i>
+                            Bạn chưa có yêu cầu sửa chữa nào.
+                        </td>
+                    </tr>
+                    <tr th:each="t : ${tickets}">
+                        <td><span class="ktx-chip" th:text="${t.code}">#TK-2041</span></td>
+                        <td>
+                            <strong class="text-dark">
+                                <i class="bi me-1" th:classappend="${t.categoryIcon + ' ' + t.categoryColor}"></i>
+                                <span th:text="${t.category}">Điện & Chiếu sáng</span>
+                            </strong>
+                            <div class="small text-muted" th:text="${t.subCategory}">Bóng tuýp LED trần</div>
+                        </td>
+                        <td th:text="${t.description}">Bóng đèn trần phòng nhấp nháy liên tục rồi tắt hẳn, cần thay bóng mới.</td>
+                        <td><span class="badge" th:classappend="${t.severityClass}" th:text="${t.severity}">Khẩn cấp</span></td>
+                        <td th:text="${t.createdAt}">24/08/2026</td>
+                        <td><span class="ktx-pill" th:classappend="${t.statusClass}" th:text="${t.statusLabel}">Chờ tiếp nhận</span></td>
+                        <td class="text-end">
+                            <!-- Nút Đóng ticket khi Đã sửa xong -->
+                            <form th:if="${t.status == 'RESOLVED'}" th:action="@{'/student/tickets/' + ${t.id} + '/close'}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                    <i class="bi bi-check2 me-1"></i>Đóng ticket
+                                </button>
+                            </form>
+                            <!-- Trạng thái Đã đóng -->
+                            <span th:if="${t.status == 'CLOSED'}" class="text-muted small">
+                                <i class="bi bi-check-all text-success me-1"></i>Đã đóng
+                            </span>
+                            <!-- Trạng thái khác -->
+                            <span th:if="${t.status != 'RESOLVED' && t.status != 'CLOSED'}" class="text-muted small" th:text="${t.actionNote}">
+                                Đang đợi thợ
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

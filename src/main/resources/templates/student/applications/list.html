@@ -8,17 +8,6 @@
         <p class="text-muted">Xem danh sách đợt đăng ký đang mở và theo dõi các đơn nguyện vọng của bạn</p>
     </div>
 
-    <!-- Thông báo lỗi/thành công từ flash attributes -->
-    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" style="border-radius: 12px;" role="alert">
-        <i class="bi bi-check-circle-fill me-2 text-success"></i>
-        <span th:text="${successMessage}">Thành công</span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" style="border-radius: 12px;" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>
-        <span th:text="${errorMessage}">Lỗi</span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
 
     <!-- PHẦN 1: ĐỢT ĐĂNG KÝ ĐANG MỞ -->
     <div class="ktx-card mb-4">

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-3">
+    <!-- Tiêu đề -->
+    <div class="mb-4">
+        <h1 class="h3 mb-1 text-gray-800">Kỷ luật & Điểm rèn luyện KTX</h1>
+        <p class="text-muted mb-0">Theo dõi lịch sử đánh giá ý thức chấp hành nội quy và điểm rèn luyện ký túc xá</p>
+    </div>
+
+    <!-- Khối chỉ số điểm rèn luyện -->
+    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+        <div class="col">
+            <div class="ktx-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-circle bg-primary-subtle text-primary fs-3"><i class="bi bi-shield-check"></i></div>
+                    <div>
+                        <div class="text-muted small">Điểm rèn luyện hiện tại</div>
+                        <div class="h3 fw-bold text-dark mb-0" th:text="${student.conductScore != null ? student.conductScore : 100}">100</div>
+                        <div class="small">
+                            <span class="badge bg-success-subtle text-success" th:if="${student.conductScore == null || student.conductScore >= 80}">Xếp loại: Tốt / Xuất sắc</span>
+                            <span class="badge bg-warning-subtle text-warning" th:if="${student.conductScore != null && student.conductScore >= 50 && student.conductScore < 80}">Xếp loại: Khá / Cần lưu ý</span>
+                            <span class="badge bg-danger-subtle text-danger" th:if="${student.conductScore != null && student.conductScore < 50}">Cảnh báo nguy cơ cấm túc</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="ktx-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-circle bg-warning-subtle text-warning fs-3"><i class="bi bi-exclamation-triangle"></i></div>
+                    <div>
+                        <div class="text-muted small">Số lần vi phạm ghi nhận</div>
+                        <div class="h3 fw-bold text-dark mb-0">0</div>
+                        <div class="small text-muted">Hồ sơ kỷ luật sạch</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="ktx-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-circle bg-info-subtle text-info fs-3"><i class="bi bi-award"></i></div>
+                    <div>
+                        <div class="text-muted small">Quyền ưu tiên xét ở kỳ sau</div>
+                        <div class="fw-bold text-success mb-0">Đủ điều kiện xét duyệt</div>
+                        <div class="small text-muted">Yêu cầu điểm rèn luyện $\ge$ 50</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng lịch sử vi phạm & Khung chế tài -->
+    <div class="row g-4">
+        <!-- Cột trái: Lịch sử biên bản vi phạm -->
+        <div class="col-lg-7">
+            <div class="ktx-card h-100">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-journal-text me-2 text-primary"></i>Lịch sử biên bản vi phạm</h2>
+                </div>
+
+                <!-- Bảng biên bản -->
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle ktx-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Thời gian</th>
+                                <th>Hành vi vi phạm</th>
+                                <th>Mức độ</th>
+                                <th>Điểm trừ</th>
+                                <th>Cán bộ ghi nhận</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Không có vi phạm -->
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <i class="bi bi-emoji-smile fs-2 text-success d-block mb-2"></i>
+                                    <strong class="text-dark">Rất tốt! Bạn chưa từng vi phạm nội quy KTX.</strong>
+                                    <p class="mb-0 small">Hãy tiếp tục giữ gìn môi trường sống văn minh và an toàn tại ký túc xá.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Bảng khung trừ điểm quy định -->
+        <div class="col-lg-5">
+            <div class="ktx-card h-100">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-book me-2 text-primary"></i>Khung xử phạt nội quy KTX</h2>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Hành vi vi phạm</th>
+                                <th>Mức độ</th>
+                                <th class="text-end">Khung trừ điểm</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Về muộn sau 23:00 không lý do chính đáng</td>
+                                <td><span class="badge bg-secondary-subtle text-secondary">Nhẹ</span></td>
+                                <td class="text-end text-danger fw-bold">-5 điểm</td>
+                            </tr>
+                            <tr>
+                                <td>Nấu ăn trái phép trong phòng</td>
+                                <td><span class="badge bg-warning-subtle text-warning">Nặng</span></td>
+                                <td class="text-end text-danger fw-bold">-20 điểm</td>
+                            </tr>
+                            <tr>
+                                <td>Gây mất trật tự, ồn ào sau 22:00</td>
+                                <td><span class="badge bg-warning-subtle text-warning">Nặng</span></td>
+                                <td class="text-end text-danger fw-bold">-25 điểm</td>
+                            </tr>
+                            <tr>
+                                <td>Làm hư hỏng nặng tài sản KTX</td>
+                                <td><span class="badge bg-danger-subtle text-danger">Nghiêm trọng</span></td>
+                                <td class="text-end text-danger fw-bold">-50 điểm</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 small text-secondary mt-3">
+                    <strong class="text-dark d-block mb-1"><i class="bi bi-info-circle me-1 text-primary"></i>Quy chế rèn luyện:</strong>
+                    <div>- Đầu mỗi học kỳ, mỗi sinh viên được cấp <strong>100 điểm</strong> rèn luyện.</div>
+                    <div>- Nếu điểm rơi xuống <strong>dưới 50 điểm</strong>: Hệ thống sẽ gửi cảnh cáo.</div>
+                    <div>- Nếu điểm về <strong>0 điểm</strong>: Bị chấm dứt hợp đồng và cấm đăng ký KTX kỳ sau.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

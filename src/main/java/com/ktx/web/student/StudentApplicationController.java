@@ -80,7 +80,7 @@ public class StudentApplicationController {
     }
 
     @GetMapping("/new")
-    public String createForm(@RequestParam("periodId") Long periodId, Principal principal, Model model, RedirectAttributes redirectAttributes) {
+    public String createForm(@RequestParam(value = "periodId", required = false) Long periodId, Principal principal, Model model, RedirectAttributes redirectAttributes) {
         Student student = getStudent(principal);
 
         // Pre-checks
@@ -96,17 +96,40 @@ public class StudentApplicationController {
             redirectAttributes.addFlashAttribute("errorMessage", RoomApplicationService.ACTIVE_CONTRACT_EXISTS);
             return "redirect:/student/applications";
         }
-        if (roomApplicationRepositoryExists(periodId, student.getId())) {
-            redirectAttributes.addFlashAttribute("errorMessage", RoomApplicationService.ALREADY_SUBMITTED);
+
+        List<RegistrationPeriod> openPeriods = periodRepository.findAllWithCreator().stream()
+                .filter(p -> p.getStatus() == PeriodStatus.OPEN)
+                .toList();
+
+        if (openPeriods.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Hiện không có đợt đăng ký nào đang mở nhận đơn.");
             return "redirect:/student/applications";
         }
 
-        RegistrationPeriod period = periodRepository.findById(periodId)
-                .orElseThrow(() -> new BusinessException(RoomApplicationService.PERIOD_NOT_FOUND));
+        List<RegistrationPeriod> availablePeriods = openPeriods.stream()
+                .filter(p -> !roomApplicationRepositoryExists(p.getId(), student.getId()))
+                .toList();
 
-        if (period.getStatus() != PeriodStatus.OPEN) {
-            redirectAttributes.addFlashAttribute("errorMessage", RoomApplicationService.PERIOD_NOT_OPEN);
+        if (availablePeriods.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn đã nộp đơn cho tất cả các đợt đăng ký đang mở.");
             return "redirect:/student/applications";
+        }
+
+        RegistrationPeriod selectedPeriod;
+        if (periodId != null) {
+            selectedPeriod = availablePeriods.stream()
+                    .filter(p -> p.getId().equals(periodId))
+                    .findFirst()
+                    .orElse(null);
+            if (selectedPeriod == null) {
+                if (roomApplicationRepositoryExists(periodId, student.getId())) {
+                    redirectAttributes.addFlashAttribute("errorMessage", RoomApplicationService.ALREADY_SUBMITTED);
+                    return "redirect:/student/applications";
+                }
+                selectedPeriod = availablePeriods.get(0);
+            }
+        } else {
+            selectedPeriod = availablePeriods.get(0);
         }
 
         // Lọc tòa nhà theo giới tính của sinh viên
@@ -115,17 +138,19 @@ public class StudentApplicationController {
                 .filter(b -> Boolean.TRUE.equals(b.getActive()) && b.getGenderPolicy() == genderPolicy)
                 .toList();
 
-        model.addAttribute("period", period);
+        model.addAttribute("period", selectedPeriod);
+        model.addAttribute("availablePeriods", availablePeriods);
         model.addAttribute("buildings", buildings);
         model.addAttribute("roomTypes", RoomType.values());
         model.addAttribute("student", student);
-        
+
         RoomApplication app = new RoomApplication();
-        app.setPeriod(period);
+        app.setPeriod(selectedPeriod);
         app.setStudent(student);
         model.addAttribute("form", app);
 
         page(model, "Nộp đơn nguyện vọng", "Chọn tòa nhà và loại phòng mong muốn");
+        model.addAttribute("activeMenu", "applications-new");
         return "student/applications/form";
     }
 
