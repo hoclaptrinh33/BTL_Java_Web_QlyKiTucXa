@@ -547,9 +547,17 @@ a:focus-visible {
 .ktx-user {
     display: flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.65rem;
     border: 0;
     background: transparent;
+    cursor: pointer;
+    padding: 0.2rem 0.35rem;
+    border-radius: 10px;
+    transition: background 0.15s ease;
+}
+
+.ktx-user:hover {
+    background: var(--line);
 }
 
 .ktx-avatar {
@@ -558,27 +566,62 @@ a:focus-visible {
     border-radius: 50%;
     background: var(--violet);
     color: #fff;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 700;
+    letter-spacing: 0.03em;
     display: grid;
     place-items: center;
     overflow: hidden;
     text-transform: uppercase;
+    flex-shrink: 0;
 }
 
 .ktx-user__meta {
     text-align: left;
 }
 
-.ktx-user__meta strong,
-.ktx-user__meta small {
+.ktx-user__meta strong {
     display: block;
-    line-height: 1.2;
+    line-height: 1.25;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--ink);
 }
 
 .ktx-user__meta small {
+    display: block;
+    line-height: 1.2;
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.78rem;
+    margin-top: 1px;
+}
+
+.dropdown-menu {
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    padding: 0.5rem;
+}
+
+.dropdown-menu .dropdown-item {
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--ink);
+    padding: 0.55rem 0.85rem;
+    display: flex;
+    align-items: center;
+    transition: all 0.15s ease;
+}
+
+.dropdown-menu .dropdown-item:hover {
+    background: var(--violet-soft);
+    color: var(--violet);
+}
+
+.dropdown-menu .dropdown-divider {
+    margin: 0.4rem 0;
+    border-color: var(--line);
+    opacity: 1;
 }
 
 .ktx-content {

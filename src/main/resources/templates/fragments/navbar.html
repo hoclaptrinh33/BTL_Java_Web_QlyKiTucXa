@@ -18,7 +18,9 @@
     </button>
     <div class="dropdown">
         <button class="ktx-user" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <span class="ktx-avatar" sec:authentication="name">AD</span>
+            <span class="ktx-avatar" sec:authorize="hasRole('ADMIN')">ADMIN</span>
+            <span class="ktx-avatar" sec:authorize="hasRole('STAFF')">STAFF</span>
+            <span class="ktx-avatar" sec:authorize="hasRole('STUDENT')">SV</span>
             <span class="ktx-user__meta">
                 <strong sec:authentication="name">user</strong>
                 <small sec:authorize="hasRole('ADMIN')">Quản trị viên</small>
@@ -41,7 +43,7 @@
             <li><hr class="dropdown-divider"/></li>
             <li>
                 <form th:action="@{/logout}" method="post">
-                    <button class="dropdown-item py-2 text-danger" type="submit">
+                    <button class="dropdown-item py-2" type="submit">
                         <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
                     </button>
                 </form>
@@ -159,37 +161,42 @@
         </div>
     </nav>
 
-    <!-- User Account Dropdown -->
-    <div class="dropdown ms-auto">
-        <button class="ktx-user" type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                th:classappend="${activeMenu == 'profile' or activeMenu == 'password'} ? 'is-active'">
-            <span class="ktx-avatar" sec:authentication="name">SV</span>
-            <span class="ktx-user__meta d-none d-sm-inline-flex">
-                <strong sec:authentication="name">user</strong>
-                <small>Sinh viên</small>
-            </span>
-            <i class="bi bi-chevron-down"></i>
+    <!-- Notification bell & User Account Dropdown -->
+    <div class="d-flex align-items-center gap-2 ms-auto">
+        <button class="btn ktx-icon-btn" type="button" aria-label="Thông báo" disabled>
+            <i class="bi bi-bell"></i>
         </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-            <li>
-                <a class="dropdown-item py-2" th:href="@{/student/profile}" th:classappend="${activeMenu == 'profile'} ? 'active'">
-                    <i class="bi bi-person me-2"></i>Thông tin cá nhân
-                </a>
-            </li>
-            <li>
-                <a class="dropdown-item py-2" th:href="@{/student/password}" th:classappend="${activeMenu == 'password'} ? 'active'">
-                    <i class="bi bi-shield-lock me-2"></i>Đổi mật khẩu
-                </a>
-            </li>
-            <li><hr class="dropdown-divider"/></li>
-            <li>
-                <form th:action="@{/logout}" method="post">
-                    <button class="dropdown-item py-2 text-danger" type="submit">
-                        <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
-                    </button>
-                </form>
-            </li>
-        </ul>
+        <div class="dropdown">
+            <button class="ktx-user" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                    th:classappend="${activeMenu == 'profile' or activeMenu == 'password'} ? 'is-active'">
+                <span class="ktx-avatar">SV</span>
+                <span class="ktx-user__meta d-none d-sm-block">
+                    <strong sec:authentication="name">user</strong>
+                    <small>Sinh viên</small>
+                </span>
+                <i class="bi bi-chevron-down"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/student/profile}" th:classappend="${activeMenu == 'profile'} ? 'active'">
+                        <i class="bi bi-person me-2"></i>Thông tin cá nhân
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-2" th:href="@{/student/password}" th:classappend="${activeMenu == 'password'} ? 'active'">
+                        <i class="bi bi-shield-lock me-2"></i>Đổi mật khẩu
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"/></li>
+                <li>
+                    <form th:action="@{/logout}" method="post">
+                        <button class="dropdown-item py-2" type="submit">
+                            <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
     </div>
 
     <!-- Mobile Collapse Menu -->
