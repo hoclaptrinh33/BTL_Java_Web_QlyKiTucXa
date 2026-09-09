@@ -15,12 +15,6 @@
         </div>
     </div>
 
-    <!-- Thông báo lỗi/thành công -->
-    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="border-radius: 12px;">
-        <i class="bi bi-check-circle-fill me-2 text-success"></i><span th:text="${successMessage}">Thành công</span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-
     <!-- 3 Thẻ trạng thái ticket -->
     <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
         <div class="col">
@@ -29,7 +23,7 @@
                     <div class="p-3 rounded-circle bg-warning-subtle text-warning fs-3"><i class="bi bi-hourglass-split"></i></div>
                     <div>
                         <div class="text-muted small">Đang chờ xử lý</div>
-                        <div class="h4 fw-bold text-dark mb-0">1</div>
+                        <div class="h4 fw-bold text-dark mb-0" th:text="${countWaiting}">1</div>
                         <div class="small text-muted">Đội kỹ thuật tiếp nhận trong 24h</div>
                     </div>
                 </div>
@@ -41,7 +35,7 @@
                     <div class="p-3 rounded-circle bg-info-subtle text-info fs-3"><i class="bi bi-wrench-adjustable"></i></div>
                     <div>
                         <div class="text-muted small">Đang sửa chữa</div>
-                        <div class="h4 fw-bold text-dark mb-0">1</div>
+                        <div class="h4 fw-bold text-dark mb-0" th:text="${countInProgress}">1</div>
                         <div class="small text-muted">Thợ đang kiểm tra tại phòng</div>
                     </div>
                 </div>
@@ -53,8 +47,8 @@
                     <div class="p-3 rounded-circle bg-success-subtle text-success fs-3"><i class="bi bi-check-circle"></i></div>
                     <div>
                         <div class="text-muted small">Đã hoàn thành</div>
-                        <div class="h4 fw-bold text-dark mb-0">2</div>
-                        <div class="small text-muted">Đã nghiệm thu hoạt động tốt</div>
+                        <div class="h4 fw-bold text-dark mb-0" th:text="${countCompleted}">2</div>
+                        <div class="small text-muted">Đã nghiệm thu / đã đóng</div>
                     </div>
                 </div>
             </div>
@@ -81,50 +75,40 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td><span class="ktx-chip">#TK-2041</span></td>
-                        <td>
-                            <strong class="text-dark"><i class="bi bi-lightning-charge me-1 text-warning"></i>Điện & Chiếu sáng</strong>
-                            <div class="small text-muted">Bóng tuýp LED trần</div>
-                        </td>
-                        <td>Bóng đèn trần phòng nhấp nháy liên tục rồi tắt hẳn, cần thay bóng mới.</td>
-                        <td><span class="badge bg-warning-subtle text-warning">Khẩn cấp</span></td>
-                        <td>24/08/2026</td>
-                        <td><span class="ktx-pill is-peach">Chờ tiếp nhận</span></td>
-                        <td class="text-end">
-                            <span class="text-muted small">Đang đợi thợ</span>
+                    <tr th:if="${#lists.isEmpty(tickets)}">
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox fs-3 d-block mb-1"></i>
+                            Bạn chưa có yêu cầu sửa chữa nào.
                         </td>
                     </tr>
-                    <tr>
-                        <td><span class="ktx-chip">#TK-1988</span></td>
+                    <tr th:each="t : ${tickets}">
+                        <td><span class="ktx-chip" th:text="${t.code}">#TK-2041</span></td>
                         <td>
-                            <strong class="text-dark"><i class="bi bi-water me-1 text-info"></i>Nước & Thiết bị vệ sinh</strong>
-                            <div class="small text-muted">Vòi sen phòng tắm</div>
+                            <strong class="text-dark">
+                                <i class="bi me-1" th:classappend="${t.categoryIcon + ' ' + t.categoryColor}"></i>
+                                <span th:text="${t.category}">Điện & Chiếu sáng</span>
+                            </strong>
+                            <div class="small text-muted" th:text="${t.subCategory}">Bóng tuýp LED trần</div>
                         </td>
-                        <td>Vòi hoa sen bị rỉ nước liên tục gây hao phí nước sạch.</td>
-                        <td><span class="badge bg-secondary-subtle text-secondary">Bình thường</span></td>
-                        <td>18/08/2026</td>
-                        <td><span class="ktx-pill is-violet">Đang xử lý</span></td>
+                        <td th:text="${t.description}">Bóng đèn trần phòng nhấp nháy liên tục rồi tắt hẳn, cần thay bóng mới.</td>
+                        <td><span class="badge" th:classappend="${t.severityClass}" th:text="${t.severity}">Khẩn cấp</span></td>
+                        <td th:text="${t.createdAt}">24/08/2026</td>
+                        <td><span class="ktx-pill" th:classappend="${t.statusClass}" th:text="${t.statusLabel}">Chờ tiếp nhận</span></td>
                         <td class="text-end">
-                            <span class="text-muted small">Kỹ thuật đang kiểm tra</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><span class="ktx-chip">#TK-1850</span></td>
-                        <td>
-                            <strong class="text-dark"><i class="bi bi-door-closed me-1 text-secondary"></i>Khóa cửa & Đồ gỗ</strong>
-                            <div class="small text-muted">Khóa tay gạt cửa chính</div>
-                        </td>
-                        <td>Khóa cửa ra vào bị kẹt ổ khóa không cắm chìa vào được.</td>
-                        <td><span class="badge bg-danger-subtle text-danger">Rất khẩn cấp</span></td>
-                        <td>10/08/2026</td>
-                        <td><span class="ktx-pill is-mint">Đã sửa xong</span></td>
-                        <td class="text-end">
-                            <form th:action="@{/student/tickets/1850/close}" method="post">
+                            <!-- Nút Đóng ticket khi Đã sửa xong -->
+                            <form th:if="${t.status == 'RESOLVED'}" th:action="@{'/student/tickets/' + ${t.id} + '/close'}" method="post" class="d-inline">
                                 <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">
                                     <i class="bi bi-check2 me-1"></i>Đóng ticket
                                 </button>
                             </form>
+                            <!-- Trạng thái Đã đóng -->
+                            <span th:if="${t.status == 'CLOSED'}" class="text-muted small">
+                                <i class="bi bi-check-all text-success me-1"></i>Đã đóng
+                            </span>
+                            <!-- Trạng thái khác -->
+                            <span th:if="${t.status != 'RESOLVED' && t.status != 'CLOSED'}" class="text-muted small" th:text="${t.actionNote}">
+                                Đang đợi thợ
+                            </span>
                         </td>
                     </tr>
                 </tbody>

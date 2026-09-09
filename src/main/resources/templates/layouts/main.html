@@ -15,6 +15,7 @@
     <link rel="stylesheet" th:href="@{/css/ktx.css}"/>
 </head>
 <body>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
 <div class="ktx-shell" sec:authorize="hasAnyRole('ADMIN','STAFF')">
     <aside class="ktx-sidebar d-none d-lg-flex">
         <div th:replace="~{fragments/sidebar :: inner}"></div>
@@ -27,7 +28,6 @@
     <div class="ktx-workspace">
         <header th:replace="~{fragments/navbar :: navbar}"></header>
         <div class="ktx-content">
-            <div th:replace="~{fragments/alerts :: alerts}"></div>
             <div th:replace="${content}"></div>
         </div>
     </div>
@@ -36,7 +36,6 @@
     <header th:replace="~{fragments/navbar :: navbar-student}"></header>
     <main class="ktx-portal-main">
         <div class="container-xl py-4">
-            <div th:replace="~{fragments/alerts :: alerts}"></div>
             <div th:replace="${content}"></div>
         </div>
     </main>
@@ -88,6 +87,119 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    // Quản lý Toast thông báo nổi (Floating Toast Notification Overlay)
+    function setupKtxToasts() {
+        const toasts = document.querySelectorAll('.ktx-toast');
+        toasts.forEach(function(toast) {
+            if (toast.dataset.initialized) return;
+            toast.dataset.initialized = 'true';
+
+            let dismissTimeout;
+            let startTime = Date.now();
+            let remaining = 3000;
+
+            function dismiss() {
+                if (toast.dataset.dismissing) return;
+                toast.dataset.dismissing = 'true';
+                toast.classList.add('is-hiding');
+                setTimeout(function() {
+                    toast.remove();
+                }, 350);
+            }
+
+            function startTimer() {
+                startTime = Date.now();
+                dismissTimeout = setTimeout(dismiss, remaining);
+            }
+
+            function pauseTimer() {
+                clearTimeout(dismissTimeout);
+                remaining -= (Date.now() - startTime);
+                const bar = toast.querySelector('.ktx-toast-progress');
+                if (bar) bar.style.animationPlayState = 'paused';
+            }
+
+            function resumeTimer() {
+                if (remaining <= 0) {
+                    dismiss();
+                    return;
+                }
+                startTime = Date.now();
+                dismissTimeout = setTimeout(dismiss, remaining);
+                const bar = toast.querySelector('.ktx-toast-progress');
+                if (bar) bar.style.animationPlayState = 'running';
+            }
+
+            // Bắt đầu đếm ngược tự đóng sau 3 giây
+            startTimer();
+
+            // Hover vào thì dừng đếm, rời chuột ra thì tiếp tục
+            toast.addEventListener('mouseenter', pauseTimer);
+            toast.addEventListener('mouseleave', resumeTimer);
+
+            // Nút đóng ngay lập tức
+            const closeBtn = toast.querySelector('.ktx-toast-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    clearTimeout(dismissTimeout);
+                    dismiss();
+                });
+            }
+        });
+    }
+
+    setupKtxToasts();
+
+    // Hỗ trợ hiển thị Toast động từ Javascript nếu cần
+    window.showKtxToast = function(message, type = 'success', title = '') {
+        let container = document.getElementById('ktxGlobalAlerts');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'ktxGlobalAlerts';
+            container.className = 'ktx-toast-container';
+            document.body.prepend(container);
+        }
+
+        const iconMap = {
+            success: 'bi-check-circle-fill',
+            danger: 'bi-exclamation-circle-fill',
+            error: 'bi-exclamation-circle-fill',
+            warning: 'bi-exclamation-triangle-fill',
+            info: 'bi-info-circle-fill'
+        };
+
+        const titleMap = {
+            success: 'Thành công',
+            danger: 'Lỗi thao tác',
+            error: 'Lỗi thao tác',
+            warning: 'Cảnh báo',
+            info: 'Thông báo'
+        };
+
+        const resolvedType = type === 'error' ? 'danger' : type;
+        const icon = iconMap[resolvedType] || 'bi-info-circle-fill';
+        const displayTitle = title || titleMap[resolvedType] || 'Thông báo';
+
+        const toast = document.createElement('div');
+        toast.className = 'ktx-toast ktx-toast--' + resolvedType;
+        toast.setAttribute('role', resolvedType === 'danger' ? 'alert' : 'status');
+        toast.innerHTML = `
+            <div class="ktx-toast-icon"><i class="bi ${icon}"></i></div>
+            <div class="ktx-toast-body">
+                <div class="ktx-toast-title">${displayTitle}</div>
+                <div class="ktx-toast-text">${message}</div>
+            </div>
+            <button type="button" class="ktx-toast-close" aria-label="Đóng">
+                <i class="bi bi-x-lg"></i>
+            </button>
+            <div class="ktx-toast-progress"></div>
+        `;
+
+        container.appendChild(toast);
+        setupKtxToasts();
+    };
 });
 </script>
 </body>
