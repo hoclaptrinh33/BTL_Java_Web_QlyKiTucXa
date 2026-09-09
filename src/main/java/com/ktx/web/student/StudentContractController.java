@@ -60,7 +60,7 @@ public class StudentContractController {
         model.addAttribute("contract", activeContract);
         model.addAttribute("pageTitle", "Gia hạn hợp đồng");
         model.addAttribute("pageSubtitle", "Nộp đơn xin ở tiếp sang học kỳ mới");
-        model.addAttribute("activeMenu", "contract");
+        model.addAttribute("activeMenu", "renewals");
         return "student/contract/renewals";
     }
 
@@ -92,7 +92,7 @@ public class StudentContractController {
         model.addAttribute("contract", activeContract);
         model.addAttribute("pageTitle", "Yêu cầu chuyển phòng");
         model.addAttribute("pageSubtitle", "Đăng ký đổi sang phòng hoặc giường khác");
-        model.addAttribute("activeMenu", "contract");
+        model.addAttribute("activeMenu", "room-change");
         return "student/contract/room-change";
     }
 
@@ -118,7 +118,7 @@ public class StudentContractController {
         model.addAttribute("contract", activeContract);
         model.addAttribute("pageTitle", "Yêu cầu trả phòng");
         model.addAttribute("pageSubtitle", "Thủ tục thanh lý hợp đồng và bàn giao chỗ ở");
-        model.addAttribute("activeMenu", "contract");
+        model.addAttribute("activeMenu", "return-room");
         return "student/contract/return-room";
     }
 

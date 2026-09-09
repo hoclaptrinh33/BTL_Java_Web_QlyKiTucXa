@@ -80,7 +80,7 @@ public class StudentApplicationController {
     }
 
     @GetMapping("/new")
-    public String createForm(@RequestParam("periodId") Long periodId, Principal principal, Model model, RedirectAttributes redirectAttributes) {
+    public String createForm(@RequestParam(value = "periodId", required = false) Long periodId, Principal principal, Model model, RedirectAttributes redirectAttributes) {
         Student student = getStudent(principal);
 
         // Pre-checks
@@ -96,6 +96,18 @@ public class StudentApplicationController {
             redirectAttributes.addFlashAttribute("errorMessage", RoomApplicationService.ACTIVE_CONTRACT_EXISTS);
             return "redirect:/student/applications";
         }
+
+        if (periodId == null) {
+            RegistrationPeriod openPeriod = periodRepository.findAllWithCreator().stream()
+                    .filter(p -> p.getStatus() == PeriodStatus.OPEN)
+                    .findFirst().orElse(null);
+            if (openPeriod == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Hiện không có đợt đăng ký nào đang mở nhận đơn.");
+                return "redirect:/student/applications";
+            }
+            periodId = openPeriod.getId();
+        }
+
         if (roomApplicationRepositoryExists(periodId, student.getId())) {
             redirectAttributes.addFlashAttribute("errorMessage", RoomApplicationService.ALREADY_SUBMITTED);
             return "redirect:/student/applications";
@@ -126,6 +138,7 @@ public class StudentApplicationController {
         model.addAttribute("form", app);
 
         page(model, "Nộp đơn nguyện vọng", "Chọn tòa nhà và loại phòng mong muốn");
+        model.addAttribute("activeMenu", "applications-new");
         return "student/applications/form";
     }
 

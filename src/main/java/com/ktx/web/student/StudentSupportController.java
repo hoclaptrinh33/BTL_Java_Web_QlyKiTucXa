@@ -44,7 +44,7 @@ public class StudentSupportController {
         model.addAttribute("contract", activeContract);
         model.addAttribute("pageTitle", "Yêu cầu sửa chữa & Sự cố");
         model.addAttribute("pageSubtitle", "Báo cáo sự cố điện nước, đồ đạc trong phòng");
-        model.addAttribute("activeMenu", "support");
+        model.addAttribute("activeMenu", "tickets");
         return "student/tickets/list";
     }
 
@@ -59,7 +59,7 @@ public class StudentSupportController {
         model.addAttribute("contract", activeContract);
         model.addAttribute("pageTitle", "Tạo phiếu báo hỏng thiết bị");
         model.addAttribute("pageSubtitle", "Gửi thông tin sự cố tới ban quản lý và đội kỹ thuật");
-        model.addAttribute("activeMenu", "support");
+        model.addAttribute("activeMenu", "tickets-new");
         return "student/tickets/form";
     }
 
