@@ -38,7 +38,9 @@ import com.ktx.domain.enums.PeriodType;
 import com.ktx.dto.AllocationRunResult;
 import com.ktx.repository.AllocationItemRepository;
 import com.ktx.repository.AllocationRunRepository;
+import com.ktx.repository.BedRepository;
 import com.ktx.repository.RegistrationPeriodRepository;
+import com.ktx.repository.RoomApplicationRepository;
 import com.ktx.repository.SystemConfigRepository;
 import com.ktx.repository.UserRepository;
 import com.ktx.service.impl.AllocationServiceImpl;
@@ -64,6 +66,15 @@ class AllocationServiceTest {
     @Mock
     private SystemConfigRepository systemConfigRepository;
 
+    @Mock
+    private ContractService contractService;
+
+    @Mock
+    private BedRepository bedRepository;
+
+    @Mock
+    private RoomApplicationRepository roomApplicationRepository;
+
     private AllocationService allocationService;
 
     private RegistrationPeriod samplePeriod;
@@ -85,7 +96,10 @@ class AllocationServiceTest {
                 allocationItemRepository,
                 periodRepository,
                 userRepository,
-                systemConfigRepository
+                systemConfigRepository,
+                contractService,
+                bedRepository,
+                roomApplicationRepository
         );
 
         adminUser = new User();
@@ -240,5 +254,116 @@ class AllocationServiceTest {
 
         assertThrows(BusinessException.class, () -> allocationService.discardRun(10L));
         verify(allocationRunRepository, never()).save(run);
+    }
+
+    @Test
+    @DisplayName("commit() chốt phân bổ: khóa giường, tạo HĐ DRAFT, đổi ApplicationStatus và chuyển đợt sang COMPLETED")
+    void commit_success() {
+        samplePeriod.setStatus(PeriodStatus.CLOSED);
+        samplePeriod.setTermStart(java.time.LocalDate.of(2026, 9, 1));
+        samplePeriod.setTermEnd(java.time.LocalDate.of(2027, 1, 31));
+
+        when(periodRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(samplePeriod));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(adminUser));
+
+        when(systemConfigRepository.findById("alloc.weight.policy"))
+                .thenReturn(Optional.of(config("alloc.weight.policy", "1000")));
+        when(systemConfigRepository.findById("alloc.weight.remote"))
+                .thenReturn(Optional.of(config("alloc.weight.remote", "500")));
+        when(systemConfigRepository.findById("alloc.weight.prev_good"))
+                .thenReturn(Optional.of(config("alloc.weight.prev_good", "200")));
+        when(systemConfigRepository.findById("alloc.preference.mode"))
+                .thenReturn(Optional.of(config("alloc.preference.mode", "SOFT")));
+
+        // 3 items: 1 ASSIGNED, 1 WAITLISTED, 1 SKIPPED
+        Student sv1 = new Student();
+        sv1.setId(10L);
+
+        RoomApplication app1 = new RoomApplication();
+        app1.setId(101L);
+        app1.setStudent(sv1);
+        app1.setStatus(ApplicationStatus.SUBMITTED);
+
+        Bed bed1 = new Bed();
+        bed1.setId(50L);
+        bed1.setBedCode("G1");
+
+        AllocationItem item1 = new AllocationItem();
+        item1.setStudent(sv1);
+        item1.setApplication(app1);
+        item1.setBed(bed1);
+        item1.setRankNo(1);
+        item1.setScore(1000);
+        item1.setResult(AllocationResult.ASSIGNED);
+
+        RoomApplication app2 = new RoomApplication();
+        app2.setId(102L);
+        app2.setStudent(sv1);
+        app2.setStatus(ApplicationStatus.SUBMITTED);
+
+        AllocationItem item2 = new AllocationItem();
+        item2.setStudent(sv1);
+        item2.setApplication(app2);
+        item2.setRankNo(2);
+        item2.setScore(500);
+        item2.setResult(AllocationResult.WAITLISTED);
+
+        RoomApplication app3 = new RoomApplication();
+        app3.setId(103L);
+        app3.setStudent(sv1);
+        app3.setStatus(ApplicationStatus.SUBMITTED);
+
+        AllocationItem item3 = new AllocationItem();
+        item3.setStudent(sv1);
+        item3.setApplication(app3);
+        item3.setRankNo(3);
+        item3.setScore(0);
+        item3.setResult(AllocationResult.SKIPPED);
+
+        List<AllocationItem> items = new java.util.ArrayList<>(List.of(item1, item2, item3));
+        when(allocationEngine.plan(100L)).thenReturn(new AllocationRunResult(items));
+        when(allocationRunRepository.save(any(AllocationRun.class))).thenAnswer(inv -> {
+            AllocationRun r = inv.getArgument(0);
+            r.setId(888L);
+            return r;
+        });
+
+        // Act
+        AllocationRun committedRun = allocationService.commit(100L, 1L);
+
+        // Assert
+        assertNotNull(committedRun);
+        assertEquals(888L, committedRun.getId());
+        assertEquals(Boolean.FALSE, committedRun.getDryRun(), "Commit phải dryRun=false");
+        assertEquals(AllocationRunStatus.COMMITTED, committedRun.getStatus());
+
+        // Kiểm tra khóa giường tăng dần ID
+        verify(bedRepository).findByIdInForUpdate(List.of(50L));
+
+        // Kiểm tra tạo HĐ DRAFT
+        verify(contractService).createDraftFromAllocation(
+                app1, bed1, samplePeriod.getTermStart(), samplePeriod.getTermEnd()
+        );
+
+        // Kiểm tra cập nhật ApplicationStatus theo §6.3.4
+        assertEquals(ApplicationStatus.ALLOCATED, app1.getStatus());
+        assertEquals(ApplicationStatus.WAITLISTED, app2.getStatus());
+        assertEquals(ApplicationStatus.REJECTED, app3.getStatus());
+        verify(roomApplicationRepository).save(app1);
+        verify(roomApplicationRepository).save(app2);
+        verify(roomApplicationRepository).save(app3);
+
+        // Đợt phải chuyển sang COMPLETED
+        assertEquals(PeriodStatus.COMPLETED, samplePeriod.getStatus());
+    }
+
+    @Test
+    @DisplayName("commit() ném ngoại lệ nếu đợt không ở trạng thái CLOSED hoặc ALLOCATING")
+    void commit_invalidPeriodStatus() {
+        samplePeriod.setStatus(PeriodStatus.OPEN);
+        when(periodRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(samplePeriod));
+
+        assertThrows(BusinessException.class, () -> allocationService.commit(100L, 1L));
+        verify(allocationEngine, never()).plan(any(Long.class));
     }
 }

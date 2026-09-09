@@ -40,6 +40,9 @@ class AdminAllocationSecurityTest {
     private RoomApplicationRepository roomApplicationRepository;
 
     @MockitoBean
+    private com.ktx.service.ContractService contractService;
+
+    @MockitoBean
     private UserRepository userRepository;
 
     @MockitoBean
