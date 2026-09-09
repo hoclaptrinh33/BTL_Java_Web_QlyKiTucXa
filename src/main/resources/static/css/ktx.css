@@ -591,19 +591,34 @@ a:focus-visible {
     z-index: 20;
 }
 
-.ktx-portal-nav a {
-    margin-left: 1rem;
+.ktx-portal-nav a,
+.ktx-portal-nav .dropdown-toggle {
+    margin-left: 0.75rem;
+    padding: 0.4rem 0.75rem;
     color: var(--muted);
     text-decoration: none;
     font-weight: 600;
+    font-size: 0.92rem;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
 }
 
-.ktx-portal-nav a.is-active {
+.ktx-portal-nav a:hover,
+.ktx-portal-nav .dropdown-toggle:hover {
     color: var(--violet);
+    background: var(--violet-soft);
+}
+
+.ktx-portal-nav a.is-active,
+.ktx-portal-nav .dropdown-toggle.is-active {
+    color: var(--violet);
+    background: var(--violet-soft);
 }
 
 .ktx-portal-body {
-    max-width: 960px;
+    max-width: 1140px;
     margin: 0 auto;
     padding: 1.5rem 1.25rem 2.5rem;
 }

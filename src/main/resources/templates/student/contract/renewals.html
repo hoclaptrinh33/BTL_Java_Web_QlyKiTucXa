@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-3">
+    <!-- Tiêu đề -->
+    <div class="mb-4">
+        <h1 class="h3 mb-1 text-gray-800">Gia hạn hợp đồng phòng ở</h1>
+        <p class="text-muted mb-0">Nộp đơn xin tiếp tục lưu trú tại ký túc xá cho học kỳ tiếp theo</p>
+    </div>
+
+    <!-- Thông báo lỗi/thành công -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="border-radius: 12px;">
+        <i class="bi bi-check-circle-fill me-2 text-success"></i><span th:text="${successMessage}">Thành công</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="border-radius: 12px;">
+        <i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i><span th:text="${errorMessage}">Lỗi</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="row g-4">
+        <!-- Form nộp đơn gia hạn -->
+        <div class="col-lg-6">
+            <div class="ktx-card h-100">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-pencil-square me-2 text-primary"></i>Nộp đơn gia hạn mới</h2>
+                </div>
+
+                <div th:if="${contract == null}" class="text-center py-4 text-muted">
+                    <i class="bi bi-info-circle fs-1 d-block mb-2 text-secondary"></i>
+                    <p class="mb-0">Bạn hiện không có hợp đồng lưu trú đang hoạt động để xin gia hạn.</p>
+                </div>
+
+                <form th:if="${contract != null}" th:action="@{/student/renewals}" method="post" class="d-flex flex-column gap-3">
+                    <div>
+                        <label class="form-label text-muted small fw-semibold">Hợp đồng hiện tại</label>
+                        <input type="text" class="form-control bg-light" readonly
+                               th:value="${contract.contractNo + ' — ' + contract.bed.room.building.name + ' (Phòng ' + contract.bed.room.roomNumber + ')'}"/>
+                    </div>
+
+                    <div>
+                        <label class="form-label text-muted small fw-semibold">Thời hạn hết hạn hiện tại</label>
+                        <input type="text" class="form-control bg-light" readonly
+                               th:value="${#temporals.format(contract.endDate, 'dd/MM/yyyy')}"/>
+                    </div>
+
+                    <div>
+                        <label for="termMonths" class="form-label fw-semibold text-dark">Kỳ hạn xin gia hạn <span class="text-danger">*</span></label>
+                        <select id="termMonths" name="termMonths" class="form-select" required>
+                            <option value="5">Học kỳ tiếp theo (5 tháng)</option>
+                            <option value="10">Cả năm học mới (10 tháng)</option>
+                            <option value="2">Học kỳ hè (2 tháng)</option>
+                        </select>
+                        <div class="form-text">Khi được duyệt, thời hạn hợp đồng sẽ tự động kéo dài mà không cần đổi phòng/giường.</div>
+                    </div>
+
+                    <div>
+                        <label for="note" class="form-label fw-semibold text-dark">Ghi chú hoặc lý do</label>
+                        <textarea id="note" name="note" class="form-control" rows="3" placeholder="Nhập lý do hoặc nguyện vọng tiếp tục lưu trú (nếu có)..."></textarea>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 small text-secondary">
+                        <i class="bi bi-shield-check text-primary me-1"></i>
+                        Điều kiện xét duyệt: Sinh viên có điểm rèn luyện KTX từ <strong>50 điểm trở lên</strong> và không nợ đọng tiền phòng/điện nước.
+                    </div>
+
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 mt-2">
+                        <i class="bi bi-send me-1"></i>Gửi đơn gia hạn
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lịch sử các lần gia hạn -->
+        <div class="col-lg-6">
+            <div class="ktx-card h-100">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Lịch sử yêu cầu gia hạn</h2>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle ktx-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Thời gian nộp</th>
+                                <th>Kỳ hạn xin</th>
+                                <th>Trạng thái</th>
+                                <th>Ghi chú BQL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <strong>20/08/2026</strong>
+                                    <div class="small text-muted">Học kỳ 1</div>
+                                </td>
+                                <td>5 tháng</td>
+                                <td><span class="badge bg-success-subtle text-success">Đã duyệt</span></td>
+                                <td class="small text-muted">Đã gia hạn thành công</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>15/01/2026</strong>
+                                    <div class="small text-muted">Học kỳ hè</div>
+                                </td>
+                                <td>2 tháng</td>
+                                <td><span class="badge bg-secondary-subtle text-secondary">Hoàn tất</span></td>
+                                <td class="small text-muted">Đã kết thúc kỳ</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

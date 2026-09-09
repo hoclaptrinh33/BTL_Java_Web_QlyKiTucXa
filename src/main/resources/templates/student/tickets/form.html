@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-3">
+    <!-- Nút quay lại & Tiêu đề -->
+    <div class="mb-4">
+        <a th:href="@{/student/tickets}" class="text-decoration-none text-muted small d-inline-flex align-items-center mb-2">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách yêu cầu
+        </a>
+        <h1 class="h3 mb-1 text-gray-800">Tạo phiếu báo hỏng thiết bị phòng</h1>
+        <p class="text-muted mb-0">Thông báo sự cố cơ sở vật chất để nhân viên kỹ thuật KTX đến sửa chữa kịp thời</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Form báo hỏng -->
+        <div class="col-lg-7">
+            <div class="ktx-card">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-wrench me-2 text-primary"></i>Thông tin sự cố hư hỏng</h2>
+                </div>
+
+                <form th:action="@{/student/tickets}" method="post" class="d-flex flex-column gap-3">
+                    <!-- Vị trí phòng (Tự động) -->
+                    <div>
+                        <label class="form-label text-muted small fw-semibold">Vị trí phòng xảy ra sự cố</label>
+                        <input type="text" class="form-control bg-light" readonly
+                               th:value="${contract != null ? contract.bed.room.building.name + ' — Phòng ' + contract.bed.room.roomNumber + ' (Giường ' + contract.bed.bedCode + ')' : 'Chưa nhận phòng (Sự cố khu vực chung)'}"/>
+                    </div>
+
+                    <!-- Danh mục sự cố -->
+                    <div>
+                        <label for="category" class="form-label fw-semibold text-dark">Phân loại thiết bị <span class="text-danger">*</span></label>
+                        <select id="category" name="category" class="form-select" required>
+                            <option value="ELECTRIC">Điện & Đèn chiếu sáng (bóng đèn, công tắc, ổ cắm)</option>
+                            <option value="AC">Điều hòa nhiệt độ (không mát, chảy nước, mất nguồn)</option>
+                            <option value="WATER">Nước & Thiết bị vệ sinh (vòi nước, bồn cầu, bình nóng lạnh)</option>
+                            <option value="FURNITURE">Đồ gỗ & Kim loại (giường tầng, bàn ghế, tủ đồ)</option>
+                            <option value="DOOR">Cửa & Khóa phòng (kẹt khóa, hỏng tay nắm, bản lề)</option>
+                            <option value="OTHER">Vấn đề khác...</option>
+                        </select>
+                    </div>
+
+                    <!-- Tiêu đề ngắn gọn -->
+                    <div>
+                        <label for="title" class="form-label fw-semibold text-dark">Tiêu đề sự cố <span class="text-danger">*</span></label>
+                        <input type="text" id="title" name="title" class="form-control" required
+                               placeholder="Ví dụ: Bóng đèn bàn học bị cháy, vòi nước rò rỉ..."/>
+                    </div>
+
+                    <!-- Mức độ khẩn cấp -->
+                    <div>
+                        <label for="severity" class="form-label fw-semibold text-dark">Mức độ khẩn cấp <span class="text-danger">*</span></label>
+                        <select id="severity" name="severity" class="form-select" required>
+                            <option value="NORMAL">Bình thường (xử lý trong 24 - 48h làm việc)</option>
+                            <option value="URGENT">Cần gấp (trong ngày làm việc)</option>
+                            <option value="CRITICAL">Nguy hiểm / Khẩn cấp (rò rỉ điện, tràn nước, mất an toàn)</option>
+                        </select>
+                    </div>
+
+                    <!-- Mô tả chi tiết -->
+                    <div>
+                        <label for="description" class="form-label fw-semibold text-dark">Mô tả hiện trạng chi tiết <span class="text-danger">*</span></label>
+                        <textarea id="description" name="description" class="form-control" rows="4" required
+                                  placeholder="Mô tả cụ thể biểu hiện hư hỏng, thời điểm phát hiện sự cố..."></textarea>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 small text-muted">
+                        <i class="bi bi-info-circle text-primary me-1"></i>
+                        Đội kỹ thuật KTX sẽ liên hệ qua số điện thoại của bạn trước khi đến kiểm tra tại phòng.
+                    </div>
+
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 mt-2">
+                        <i class="bi bi-send me-1"></i>Gửi phiếu báo hỏng
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lưu ý an toàn & Hotline -->
+        <div class="col-lg-5">
+            <div class="ktx-card mb-4">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Khuyến cáo an toàn</h2>
+                </div>
+                <ul class="small list-unstyled d-flex flex-column gap-2 mb-0 text-secondary">
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-dot text-danger fs-4 mt-n2"></i>
+                        <span>Tuyệt đối <strong>không tự ý tháo dỡ, câu nối dây điện</strong> hoặc tự ý thay thế aptomat trong phòng.</span>
+                    </li>
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-dot text-danger fs-4 mt-n2"></i>
+                        <span>Nếu phát hiện mùi khét, chập điện hoặc rò rỉ nước lớn, hãy <strong>ngắt ngay aptomat tổng</strong> của phòng.</span>
+                    </li>
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-dot text-danger fs-4 mt-n2"></i>
+                        <span>Báo cáo trung thực tình trạng hỏng do hao mòn tự nhiên hay va đập để làm căn cứ miễn trừ bồi thường.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="ktx-card">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-telephone-inbound me-2 text-danger"></i>Đường dây nóng khẩn cấp 24/7</h2>
+                </div>
+                <div class="small">
+                    <div class="mb-2"><strong class="text-dark">Hotline Kỹ thuật KTX:</strong> <span class="text-danger fw-bold">024.3754.9999</span></div>
+                    <div class="mb-2"><strong class="text-dark">Phòng Bảo vệ thường trực:</strong> 024.3754.8888</div>
+                    <div class="text-muted mt-2">Dùng cho các trường hợp khẩn cấp ban đêm hoặc nguy cơ chập cháy.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
