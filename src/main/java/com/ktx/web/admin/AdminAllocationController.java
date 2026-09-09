@@ -23,6 +23,7 @@ import com.ktx.domain.enums.PeriodStatus;
 import com.ktx.repository.RoomApplicationRepository;
 import com.ktx.security.KtxUserDetails;
 import com.ktx.service.AllocationService;
+import com.ktx.service.ContractService;
 
 @Controller
 @RequestMapping("/admin/allocations")
@@ -31,11 +32,14 @@ public class AdminAllocationController {
 
     private final AllocationService allocationService;
     private final RoomApplicationRepository roomApplicationRepository;
+    private final ContractService contractService;
 
     public AdminAllocationController(AllocationService allocationService,
-                                     RoomApplicationRepository roomApplicationRepository) {
+                                     RoomApplicationRepository roomApplicationRepository,
+                                     ContractService contractService) {
         this.allocationService = allocationService;
         this.roomApplicationRepository = roomApplicationRepository;
+        this.contractService = contractService;
     }
 
     @GetMapping
@@ -97,6 +101,48 @@ public class AdminAllocationController {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi chạy phân bổ: " + ex.getMessage());
             return "redirect:/admin/allocations?periodId=" + id;
         }
+    }
+
+    @PostMapping("/periods/{id}/commit")
+    public String commit(@PathVariable("id") Long id,
+                         Authentication authentication,
+                         RedirectAttributes redirectAttributes) {
+        try {
+            Long adminUserId = null;
+            if (authentication != null && authentication.getPrincipal() instanceof KtxUserDetails userDetails) {
+                adminUserId = userDetails.getUser().getId();
+            }
+
+            AllocationRun run = allocationService.commit(id, adminUserId);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã chốt phân bổ thành công (Lượt #" + run.getId() + "). Toàn bộ giường đã được khóa và tạo hợp đồng nháp (DRAFT).");
+            return "redirect:/admin/allocations/runs/" + run.getId();
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/admin/allocations?periodId=" + id;
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi chốt phân bổ: " + ex.getMessage());
+            return "redirect:/admin/allocations?periodId=" + id;
+        }
+    }
+
+    @PostMapping("/contracts/{contractId}/cancel-draft")
+    public String cancelDraft(@PathVariable("contractId") Long contractId,
+                              @RequestParam(value = "runId", required = false) Long runId,
+                              RedirectAttributes redirectAttributes) {
+        try {
+            contractService.cancelDraft(contractId);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã hủy hợp đồng nháp và nhả giường thành công.");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi hủy hợp đồng nháp: " + ex.getMessage());
+        }
+
+        if (runId != null) {
+            return "redirect:/admin/allocations/runs/" + runId;
+        }
+        return "redirect:/admin/allocations";
     }
 
     @GetMapping("/runs/{runId}")

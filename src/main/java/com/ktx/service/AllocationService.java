@@ -25,4 +25,9 @@ public interface AllocationService {
     List<RegistrationPeriod> getAvailablePeriods();
 
     RegistrationPeriod getPeriod(Long periodId);
+
+    /**
+     * Chốt phân bổ chính thức: tính lại engine, khóa giường (OCCUPIED), tạo HĐ DRAFT, cập nhật ApplicationStatus (§6.3.6)
+     */
+    AllocationRun commit(Long periodId, Long adminUserId);
 }

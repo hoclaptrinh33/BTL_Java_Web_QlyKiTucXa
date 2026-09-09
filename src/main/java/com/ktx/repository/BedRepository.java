@@ -33,5 +33,17 @@ public interface BedRepository extends JpaRepository<Bed, Long> {
             ORDER BY r.floor DESC, r.roomNumber ASC, b.bedCode ASC
             """)
     List<Bed> findByBuildingId(@org.springframework.data.repository.query.Param("buildingId") Long buildingId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Bed b SET b.status = com.ktx.domain.enums.BedStatus.OCCUPIED, b.currentContractId = :contractId WHERE b.id = :bedId AND b.status = com.ktx.domain.enums.BedStatus.VACANT")
+    int occupyBed(@org.springframework.data.repository.query.Param("bedId") Long bedId, @org.springframework.data.repository.query.Param("contractId") Long contractId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Bed b SET b.status = com.ktx.domain.enums.BedStatus.VACANT, b.currentContractId = null WHERE b.id = :bedId AND b.status = com.ktx.domain.enums.BedStatus.OCCUPIED")
+    int vacateBed(@org.springframework.data.repository.query.Param("bedId") Long bedId);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Bed b WHERE b.id IN :ids ORDER BY b.id ASC")
+    List<Bed> findByIdInForUpdate(@org.springframework.data.repository.query.Param("ids") java.util.Collection<Long> ids);
 }
 

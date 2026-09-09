@@ -33,6 +33,7 @@ import com.ktx.domain.enums.PeriodStatus;
 import com.ktx.repository.RoomApplicationRepository;
 import com.ktx.security.KtxUserDetails;
 import com.ktx.service.AllocationService;
+import com.ktx.service.ContractService;
 
 @ExtendWith(MockitoExtension.class)
 class AdminAllocationControllerTest {
@@ -42,6 +43,9 @@ class AdminAllocationControllerTest {
 
     @Mock
     private RoomApplicationRepository roomApplicationRepository;
+
+    @Mock
+    private ContractService contractService;
 
     @Mock
     private Authentication authentication;
@@ -56,7 +60,7 @@ class AdminAllocationControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new AdminAllocationController(allocationService, roomApplicationRepository);
+        controller = new AdminAllocationController(allocationService, roomApplicationRepository, contractService);
 
         adminUser = new User();
         adminUser.setId(1L);
@@ -153,6 +157,35 @@ class AdminAllocationControllerTest {
 
         assertEquals("redirect:/admin/allocations?periodId=10", view);
         verify(allocationService).discardRun(88L);
+        assertTrue(redirectAttributes.getFlashAttributes().containsKey("successMessage"));
+    }
+
+    @Test
+    @DisplayName("commit() gọi allocationService.commit và redirect về kết quả lượt chạy")
+    void commit_success() {
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+        when(userDetails.getUser()).thenReturn(adminUser);
+
+        AllocationRun run = new AllocationRun();
+        run.setId(99L);
+        when(allocationService.commit(eq(10L), eq(1L))).thenReturn(run);
+
+        RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+        String view = controller.commit(10L, authentication, redirectAttributes);
+
+        assertEquals("redirect:/admin/allocations/runs/99", view);
+        assertTrue(redirectAttributes.getFlashAttributes().containsKey("successMessage"));
+        verify(allocationService).commit(10L, 1L);
+    }
+
+    @Test
+    @DisplayName("cancelDraft() gọi contractService.cancelDraft và redirect về runDetail nếu có runId")
+    void cancelDraft_success() {
+        RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+        String view = controller.cancelDraft(50L, 99L, redirectAttributes);
+
+        assertEquals("redirect:/admin/allocations/runs/99", view);
+        verify(contractService).cancelDraft(50L);
         assertTrue(redirectAttributes.getFlashAttributes().containsKey("successMessage"));
     }
 }
