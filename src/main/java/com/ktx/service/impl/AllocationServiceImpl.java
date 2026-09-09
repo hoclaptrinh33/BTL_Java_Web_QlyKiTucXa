@@ -9,7 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ktx.common.exception.BusinessException;
 import com.ktx.domain.AllocationItem;
 import com.ktx.domain.AllocationRun;
+import com.ktx.domain.Bed;
+import com.ktx.domain.Contract;
 import com.ktx.domain.RegistrationPeriod;
+import com.ktx.domain.RoomApplication;
 import com.ktx.domain.SystemConfig;
 import com.ktx.domain.enums.AllocationResult;
 import com.ktx.domain.enums.AllocationRunStatus;
@@ -39,6 +42,9 @@ public class AllocationServiceImpl implements AllocationService {
     private final ContractService contractService;
     private final BedRepository bedRepository;
     private final RoomApplicationRepository roomApplicationRepository;
+    private final com.ktx.repository.StudentRepository studentRepository;
+    private final com.ktx.repository.SystemLockRepository systemLockRepository;
+    private final com.ktx.repository.ContractRepository contractRepository;
 
     public AllocationServiceImpl(AllocationEngine allocationEngine,
                                  AllocationRunRepository allocationRunRepository,
@@ -48,7 +54,10 @@ public class AllocationServiceImpl implements AllocationService {
                                  SystemConfigRepository systemConfigRepository,
                                  ContractService contractService,
                                  BedRepository bedRepository,
-                                 RoomApplicationRepository roomApplicationRepository) {
+                                 RoomApplicationRepository roomApplicationRepository,
+                                 com.ktx.repository.StudentRepository studentRepository,
+                                 com.ktx.repository.SystemLockRepository systemLockRepository,
+                                 com.ktx.repository.ContractRepository contractRepository) {
         this.allocationEngine = allocationEngine;
         this.allocationRunRepository = allocationRunRepository;
         this.allocationItemRepository = allocationItemRepository;
@@ -58,6 +67,9 @@ public class AllocationServiceImpl implements AllocationService {
         this.contractService = contractService;
         this.bedRepository = bedRepository;
         this.roomApplicationRepository = roomApplicationRepository;
+        this.studentRepository = studentRepository;
+        this.systemLockRepository = systemLockRepository;
+        this.contractRepository = contractRepository;
     }
 
     @Override
@@ -293,6 +305,79 @@ public class AllocationServiceImpl implements AllocationService {
         periodRepository.save(period);
 
         return savedRun;
+    }
+
+    @Override
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    public Contract assignManual(Long studentId, Long bedId, Long periodId, String note) {
+        if (studentId == null || bedId == null) {
+            throw new BusinessException("Mã sinh viên và mã giường là bắt buộc");
+        }
+
+        // 1. Khóa phân bổ: theo periodId hoặc theo system_locks.ALLOCATION (§6.3.6 bước 9)
+        RegistrationPeriod period = null;
+        if (periodId != null) {
+            period = periodRepository.findByIdForUpdate(periodId)
+                    .orElseThrow(() -> new BusinessException("Không tìm thấy đợt đăng ký #" + periodId));
+        } else {
+            systemLockRepository.findByLockNameForUpdate("ALLOCATION")
+                    .orElseThrow(() -> new BusinessException("Không tìm thấy khóa hệ thống phân bổ ALLOCATION"));
+        }
+
+        // 2. Khóa giường ORDER BY id (§6.3.6 bước 9)
+        Bed bed = bedRepository.findByIdForUpdate(bedId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy giường #" + bedId));
+
+        if (bed.getStatus() != com.ktx.domain.enums.BedStatus.VACANT) {
+            throw new BusinessException("Giường " + bed.getBedCode() + " không ở trạng thái trống (VACANT)");
+        }
+
+        // 3. Kiểm tra sinh viên
+        com.ktx.domain.Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy sinh viên #" + studentId));
+
+        if (Boolean.TRUE.equals(student.getBlockedFromHousing())) {
+            throw new BusinessException("Sinh viên " + student.getStudentCode() + " đang bị chặn đăng ký chỗ ở");
+        }
+
+        if (contractRepository.existsByStudentIdAndStatusIn(studentId, com.ktx.common.util.OccupyingStatuses.OCCUPYING)) {
+            throw new BusinessException("Sinh viên " + student.getStudentCode() + " đang có hợp đồng lưu trú (OCCUPYING)");
+        }
+
+        // 4. Kiểm tra giới tính tòa (§6.3.2 quy tắc 5 & 95)
+        if (bed.getRoom() != null && bed.getRoom().getBuilding() != null && bed.getRoom().getBuilding().getGenderPolicy() != null) {
+            com.ktx.domain.enums.BuildingGenderPolicy policy = bed.getRoom().getBuilding().getGenderPolicy();
+            if (policy == com.ktx.domain.enums.BuildingGenderPolicy.MALE && student.getGender() != com.ktx.domain.enums.Gender.MALE) {
+                throw new BusinessException("Tòa " + bed.getRoom().getBuilding().getCode() + " chỉ dành cho sinh viên Nam");
+            }
+            if (policy == com.ktx.domain.enums.BuildingGenderPolicy.FEMALE && student.getGender() != com.ktx.domain.enums.Gender.FEMALE) {
+                throw new BusinessException("Tòa " + bed.getRoom().getBuilding().getCode() + " chỉ dành cho sinh viên Nữ");
+            }
+        }
+
+        // 5. Xác định kỳ hạn hợp đồng
+        java.time.LocalDate termStart;
+        java.time.LocalDate termEnd;
+        if (period != null && period.getTermStart() != null && period.getTermEnd() != null) {
+            termStart = period.getTermStart();
+            termEnd = period.getTermEnd();
+        } else {
+            termStart = java.time.LocalDate.now();
+            termEnd = termStart.plusMonths(5);
+        }
+
+        // 6. Tìm đơn nếu có trong đợt
+        RoomApplication app = null;
+        if (periodId != null) {
+            app = roomApplicationRepository.findByPeriodIdAndStudentId(periodId, studentId).orElse(null);
+            if (app != null) {
+                app.setStatus(ApplicationStatus.ALLOCATED);
+                roomApplicationRepository.save(app);
+            }
+        }
+
+        // 7. Tạo HĐ DRAFT và chuyển giường OCCUPIED
+        return contractService.createDraft(student, bed, app, termStart, termEnd);
     }
 
     private String serializeWeightsJson(int policy, int remote, int prevGood, String mode) {

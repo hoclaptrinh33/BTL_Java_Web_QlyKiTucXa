@@ -33,6 +33,8 @@ public interface RoomApplicationRepository extends JpaRepository<RoomApplication
 
     boolean existsByPeriodIdAndStudentId(Long periodId, Long studentId);
 
+    java.util.Optional<RoomApplication> findByPeriodIdAndStudentId(Long periodId, Long studentId);
+
     @Query("""
             SELECT a FROM RoomApplication a
             JOIN FETCH a.student s

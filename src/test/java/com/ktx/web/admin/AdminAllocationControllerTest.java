@@ -24,7 +24,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 import com.ktx.domain.AllocationItem;
 import com.ktx.domain.AllocationRun;
+import com.ktx.domain.Contract;
 import com.ktx.domain.RegistrationPeriod;
+import com.ktx.domain.Student;
 import com.ktx.domain.User;
 import com.ktx.domain.enums.AllocationResult;
 import com.ktx.domain.enums.AllocationRunStatus;
@@ -187,5 +189,39 @@ class AdminAllocationControllerTest {
         assertEquals("redirect:/admin/allocations/runs/99", view);
         verify(contractService).cancelDraft(50L);
         assertTrue(redirectAttributes.getFlashAttributes().containsKey("successMessage"));
+    }
+
+    @Test
+    @DisplayName("assignManual() gọi allocationService.assignManual và redirect về allocations")
+    void assignManual_success() {
+        Student student = new Student();
+        student.setId(123L);
+        student.setFullName("Nguyen Van A");
+
+        Contract contract = new Contract();
+        contract.setContractNo("HD-2026-000001");
+        contract.setStudent(student);
+
+        when(allocationService.assignManual(eq(123L), eq(456L), eq(10L), eq("Note"))).thenReturn(contract);
+
+        RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+        String view = controller.assignManual(123L, 456L, 10L, "Note", redirectAttributes);
+
+        assertEquals("redirect:/admin/allocations?periodId=10", view);
+        verify(allocationService).assignManual(123L, 456L, 10L, "Note");
+        assertTrue(redirectAttributes.getFlashAttributes().containsKey("successMessage"));
+    }
+
+    @Test
+    @DisplayName("assignManual() xử lý BusinessException và redirect với errorMessage")
+    void assignManual_businessException() {
+        when(allocationService.assignManual(eq(123L), eq(456L), eq(10L), any()))
+                .thenThrow(new com.ktx.common.exception.BusinessException("Giường đã có người"));
+
+        RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+        String view = controller.assignManual(123L, 456L, 10L, null, redirectAttributes);
+
+        assertEquals("redirect:/admin/allocations?periodId=10", view);
+        assertTrue(redirectAttributes.getFlashAttributes().containsKey("errorMessage"));
     }
 }

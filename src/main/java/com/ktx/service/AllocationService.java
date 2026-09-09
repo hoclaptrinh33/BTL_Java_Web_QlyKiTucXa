@@ -30,4 +30,12 @@ public interface AllocationService {
      * Chốt phân bổ chính thức: tính lại engine, khóa giường (OCCUPIED), tạo HĐ DRAFT, cập nhật ApplicationStatus (§6.3.6)
      */
     AllocationRun commit(Long periodId, Long adminUserId);
+
+    /**
+     * Gán tay sinh viên vào giường cụ thể (§6.3.6 bước 9)
+     * - Có periodId: khóa đợt đó bằng FOR UPDATE
+     * - Không có periodId: khóa system_locks.ALLOCATION
+     * - Khóa giường, kiểm tra giới tính tòa, sinh viên chưa OCCUPYING, tạo HĐ và chuyển giường OCCUPIED
+     */
+    com.ktx.domain.Contract assignManual(Long studentId, Long bedId, Long periodId, String note);
 }

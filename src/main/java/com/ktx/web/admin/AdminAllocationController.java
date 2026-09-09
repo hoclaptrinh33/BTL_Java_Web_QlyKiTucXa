@@ -16,6 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.ktx.common.exception.BusinessException;
 import com.ktx.domain.AllocationItem;
 import com.ktx.domain.AllocationRun;
+import com.ktx.domain.Contract;
 import com.ktx.domain.RegistrationPeriod;
 import com.ktx.domain.enums.AllocationResult;
 import com.ktx.domain.enums.ApplicationStatus;
@@ -141,6 +142,28 @@ public class AdminAllocationController {
 
         if (runId != null) {
             return "redirect:/admin/allocations/runs/" + runId;
+        }
+        return "redirect:/admin/allocations";
+    }
+
+    @PostMapping("/assign-manual")
+    public String assignManual(@RequestParam("studentId") Long studentId,
+                               @RequestParam("bedId") Long bedId,
+                               @RequestParam(value = "periodId", required = false) Long periodId,
+                               @RequestParam(value = "note", required = false) String note,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            Contract contract = allocationService.assignManual(studentId, bedId, periodId, note);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Gán tay thành công! Đã tạo hợp đồng nháp " + contract.getContractNo() + " cho sinh viên " + contract.getStudent().getFullName());
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi gán tay: " + ex.getMessage());
+        }
+
+        if (periodId != null) {
+            return "redirect:/admin/allocations?periodId=" + periodId;
         }
         return "redirect:/admin/allocations";
     }

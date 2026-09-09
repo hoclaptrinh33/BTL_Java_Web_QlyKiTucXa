@@ -37,8 +37,17 @@ public class ContractServiceImpl implements ContractService {
     @Override
     @Transactional
     public Contract createDraftFromAllocation(RoomApplication app, Bed bed, LocalDate termStart, LocalDate termEnd) {
-        if (app == null || bed == null || termStart == null || termEnd == null) {
-            throw new BusinessException("Thông tin đơn, giường hoặc thời hạn kỳ không hợp lệ");
+        if (app == null) {
+            throw new BusinessException("Thông tin đơn không hợp lệ");
+        }
+        return createDraft(app.getStudent(), bed, app, termStart, termEnd);
+    }
+
+    @Override
+    @Transactional
+    public Contract createDraft(com.ktx.domain.Student student, Bed bed, RoomApplication app, LocalDate termStart, LocalDate termEnd) {
+        if (student == null || bed == null || termStart == null || termEnd == null) {
+            throw new BusinessException("Thông tin sinh viên, giường hoặc thời hạn kỳ không hợp lệ");
         }
 
         BigDecimal pricePerTerm = BigDecimal.ZERO;
@@ -54,7 +63,7 @@ public class ContractServiceImpl implements ContractService {
 
         Contract contract = new Contract();
         contract.setContractNo(contractNo);
-        contract.setStudent(app.getStudent());
+        contract.setStudent(student);
         contract.setBed(bed);
         contract.setApplication(app);
         contract.setStartDate(termStart);

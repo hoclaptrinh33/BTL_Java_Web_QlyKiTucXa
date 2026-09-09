@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/ktx?sslMode=DISABLED&characterEncoding=utf8
+    username: ${KTX_DB_USER:ktx}
+    password: ${KTX_DB_PASSWORD:ktx}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false

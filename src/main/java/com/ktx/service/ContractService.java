@@ -14,6 +14,11 @@ public interface ContractService {
     Contract createDraftFromAllocation(RoomApplication app, Bed bed, LocalDate termStart, LocalDate termEnd);
 
     /**
+     * Tạo hợp đồng DRAFT cho sinh viên và khóa giường sang OCCUPIED
+     */
+    Contract createDraft(com.ktx.domain.Student student, Bed bed, RoomApplication app, LocalDate termStart, LocalDate termEnd);
+
+    /**
      * Hủy hợp đồng DRAFT và nhả giường về VACANT
      */
     void cancelDraft(Long contractId);
