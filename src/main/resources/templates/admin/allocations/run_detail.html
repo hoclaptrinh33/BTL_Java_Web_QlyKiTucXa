@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <!-- Thanh tiêu đề & Nút hành động cốt lõi (§24.8.3 wireframe) -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                        <a th:href="@{/admin/allocations(periodId=${period.id})}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>Danh sách đợt
+                        </a>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fs-6 fw-semibold">
+                            <i class="bi bi-calendar3 me-1"></i><span th:text="${period.name}">Đợt Tân SV 2026-2027</span>
+                        </span>
+                        <span th:if="${run.dryRun}" class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-3 py-2 fs-6">
+                            <i class="bi bi-eye me-1"></i>Xem trước phân bổ (Dry-run #<span th:text="${run.id}">1</span>)
+                        </span>
+                        <span th:unless="${run.dryRun}" class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-3 py-2 fs-6">
+                            <i class="bi bi-check-circle me-1"></i>Chính thức (Commit #<span th:text="${run.id}">1</span>)
+                        </span>
+                        <span class="badge" th:classappend="${run.status != null and run.status.name() == 'DISCARDED' ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success'}"
+                              th:text="${run.status}">COMPLETED</span>
+                    </div>
+
+                    <div class="text-muted small mt-2">
+                        <span class="badge bg-secondary-subtle text-secondary me-2">SOFT Mode</span>
+                        <span class="text-secondary fw-semibold">Trọng số: </span>
+                        <code>Policy=1000 · Remote=500 · PrevGood=200</code>
+                        <span class="mx-2">·</span>
+                        <i class="bi bi-clock me-1"></i>Chạy lúc: <span th:text="${run.finishedAt != null ? #temporals.format(run.finishedAt, 'dd/MM/yyyy HH:mm:ss') : '-'}">01/09/2026</span>
+                        <span th:if="${run.runBy != null}">
+                            <span class="mx-2">·</span>
+                            <i class="bi bi-person me-1"></i>Bởi: <strong th:text="${run.runBy.username}">Admin</strong>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Nhóm nút hành động: Xem trước lại / Chốt phân bổ -->
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Nút chạy lại Preview -->
+                    <form th:action="@{/admin/allocations/periods/{id}/preview(id=${period.id})}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-primary shadow-sm">
+                            <i class="bi bi-arrow-repeat me-1"></i>Chạy lại Preview
+                        </button>
+                    </form>
+
+                    <!-- Nút Chốt phân bổ... (Mở modal xác nhận theo §24.8.3) -->
+                    <button type="button" class="btn btn-primary px-3 shadow-sm"
+                            data-bs-toggle="modal" data-bs-target="#commitModal"
+                            th:disabled="${run.status != null and run.status.name() == 'DISCARDED'}">
+                        <i class="bi bi-check-all me-1"></i>Chốt phân bổ…
+                    </button>
+
+                    <!-- Nút Hủy lượt chạy -->
+                    <form th:if="${run.status != null and run.status.name() != 'DISCARDED' and run.dryRun}"
+                          th:action="@{/admin/allocations/runs/{id}/discard(id=${run.id})}" method="post"
+                          data-confirm="Bạn chắc chắn muốn hủy kết quả xem trước phân bổ này?"
+                          data-confirm-title="Hủy kết quả Preview"
+                          data-confirm-type="warning"
+                          class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger shadow-sm" title="Đánh dấu hủy kết quả preview">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Banner cảnh báo Dry-run -->
+            <div th:if="${run.dryRun}" class="alert alert-info border-0 mt-3 mb-0 py-2 px-3 small d-flex align-items-center gap-2">
+                <i class="bi bi-info-circle-fill text-info flex-shrink-0"></i>
+                <span><strong>Chế độ xem trước (Dry-run):</strong> Toàn bộ giường và đơn đăng ký <u>chưa bị khóa hay thay đổi</u> trong cơ sở dữ liệu. Bạn có thể kiểm tra danh sách bên dưới trước khi chốt.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hàng thống kê tổng quan -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase">Tổng ứng viên</span>
+                            <h3 class="fw-bold text-dark mb-0 mt-1" th:text="${totalCount}">0</h3>
+                        </div>
+                        <div class="bg-primary-subtle text-primary rounded-circle p-3">
+                            <i class="bi bi-people fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase">Được gán giường</span>
+                            <h3 class="fw-bold text-success mb-0 mt-1" th:text="${assignedCount}">0</h3>
+                        </div>
+                        <div class="bg-success-subtle text-success rounded-circle p-3">
+                            <i class="bi bi-check2-circle fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase">Vào danh sách chờ</span>
+                            <h3 class="fw-bold text-warning mb-0 mt-1" th:text="${waitlistCount}">0</h3>
+                        </div>
+                        <div class="bg-warning-subtle text-warning rounded-circle p-3">
+                            <i class="bi bi-hourglass-split fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase">Bị loại / Bỏ qua</span>
+                            <h3 class="fw-bold text-danger mb-0 mt-1" th:text="${skippedCount}">0</h3>
+                        </div>
+                        <div class="bg-danger-subtle text-danger rounded-circle p-3">
+                            <i class="bi bi-slash-circle fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng phân bổ chi tiết theo xếp hạng (§24.8.3 Wireframe cốt lõi) -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="bi bi-list-ol me-2 text-primary"></i>Bảng xếp hạng và giường dự kiến
+            </h5>
+            <div class="small text-muted">
+                <span class="badge bg-light text-dark border me-1"><i class="bi bi-circle-fill text-success me-1" style="font-size: 8px;"></i>Gán đúng</span>
+                <span class="badge bg-light text-dark border me-1"><i class="bi bi-circle-fill text-warning me-1" style="font-size: 8px;"></i>Nới nguyện vọng (SOFT)</span>
+                <span class="badge bg-light text-dark border"><i class="bi bi-circle-fill text-secondary me-1" style="font-size: 8px;"></i>Chờ phòng / Bỏ qua</span>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <div th:if="${#lists.isEmpty(items)}" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                <p class="mb-0">Không có dữ liệu phân bổ nào trong lượt chạy này.</p>
+            </div>
+
+            <div th:if="${!#lists.isEmpty(items)}" class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4 text-center" style="width: 6%">Hạng</th>
+                            <th style="width: 8%">Điểm</th>
+                            <th style="width: 22%">Sinh viên</th>
+                            <th style="width: 16%">Snapshot ưu tiên</th>
+                            <th style="width: 16%">Nguyện vọng</th>
+                            <th style="width: 18%">Giường dự kiến</th>
+                            <th class="text-end pe-4" style="width: 14%">Kết quả & Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Mỗi dòng ứng viên -->
+                        <tr th:each="it : ${items}"
+                            th:classappend="${it.result != null and it.result.name() == 'ASSIGNED' and it.reason != null and #strings.startsWith(it.reason, 'RELAXED') ? 'table-warning bg-warning-subtle' : (it.result != null and it.result.name() == 'WAITLISTED' ? 'table-light' : '')}">
+                            
+                            <!-- Hạng -->
+                            <td class="ps-4 text-center">
+                                <span class="badge rounded-pill"
+                                      th:classappend="${it.rankNo <= 3 ? 'bg-primary' : 'bg-secondary'}"
+                                      th:text="${it.rankNo}">1</span>
+                            </td>
+
+                            <!-- Điểm -->
+                            <td>
+                                <strong class="fs-6 text-primary font-monospace" th:text="${it.score} + 'đ'">1200đ</strong>
+                            </td>
+
+                            <!-- Sinh viên -->
+                            <td>
+                                <div class="fw-bold text-dark" th:text="${it.student != null ? it.student.fullName : '-'}">Nguyễn Văn A</div>
+                                <div class="small text-muted">
+                                    <span class="font-monospace fw-semibold" th:text="${it.student != null ? it.student.studentCode : ''}">SV001</span>
+                                    <span th:if="${it.student != null and it.student.gender != null}">
+                                        · <span th:text="${it.student.gender.name() == 'MALE' ? 'Nam' : 'Nữ'}">Nam</span>
+                                    </span>
+                                    <span th:if="${it.student != null and it.student.classCode != null}">
+                                        · Lớp: <span th:text="${it.student.classCode}">CNTT1</span>
+                                    </span>
+                                    <span th:if="${it.student != null and it.student.facultyCode != null}">
+                                        · Khoa: <span th:text="${it.student.facultyCode}">IT</span>
+                                    </span>
+                                </div>
+                            </td>
+
+                            <!-- Snapshot ưu tiên -->
+                            <td>
+                                <div class="small">
+                                    <span th:if="${it.application != null and it.application.prioritySnapshot != null}">
+                                        <span th:if="${it.application.prioritySnapshot.name() == 'POLICY'}" class="badge bg-danger-subtle text-danger border border-danger-subtle">Chính sách (+1000)</span>
+                                        <span th:if="${it.application.prioritySnapshot.name() == 'REMOTE_AREA'}" class="badge bg-info-subtle text-info border border-info-subtle">Vùng sâu (+500)</span>
+                                        <span th:if="${it.application.prioritySnapshot.name() == 'NONE'}" class="badge bg-light text-muted border">Bình thường</span>
+                                    </span>
+                                    <span th:if="${it.application == null or it.application.prioritySnapshot == null}" class="badge bg-light text-muted border">Bình thường</span>
+                                </div>
+                                <div class="small text-muted mt-1" th:if="${it.application != null and it.application.previousStayGoodSnapshot}">
+                                    <i class="bi bi-star-fill text-warning me-1"></i>Lịch sử tốt (+200)
+                                </div>
+                            </td>
+
+                            <!-- Nguyện vọng -->
+                            <td>
+                                <div class="small">
+                                    <strong>Tòa:</strong>
+                                    <span th:text="${it.application != null and it.application.preferredBuilding != null ? it.application.preferredBuilding.name : 'Tùy chọn'}">Tòa A</span>
+                                </div>
+                                <div class="small text-muted">
+                                    <strong>Loại:</strong>
+                                    <span th:text="${it.application != null and it.application.preferredRoomType != null ? (it.application.preferredRoomType.name() == 'STANDARD_4' ? '4 giường' : (it.application.preferredRoomType.name() == 'STANDARD_6' ? '6 giường' : (it.application.preferredRoomType.name() == 'STANDARD_8' ? '8 giường' : 'VIP'))) : 'Tùy chọn'}">6 giường</span>
+                                </div>
+                            </td>
+
+                            <!-- Giường dự kiến -->
+                            <td>
+                                <div th:if="${it.bed != null}">
+                                    <div class="fw-bold text-success d-flex align-items-center gap-1">
+                                        <i class="bi bi-door-open-fill"></i>
+                                        <span th:text="${it.bed.room != null and it.bed.room.building != null ? it.bed.room.building.code : ''}">A</span> - 
+                                        Phòng <span th:text="${it.bed.room != null ? it.bed.room.roomNumber : ''}">101</span>
+                                    </div>
+                                    <div class="small text-muted font-monospace">
+                                        Giường: <span class="badge bg-success-subtle text-success border border-success-subtle" th:text="${it.bed.bedCode}">G1</span>
+                                        <span th:if="${it.bed.room != null and it.bed.room.roomType != null}" class="text-secondary"
+                                              th:text="'(' + ${it.bed.room.roomType.name()} + ')'"></span>
+                                    </div>
+                                </div>
+                                <div th:if="${it.bed == null}">
+                                    <span class="text-muted fst-italic">— Chưa có giường —</span>
+                                </div>
+                            </td>
+
+                            <!-- Kết quả & Ghi chú nới lỏng -->
+                            <td class="text-end pe-4">
+                                <!-- Trạng thái ASSIGNED -->
+                                <div th:if="${it.result != null and it.result.name() == 'ASSIGNED'}">
+                                    <span class="badge bg-success px-2 py-1">
+                                        <i class="bi bi-check-lg me-1"></i>Gán phòng
+                                    </span>
+                                    <!-- Chú thích nới SOFT (§24.8.3: "đã bỏ tòa", "đã bỏ loại") -->
+                                    <div th:if="${it.reason != null and it.reason == 'RELAXED_BUILDING'}" class="small text-warning-emphasis mt-1 fw-semibold">
+                                        <i class="bi bi-exclamation-circle me-1"></i>Đã bỏ tòa
+                                    </div>
+                                    <div th:if="${it.reason != null and it.reason == 'RELAXED_ROOM_TYPE'}" class="small text-warning-emphasis mt-1 fw-semibold">
+                                        <i class="bi bi-exclamation-circle me-1"></i>Đã bỏ loại phòng
+                                    </div>
+                                    <div th:if="${it.reason != null and it.reason == 'RELAXED_BOTH'}" class="small text-warning-emphasis mt-1 fw-semibold">
+                                        <i class="bi bi-exclamation-circle me-1"></i>Đã bỏ tòa & loại phòng
+                                    </div>
+                                </div>
+
+                                <!-- Trạng thái WAITLISTED -->
+                                <div th:if="${it.result != null and it.result.name() == 'WAITLISTED'}">
+                                    <span class="badge bg-warning text-dark px-2 py-1">
+                                        <i class="bi bi-hourglass-split me-1"></i>Chờ chỗ
+                                    </span>
+                                    <div class="small text-muted mt-1">
+                                        <span th:if="${it.reason == 'NO_VACANT_BED'}">Hết giường trống</span>
+                                        <span th:if="${it.reason == 'NO_TYPE_MATCH'}">Hết phòng đúng loại</span>
+                                        <span th:if="${it.reason == 'NO_BUILDING_MATCH'}">Hết phòng đúng tòa</span>
+                                        <span th:if="${it.reason != null and it.reason != 'NO_VACANT_BED' and it.reason != 'NO_TYPE_MATCH' and it.reason != 'NO_BUILDING_MATCH'}"
+                                              th:text="${it.reason}">Lý do</span>
+                                    </div>
+                                </div>
+
+                                <!-- Trạng thái SKIPPED -->
+                                <div th:if="${it.result != null and it.result.name() == 'SKIPPED'}">
+                                    <span class="badge bg-danger px-2 py-1">
+                                        <i class="bi bi-x-circle me-1"></i>Bỏ qua
+                                    </span>
+                                    <div class="small text-danger mt-1">
+                                        <span th:if="${it.reason == 'SKIPPED_BLOCKED'}">Bị cấm ở KTX</span>
+                                        <span th:if="${it.reason == 'SKIPPED_ALREADY_HOUSED'}">Đã có hợp đồng</span>
+                                        <span th:if="${it.reason != null and it.reason != 'SKIPPED_BLOCKED' and it.reason != 'SKIPPED_ALREADY_HOUSED'}"
+                                              th:text="${it.reason}">Lý do</span>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xác nhận Chốt phân bổ (§24.8.3 wireframe chuẩn) -->
+    <div class="modal fade" id="commitModal" tabindex="-1" aria-labelledby="commitModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="commitModalLabel">
+                        <i class="bi bi-shield-lock-fill me-2"></i>Xác nhận Chốt phân bổ
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-warning border-0 d-flex align-items-start gap-2 mb-3">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 mt-1 text-warning flex-shrink-0"></i>
+                        <div>
+                            <strong>Lưu ý quan trọng (§24.8.3):</strong>
+                            <p class="mb-0 mt-1 small">
+                                Sẽ khóa giường và tạo hợp đồng nháp. Preview chỉ là tham khảo — hệ thống sẽ tính lại theo trạng thái giường thực tế lúc chốt.
+                            </p>
+                        </div>
+                    </div>
+
+                    <ul class="list-group list-group-flush small mb-3">
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Đợt phân bổ:</span>
+                            <strong th:text="${period.name}">Đợt Tân SV</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Tổng số ứng viên:</span>
+                            <span class="badge bg-primary" th:text="${totalCount}">0</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Số giường dự kiến gán:</span>
+                            <span class="badge bg-success" th:text="${assignedCount}">0</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Số đơn vào danh sách chờ:</span>
+                            <span class="badge bg-warning text-dark" th:text="${waitlistCount}">0</span>
+                        </li>
+                    </ul>
+
+                    <div class="p-3 bg-light rounded-3 text-secondary small">
+                        <i class="bi bi-info-circle me-1 text-primary"></i>
+                        Luồng tạo Hợp đồng DRAFT và cấp số hợp đồng qua <code>DocumentNumbersService</code> sẽ được kích hoạt ở <strong>Task #22</strong>.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-primary" disabled title="Chức năng Commit chính thức sẽ hoàn thiện ở Task #22">
+                        <i class="bi bi-check-circle me-1"></i>Chốt phân bổ (Task #22)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>
