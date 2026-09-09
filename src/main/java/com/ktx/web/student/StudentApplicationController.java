@@ -98,14 +98,22 @@ public class StudentApplicationController {
         }
 
         if (periodId == null) {
-            RegistrationPeriod openPeriod = periodRepository.findAllWithCreator().stream()
+            List<RegistrationPeriod> openPeriods = periodRepository.findAllWithCreator().stream()
                     .filter(p -> p.getStatus() == PeriodStatus.OPEN)
-                    .findFirst().orElse(null);
-            if (openPeriod == null) {
+                    .toList();
+            if (openPeriods.isEmpty()) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Hiện không có đợt đăng ký nào đang mở nhận đơn.");
                 return "redirect:/student/applications";
             }
-            periodId = openPeriod.getId();
+            RegistrationPeriod availablePeriod = openPeriods.stream()
+                    .filter(p -> !roomApplicationRepositoryExists(p.getId(), student.getId()))
+                    .findFirst().orElse(null);
+            if (availablePeriod != null) {
+                periodId = availablePeriod.getId();
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn đã nộp đơn cho tất cả các đợt đăng ký đang mở.");
+                return "redirect:/student/applications";
+            }
         }
 
         if (roomApplicationRepositoryExists(periodId, student.getId())) {
