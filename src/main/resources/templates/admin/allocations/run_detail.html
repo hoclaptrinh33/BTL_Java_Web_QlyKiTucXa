@@ -50,7 +50,7 @@
                     <!-- Nút Chốt phân bổ... (Mở modal xác nhận theo §24.8.3) -->
                     <button type="button" class="btn btn-primary px-3 shadow-sm"
                             data-bs-toggle="modal" data-bs-target="#commitModal"
-                            th:disabled="${run.status != null and run.status.name() == 'DISCARDED'}">
+                            th:disabled="${run.status != null and (run.status.name() == 'DISCARDED' or run.status.name() == 'COMMITTED')}">
                         <i class="bi bi-check-all me-1"></i>Chốt phân bổ…
                     </button>
 
@@ -269,8 +269,22 @@
                                     <div th:if="${it.reason != null and it.reason == 'RELAXED_ROOM_TYPE'}" class="small text-warning-emphasis mt-1 fw-semibold">
                                         <i class="bi bi-exclamation-circle me-1"></i>Đã bỏ loại phòng
                                     </div>
-                                    <div th:if="${it.reason != null and it.reason == 'RELAXED_BOTH'}" class="small text-warning-emphasis mt-1 fw-semibold">
-                                        <i class="bi bi-exclamation-circle me-1"></i>Đã bỏ tòa & loại phòng
+                                    <!-- Thao tác hợp đồng nháp khi đã chốt phân bổ (§PR-08 / Task 22) -->
+                                    <div th:if="${!run.dryRun and it.bed != null and it.bed.currentContractId != null}" class="mt-2">
+                                        <form th:action="@{/admin/allocations/contracts/{contractId}/cancel-draft(contractId=${it.bed.currentContractId}, runId=${run.id})}"
+                                              method="post" class="d-inline"
+                                              data-confirm="Bạn có chắc chắn muốn hủy hợp đồng nháp này và nhả giường về trạng thái trống (VACANT)?"
+                                              data-confirm-title="Hủy hợp đồng nháp"
+                                              data-confirm-type="danger">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.75rem;" title="Hủy hợp đồng nháp và nhả giường">
+                                                <i class="bi bi-x-circle me-1"></i>Hủy nháp
+                                            </button>
+                                        </form>
+                                    </div>
+                                    <div th:if="${!run.dryRun and it.bed != null and it.bed.currentContractId == null}" class="mt-1">
+                                        <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.75rem;">
+                                            <i class="bi bi-dash-circle me-1"></i>Đã nhả giường
+                                        </span>
                                     </div>
                                 </div>
 
@@ -350,14 +364,17 @@
 
                     <div class="p-3 bg-light rounded-3 text-secondary small">
                         <i class="bi bi-info-circle me-1 text-primary"></i>
-                        Luồng tạo Hợp đồng DRAFT và cấp số hợp đồng qua <code>DocumentNumbersService</code> sẽ được kích hoạt ở <strong>Task #22</strong>.
+                        Hệ thống sẽ chạy lại thuật toán phân bổ, cấp mã hợp đồng <code>HD-YYYY-000123</code> và chuyển giường thành <strong>OCCUPIED</strong>.
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                    <button type="button" class="btn btn-primary" disabled title="Chức năng Commit chính thức sẽ hoàn thiện ở Task #22">
-                        <i class="bi bi-check-circle me-1"></i>Chốt phân bổ (Task #22)
-                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <form th:action="@{/admin/allocations/periods/{id}/commit(id=${period.id})}" method="post">
+                        <button type="submit" class="btn btn-primary shadow-sm"
+                                th:disabled="${run.status != null and (run.status.name() == 'COMMITTED' or run.status.name() == 'DISCARDED')}">
+                            <i class="bi bi-shield-lock me-1"></i>Xác nhận Chốt phân bổ
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
