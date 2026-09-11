@@ -366,4 +366,13 @@ class AllocationServiceTest {
         assertThrows(BusinessException.class, () -> allocationService.commit(100L, 1L));
         verify(allocationEngine, never()).plan(any(Long.class));
     }
+
+    @Test
+    @DisplayName("commit() ném ngoại lệ khi không tìm thấy đợt đăng ký")
+    void commit_periodNotFound() {
+        when(periodRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
+
+        assertThrows(BusinessException.class, () -> allocationService.commit(999L, 1L));
+        verify(allocationEngine, never()).plan(any(Long.class));
+    }
 }

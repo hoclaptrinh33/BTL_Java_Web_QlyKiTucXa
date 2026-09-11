@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -179,6 +180,20 @@ class AdminAllocationControllerTest {
     }
 
     @Test
+    @DisplayName("commit() bắt BusinessException và lưu flash errorMessage")
+    void commit_businessException() {
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+        when(userDetails.getUser()).thenReturn(adminUser);
+        when(allocationService.commit(eq(10L), eq(1L))).thenThrow(new com.ktx.common.exception.BusinessException("Lỗi chốt phân bổ"));
+
+        RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+        String view = controller.commit(10L, authentication, redirectAttributes);
+
+        assertEquals("redirect:/admin/allocations?periodId=10", view);
+        assertEquals("Lỗi chốt phân bổ", redirectAttributes.getFlashAttributes().get("errorMessage"));
+    }
+
+    @Test
     @DisplayName("cancelDraft() gọi contractService.cancelDraft và redirect về runDetail nếu có runId")
     void cancelDraft_success() {
         RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
@@ -187,5 +202,28 @@ class AdminAllocationControllerTest {
         assertEquals("redirect:/admin/allocations/runs/99", view);
         verify(contractService).cancelDraft(50L);
         assertTrue(redirectAttributes.getFlashAttributes().containsKey("successMessage"));
+    }
+
+    @Test
+    @DisplayName("cancelDraft() chuyển về /admin/allocations nếu không có runId")
+    void cancelDraft_withoutRunId() {
+        RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+        String view = controller.cancelDraft(50L, null, redirectAttributes);
+
+        assertEquals("redirect:/admin/allocations", view);
+        verify(contractService).cancelDraft(50L);
+        assertTrue(redirectAttributes.getFlashAttributes().containsKey("successMessage"));
+    }
+
+    @Test
+    @DisplayName("cancelDraft() bắt BusinessException và lưu flash errorMessage")
+    void cancelDraft_businessException() {
+        doThrow(new com.ktx.common.exception.BusinessException("Không thể hủy HĐ")).when(contractService).cancelDraft(50L);
+
+        RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+        String view = controller.cancelDraft(50L, 99L, redirectAttributes);
+
+        assertEquals("redirect:/admin/allocations/runs/99", view);
+        assertEquals("Không thể hủy HĐ", redirectAttributes.getFlashAttributes().get("errorMessage"));
     }
 }
