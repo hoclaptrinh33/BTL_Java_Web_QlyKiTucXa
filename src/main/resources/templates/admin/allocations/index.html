@@ -22,8 +22,11 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-7 d-flex align-items-end justify-content-md-end">
-                    <a th:href="@{/admin/periods}" class="btn btn-outline-secondary me-2">
+                <div class="col-md-6 col-lg-7 d-flex align-items-end justify-content-md-end gap-2">
+                    <a th:href="@{/admin/allocations/manual(periodId=${selectedPeriodId})}" class="btn btn-outline-primary">
+                        <i class="bi bi-person-plus me-1"></i>Gán chỗ thủ công
+                    </a>
+                    <a th:href="@{/admin/periods}" class="btn btn-outline-secondary">
                         <i class="bi bi-gear me-1"></i>Quản lý các đợt
                     </a>
                 </div>

@@ -1,27 +1,40 @@
 package com.ktx.service.impl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ktx.common.exception.BusinessException;
+import com.ktx.common.util.OccupyingStatuses;
 import com.ktx.domain.AllocationItem;
 import com.ktx.domain.AllocationRun;
+import com.ktx.domain.Bed;
+import com.ktx.domain.Contract;
 import com.ktx.domain.RegistrationPeriod;
+import com.ktx.domain.Room;
+import com.ktx.domain.RoomApplication;
+import com.ktx.domain.Student;
 import com.ktx.domain.SystemConfig;
 import com.ktx.domain.enums.AllocationResult;
 import com.ktx.domain.enums.AllocationRunStatus;
 import com.ktx.domain.enums.ApplicationStatus;
+import com.ktx.domain.enums.BedStatus;
 import com.ktx.domain.enums.PeriodStatus;
 import com.ktx.dto.AllocationRunResult;
 import com.ktx.repository.AllocationItemRepository;
 import com.ktx.repository.AllocationRunRepository;
 import com.ktx.repository.BedRepository;
+import com.ktx.repository.ContractRepository;
 import com.ktx.repository.RegistrationPeriodRepository;
 import com.ktx.repository.RoomApplicationRepository;
+import com.ktx.repository.StudentRepository;
 import com.ktx.repository.SystemConfigRepository;
+import com.ktx.repository.SystemLockRepository;
 import com.ktx.repository.UserRepository;
 import com.ktx.service.AllocationEngine;
 import com.ktx.service.AllocationService;
@@ -29,6 +42,8 @@ import com.ktx.service.ContractService;
 
 @Service
 public class AllocationServiceImpl implements AllocationService {
+
+    private static final Logger log = LoggerFactory.getLogger(AllocationServiceImpl.class);
 
     private final AllocationEngine allocationEngine;
     private final AllocationRunRepository allocationRunRepository;
@@ -39,6 +54,9 @@ public class AllocationServiceImpl implements AllocationService {
     private final ContractService contractService;
     private final BedRepository bedRepository;
     private final RoomApplicationRepository roomApplicationRepository;
+    private final StudentRepository studentRepository;
+    private final ContractRepository contractRepository;
+    private final SystemLockRepository systemLockRepository;
 
     public AllocationServiceImpl(AllocationEngine allocationEngine,
                                  AllocationRunRepository allocationRunRepository,
@@ -48,7 +66,10 @@ public class AllocationServiceImpl implements AllocationService {
                                  SystemConfigRepository systemConfigRepository,
                                  ContractService contractService,
                                  BedRepository bedRepository,
-                                 RoomApplicationRepository roomApplicationRepository) {
+                                 RoomApplicationRepository roomApplicationRepository,
+                                 StudentRepository studentRepository,
+                                 ContractRepository contractRepository,
+                                 SystemLockRepository systemLockRepository) {
         this.allocationEngine = allocationEngine;
         this.allocationRunRepository = allocationRunRepository;
         this.allocationItemRepository = allocationItemRepository;
@@ -58,6 +79,9 @@ public class AllocationServiceImpl implements AllocationService {
         this.contractService = contractService;
         this.bedRepository = bedRepository;
         this.roomApplicationRepository = roomApplicationRepository;
+        this.studentRepository = studentRepository;
+        this.contractRepository = contractRepository;
+        this.systemLockRepository = systemLockRepository;
     }
 
     @Override
@@ -293,6 +317,80 @@ public class AllocationServiceImpl implements AllocationService {
         periodRepository.save(period);
 
         return savedRun;
+    }
+
+    @Override
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    public Contract assignManual(Long studentId, Long bedId, Long periodId, String note) {
+        log.info("Bắt đầu gán chỗ thủ công: studentId={}, bedId={}, periodId={}, note={}", studentId, bedId, periodId, note);
+
+        if (studentId == null || bedId == null) {
+            throw new BusinessException("Mã sinh viên và mã giường không được để trống");
+        }
+
+        LocalDate termStart;
+        LocalDate termEnd;
+        RoomApplication app = null;
+
+        // 1. Khóa period hoặc system_locks.ALLOCATION (§6.3.6 bước 9)
+        if (periodId != null) {
+            RegistrationPeriod period = periodRepository.findByIdForUpdate(periodId)
+                    .orElseThrow(() -> new BusinessException("Không tìm thấy đợt đăng ký #" + periodId));
+            termStart = period.getTermStart();
+            termEnd = period.getTermEnd();
+            app = roomApplicationRepository.findByPeriodIdAndStudentId(periodId, studentId).orElse(null);
+        } else {
+            systemLockRepository.findByLockNameForUpdate("ALLOCATION")
+                    .orElseThrow(() -> new BusinessException("Không tìm thấy khóa hệ thống ALLOCATION"));
+            termStart = LocalDate.now();
+            termEnd = termStart.plusMonths(5);
+        }
+
+        // 2. Khóa giường bi quan PESSIMISTIC_WRITE bằng findByIdForUpdate (§6.3.6 bước 9)
+        Bed bed = bedRepository.findByIdForUpdate(bedId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy giường #" + bedId));
+
+        if (bed.getStatus() == BedStatus.MAINTENANCE) {
+            throw new BusinessException("Không thể gán vào giường đang bảo trì (MAINTENANCE)");
+        }
+        if (bed.getStatus() != BedStatus.VACANT || bed.getCurrentContractId() != null) {
+            throw new BusinessException("Giường #" + bedId + " (" + bed.getBedCode() + ") không còn trống (VACANT)");
+        }
+
+        // 3. Kiểm tra sinh viên
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy sinh viên #" + studentId));
+
+        if (Boolean.TRUE.equals(student.getBlockedFromHousing())) {
+            throw new BusinessException("Sinh viên đã bị cấm đăng ký ký túc xá");
+        }
+        if (student.getConductScore() != null && student.getConductScore() <= 0) {
+            throw new BusinessException("Sinh viên có điểm rèn luyện bằng 0, không được phép xếp phòng");
+        }
+        if (contractRepository.existsByStudentIdAndStatusIn(studentId, OccupyingStatuses.OCCUPYING)) {
+            throw new BusinessException("Sinh viên đã có hợp đồng phòng đang hiệu lực (OCCUPYING)");
+        }
+
+        // 4. Kiểm tra giới tính cứng (gender policy không bao giờ được nới)
+        Room room = bed.getRoom();
+        if (room == null || room.getBuilding() == null || room.getBuilding().getGenderPolicy() == null) {
+            throw new BusinessException("Không xác định được quy định giới tính của phòng/tòa");
+        }
+        if (student.getGender() == null || !room.getBuilding().getGenderPolicy().name().equals(student.getGender().name())) {
+            throw new BusinessException("Giới tính sinh viên không phù hợp với quy định của tòa nhà (" + room.getBuilding().getGenderPolicy() + ")");
+        }
+
+        // 5. INSERT hợp đồng DRAFT trước, UPDATE bed status OCCUPIED sau (§5.2.6 & §6.3.6)
+        Contract contract = contractService.createDraft(student, app, bed, termStart, termEnd);
+
+        // 6. Cập nhật trạng thái RoomApplication thành ALLOCATED nếu có
+        if (app != null) {
+            app.setStatus(ApplicationStatus.ALLOCATED);
+            roomApplicationRepository.save(app);
+        }
+
+        log.info("Gán chỗ thủ công thành công: contractId={}, contractNo={}", contract.getId(), contract.getContractNo());
+        return contract;
     }
 
     private String serializeWeightsJson(int policy, int remote, int prevGood, String mode) {

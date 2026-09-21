@@ -49,6 +49,12 @@ class AdminAllocationControllerTest {
     private ContractService contractService;
 
     @Mock
+    private com.ktx.repository.StudentRepository studentRepository;
+
+    @Mock
+    private com.ktx.repository.BedRepository bedRepository;
+
+    @Mock
     private Authentication authentication;
 
     @Mock
@@ -61,7 +67,7 @@ class AdminAllocationControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new AdminAllocationController(allocationService, roomApplicationRepository, contractService);
+        controller = new AdminAllocationController(allocationService, roomApplicationRepository, contractService, studentRepository, bedRepository);
 
         adminUser = new User();
         adminUser.setId(1L);
@@ -240,5 +246,81 @@ class AdminAllocationControllerTest {
 
         assertEquals("redirect:/admin/allocations/runs/99", view);
         assertEquals("Không thể hủy HĐ", redirectAttributes.getFlashAttributes().get("errorMessage"));
+    }
+
+    @Test
+    @DisplayName("manualAssignForm() chuẩn bị form và model với danh sách SV, giường, đợt")
+    void manualAssignForm_success() {
+        Model model = new ConcurrentModel();
+        when(allocationService.getAvailablePeriods()).thenReturn(List.of(period1));
+        when(studentRepository.findAllWithUser()).thenReturn(Collections.emptyList());
+        when(bedRepository.findAllWithRoomAndBuilding()).thenReturn(Collections.emptyList());
+
+        String view = controller.manualAssignForm(5L, 10L, 100L, model);
+
+        assertEquals("admin/allocations/manual", view);
+        assertTrue(model.containsAttribute("form"));
+        com.ktx.dto.ManualAssignForm form = (com.ktx.dto.ManualAssignForm) model.getAttribute("form");
+        assertNotNull(form);
+        assertEquals(5L, form.getBedId());
+        assertEquals(10L, form.getStudentId());
+        assertEquals(100L, form.getPeriodId());
+        assertTrue(model.containsAttribute("students"));
+        assertTrue(model.containsAttribute("beds"));
+        assertTrue(model.containsAttribute("periods"));
+    }
+
+    @Test
+    @DisplayName("assignManualSubmit() thành công chuyển hướng về period và flash successMessage")
+    void assignManualSubmit_success() {
+        com.ktx.dto.ManualAssignForm form = new com.ktx.dto.ManualAssignForm(10L, 5L, 100L, "Note 1");
+        org.springframework.validation.BindingResult bindingResult = new org.springframework.validation.BeanPropertyBindingResult(form, "form");
+        Model model = new ConcurrentModel();
+        RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+        com.ktx.domain.Contract mockContract = new com.ktx.domain.Contract();
+        mockContract.setContractNo("HD-2026-0001");
+        when(allocationService.assignManual(10L, 5L, 100L, "Note 1")).thenReturn(mockContract);
+
+        String view = controller.assignManualSubmit(form, bindingResult, model, redirectAttributes);
+
+        assertEquals("redirect:/admin/allocations?periodId=100", view);
+        assertTrue(redirectAttributes.getFlashAttributes().containsKey("successMessage"));
+        verify(allocationService).assignManual(10L, 5L, 100L, "Note 1");
+    }
+
+    @Test
+    @DisplayName("assignManualSubmit() có lỗi validation trả về view manual")
+    void assignManualSubmit_validationError() {
+        com.ktx.dto.ManualAssignForm form = new com.ktx.dto.ManualAssignForm(null, null, null, null);
+        org.springframework.validation.BindingResult bindingResult = new org.springframework.validation.BeanPropertyBindingResult(form, "form");
+        bindingResult.rejectValue("studentId", "NotNull", "Vui lòng chọn sinh viên");
+        Model model = new ConcurrentModel();
+        RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+        when(allocationService.getAvailablePeriods()).thenReturn(Collections.emptyList());
+        when(studentRepository.findAllWithUser()).thenReturn(Collections.emptyList());
+        when(bedRepository.findAllWithRoomAndBuilding()).thenReturn(Collections.emptyList());
+
+        String view = controller.assignManualSubmit(form, bindingResult, model, redirectAttributes);
+
+        assertEquals("admin/allocations/manual", view);
+    }
+
+    @Test
+    @DisplayName("assignManualSubmit() bắt BusinessException và flash errorMessage")
+    void assignManualSubmit_businessException() {
+        com.ktx.dto.ManualAssignForm form = new com.ktx.dto.ManualAssignForm(10L, 5L, 100L, "Note 1");
+        org.springframework.validation.BindingResult bindingResult = new org.springframework.validation.BeanPropertyBindingResult(form, "form");
+        Model model = new ConcurrentModel();
+        RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+        when(allocationService.assignManual(10L, 5L, 100L, "Note 1"))
+                .thenThrow(new com.ktx.common.exception.BusinessException("Giường đã bị bảo trì"));
+
+        String view = controller.assignManualSubmit(form, bindingResult, model, redirectAttributes);
+
+        assertEquals("redirect:/admin/allocations/manual?periodId=100", view);
+        assertEquals("Giường đã bị bảo trì", redirectAttributes.getFlashAttributes().get("errorMessage"));
     }
 }

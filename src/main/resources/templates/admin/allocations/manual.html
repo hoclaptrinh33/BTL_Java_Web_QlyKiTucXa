@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <!-- Thanh điều hướng breadcrumb -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a th:href="@{/admin/allocations}" class="text-decoration-none">Phân bổ chỗ ở</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Gán chỗ thủ công</li>
+                </ol>
+            </nav>
+            <h4 class="fw-bold mb-0 text-dark">Gán chỗ thủ công (Manual Assign)</h4>
+            <small class="text-muted">Gán sinh viên ngoại lệ vào giường chỉ định với cơ chế khóa bi quan chống xung đột</small>
+        </div>
+        <div>
+            <a th:href="@{/admin/allocations}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Cột Form Gán chỗ -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-person-plus text-primary"></i>Thông tin phân bổ giường
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form th:action="@{/admin/allocations/manual}" th:object="${form}" method="post" novalidate>
+                        
+                        <!-- Chọn Đợt đăng ký -->
+                        <div class="mb-3">
+                            <label for="periodId" class="form-label fw-semibold">Đợt đăng ký <small class="text-muted fw-normal">(Tùy chọn)</small></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
+                                <select id="periodId" th:field="*{periodId}" class="form-select">
+                                    <option value="">-- Gán giữa kỳ / Ngoài đợt (Khóa system_locks.ALLOCATION) --</option>
+                                    <option th:each="p : ${periods}"
+                                            th:value="${p.id}"
+                                            th:text="${p.name + ' (' + p.academicYear + ') - [' + p.status + ']'}">
+                                        Đợt tân SV
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="form-text">
+                                Nếu chọn đợt, thời hạn hợp đồng lấy theo đợt và hệ thống khóa dòng period đó. Nếu không chọn, hệ thống khóa <code>system_locks.ALLOCATION</code>.
+                            </div>
+                        </div>
+
+                        <!-- Chọn Sinh viên -->
+                        <div class="mb-3">
+                            <label for="studentId" class="form-label fw-semibold">Sinh viên <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                                <select id="studentId" th:field="*{studentId}" class="form-select"
+                                        th:classappend="${#fields.hasErrors('studentId')} ? 'is-invalid'">
+                                    <option value="">-- Chọn sinh viên cần xếp chỗ --</option>
+                                    <option th:each="s : ${students}"
+                                            th:value="${s.id}"
+                                            th:text="${s.studentCode + ' - ' + s.fullName + ' (' + (s.gender != null ? (s.gender.name() == 'MALE' ? 'Nam' : 'Nữ') : '') + ') - ĐRL: ' + s.conductScore + (s.blockedFromHousing ? ' [BỊ CẤM]' : '')}">
+                                        SV001 - Nguyễn Văn A (Nam)
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('studentId')}" th:errors="*{studentId}"></div>
+                            <div class="form-text">Chỉ áp dụng cho sinh viên không bị cấm ở KTX, điểm rèn luyện &gt; 0 và chưa có hợp đồng hiệu lực.</div>
+                        </div>
+
+                        <!-- Chọn Giường -->
+                        <div class="mb-3">
+                            <label for="bedId" class="form-label fw-semibold">Giường ký túc xá <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-door-closed"></i></span>
+                                <select id="bedId" th:field="*{bedId}" class="form-select"
+                                        th:classappend="${#fields.hasErrors('bedId')} ? 'is-invalid'">
+                                    <option value="">-- Chọn giường --</option>
+                                    <option th:each="b : ${beds}"
+                                            th:value="${b.id}"
+                                            th:text="${(b.room != null && b.room.building != null ? b.room.building.name + ' - P.' + b.room.roomNumber + ' - ' : '') + b.bedCode + ' (' + (b.room != null && b.room.building != null && b.room.building.genderPolicy != null ? (b.room.building.genderPolicy.name() == 'MALE' ? 'Tòa Nam' : 'Tòa Nữ') : '') + ') - [' + b.status + ']'}">
+                                        Tòa A - P.101 - G1 (Tòa Nam) - [VACANT]
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('bedId')}" th:errors="*{bedId}"></div>
+                            <div class="form-text">Chỉ được chọn giường đang trống (VACANT). Giường đang bảo trì (MAINTENANCE) hoặc đã có người ở sẽ bị từ chối.</div>
+                        </div>
+
+                        <!-- Ghi chú -->
+                        <div class="mb-4">
+                            <label for="note" class="form-label fw-semibold">Ghi chú phân bổ</label>
+                            <textarea id="note" th:field="*{note}" class="form-control" rows="3"
+                                      placeholder="Lý do gán ngoại lệ, diện ưu tiên bổ sung, số quyết định phê duyệt..."></textarea>
+                        </div>
+
+                        <!-- Nút Submit -->
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check2-circle me-1"></i>Xác nhận gán giường
+                            </button>
+                            <a th:href="@{/admin/allocations}" class="btn btn-outline-secondary">Hủy bỏ</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột Hướng dẫn & Quy tắc kiểm tra -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check text-success"></i>Ràng buộc nghiệp vụ (§6.3.6)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0 d-flex flex-column gap-3 small">
+                        <li class="d-flex gap-2">
+                            <i class="bi bi-gender-ambiguous text-primary fs-6"></i>
+                            <div>
+                                <strong>Chính sách giới tính cứng:</strong> Giới tính của sinh viên bắt buộc phải khớp với <code>gender_policy</code> của tòa nhà. Tuyệt đối không nới quy tắc này.
+                            </div>
+                        </li>
+                        <li class="d-flex gap-2">
+                            <i class="bi bi-slash-circle text-danger fs-6"></i>
+                            <div>
+                                <strong>Chặn giường bảo trì:</strong> Không thể gán vào giường có trạng thái <code>MAINTENANCE</code> hoặc giường không còn <code>VACANT</code>.
+                            </div>
+                        </li>
+                        <li class="d-flex gap-2">
+                            <i class="bi bi-person-x text-warning text-dark fs-6"></i>
+                            <div>
+                                <strong>Không double-booking:</strong> Sinh viên đang có hợp đồng <code>OCCUPYING</code> (DRAFT, ACTIVE, EXPIRED, TERMINATED chưa checkout) không thể nhận thêm giường mới.
+                            </div>
+                        </li>
+                        <li class="d-flex gap-2">
+                            <i class="bi bi-lock text-info fs-6"></i>
+                            <div>
+                                <strong>Khóa hàng bi quan:</strong> Giao dịch thực hiện <code>SELECT ... FOR UPDATE</code> trên giường và đợt (hoặc <code>system_locks.ALLOCATION</code>) để chống race condition.
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 bg-primary-subtle text-primary-emphasis">
+                <div class="card-body p-3">
+                    <h6 class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i>Hợp đồng DRAFT</h6>
+                    <p class="small mb-0">
+                        Sau khi gán thành công, hệ thống sẽ tự động sinh số hợp đồng và tạo hợp đồng ở trạng thái <strong>DRAFT</strong>. Giường sẽ chuyển sang <strong>OCCUPIED</strong>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>

@@ -20,10 +20,16 @@ import com.ktx.domain.RegistrationPeriod;
 import com.ktx.domain.enums.AllocationResult;
 import com.ktx.domain.enums.ApplicationStatus;
 import com.ktx.domain.enums.PeriodStatus;
+import com.ktx.dto.ManualAssignForm;
+import com.ktx.repository.BedRepository;
 import com.ktx.repository.RoomApplicationRepository;
+import com.ktx.repository.StudentRepository;
 import com.ktx.security.KtxUserDetails;
 import com.ktx.service.AllocationService;
 import com.ktx.service.ContractService;
+import jakarta.validation.Valid;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 @Controller
 @RequestMapping("/admin/allocations")
@@ -33,13 +39,19 @@ public class AdminAllocationController {
     private final AllocationService allocationService;
     private final RoomApplicationRepository roomApplicationRepository;
     private final ContractService contractService;
+    private final StudentRepository studentRepository;
+    private final BedRepository bedRepository;
 
     public AdminAllocationController(AllocationService allocationService,
                                      RoomApplicationRepository roomApplicationRepository,
-                                     ContractService contractService) {
+                                     ContractService contractService,
+                                     StudentRepository studentRepository,
+                                     BedRepository bedRepository) {
         this.allocationService = allocationService;
         this.roomApplicationRepository = roomApplicationRepository;
         this.contractService = contractService;
+        this.studentRepository = studentRepository;
+        this.bedRepository = bedRepository;
     }
 
     @GetMapping
@@ -189,6 +201,61 @@ public class AdminAllocationController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
             return "redirect:/admin/allocations";
         }
+    }
+
+    @GetMapping("/manual")
+    public String manualAssignForm(@RequestParam(value = "bedId", required = false) Long bedId,
+                                   @RequestParam(value = "studentId", required = false) Long studentId,
+                                   @RequestParam(value = "periodId", required = false) Long periodId,
+                                   Model model) {
+        ManualAssignForm form = new ManualAssignForm();
+        form.setBedId(bedId);
+        form.setStudentId(studentId);
+        form.setPeriodId(periodId);
+        model.addAttribute("form", form);
+
+        populateManualAssignModel(model);
+        page(model, "Gán chỗ thủ công", "Gán sinh viên vào giường cụ thể với khóa bi quan và kiểm tra ràng buộc");
+        return "admin/allocations/manual";
+    }
+
+    @PostMapping("/manual")
+    public String assignManualSubmit(@Valid @ModelAttribute("form") ManualAssignForm form,
+                                     BindingResult bindingResult,
+                                     Model model,
+                                     RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            populateManualAssignModel(model);
+            page(model, "Gán chỗ thủ công", "Gán sinh viên vào giường cụ thể với khóa bi quan và kiểm tra ràng buộc");
+            return "admin/allocations/manual";
+        }
+
+        try {
+            com.ktx.domain.Contract contract = allocationService.assignManual(
+                    form.getStudentId(), form.getBedId(), form.getPeriodId(), form.getNote()
+            );
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Gán giường thành công! Hợp đồng DRAFT " + contract.getContractNo() + " đã được tạo.");
+            if (form.getPeriodId() != null) {
+                return "redirect:/admin/allocations?periodId=" + form.getPeriodId();
+            }
+            return "redirect:/admin/allocations";
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/admin/allocations/manual" + (form.getPeriodId() != null ? "?periodId=" + form.getPeriodId() : "");
+        } catch (org.springframework.dao.PessimisticLockingFailureException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Hệ thống đang phân bổ, thử lại");
+            return "redirect:/admin/allocations/manual" + (form.getPeriodId() != null ? "?periodId=" + form.getPeriodId() : "");
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi gán giường: " + ex.getMessage());
+            return "redirect:/admin/allocations/manual" + (form.getPeriodId() != null ? "?periodId=" + form.getPeriodId() : "");
+        }
+    }
+
+    private void populateManualAssignModel(Model model) {
+        model.addAttribute("students", studentRepository.findAllWithUser());
+        model.addAttribute("beds", bedRepository.findAllWithRoomAndBuilding());
+        model.addAttribute("periods", allocationService.getAvailablePeriods());
     }
 
     private static void page(Model model, String title, String subtitle) {
