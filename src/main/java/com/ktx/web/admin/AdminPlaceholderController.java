@@ -19,11 +19,6 @@ public class AdminPlaceholderController {
                 "Tiền phòng theo kỳ, đặt cọc, điện nước và phụ phí vệ sinh / internet / gửi xe.");
     }
 
-    @GetMapping("/admin/check-in-out")
-    public String checkInOut(Model model) {
-        return page(model, "checkin", "Lịch sử ra vào", "Check-in / check-out theo hợp đồng",
-                "Check-in đổi HĐ nháp thành đang ở. Check-out mới nhả giường.");
-    }
 
     @GetMapping("/admin/reports")
     public String reports(Model model) {

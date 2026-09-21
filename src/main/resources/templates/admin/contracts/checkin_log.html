@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <!-- Bộ lọc theo Tòa nhà -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" th:action="@{/admin/check-in-out}" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label for="buildingSelect" class="form-label fw-semibold text-secondary small">Lọc theo Tòa nhà</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-building text-muted"></i></span>
+                        <select id="buildingSelect" name="buildingId" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- Tất cả các tòa nhà --</option>
+                            <option th:each="b : ${buildings}"
+                                    th:value="${b.id}"
+                                    th:selected="${b.id == selectedBuildingId}"
+                                    th:text="${b.name + ' (' + b.code + ')'}">Tòa A</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-7 d-flex justify-content-md-end gap-2">
+                    <a th:href="@{/admin/contracts}" class="btn btn-outline-primary">
+                        <i class="bi bi-file-earmark-text me-1"></i>Quản lý hợp đồng
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng nhật ký Check-in / Check-out -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-clock-history text-primary"></i>
+                <span>Nhật ký sự kiện Check-in / Check-out</span>
+                <span class="badge bg-secondary-subtle text-secondary" th:text="${#lists.size(checkInOutList)}">0</span>
+            </h5>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Sự kiện</th>
+                        <th>Thời gian</th>
+                        <th>Cán bộ thực hiện</th>
+                        <th>Sinh viên</th>
+                        <th>Hợp đồng</th>
+                        <th>Phòng / Giường</th>
+                        <th>Hiện trạng</th>
+                        <th class="pe-3">Ghi chú tài sản</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(checkInOutList)}">
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                            Chưa có sự kiện Check-in hoặc Check-out nào được ghi nhận.
+                        </td>
+                    </tr>
+                    <tr th:each="ev : ${checkInOutList}">
+                        <td class="ps-3">
+                            <span class="badge"
+                                  th:classappend="${ev.eventType != null && ev.eventType.name() == 'CHECK_IN' ? 'bg-success' : 'bg-primary'}"
+                                  th:text="${ev.eventType}">CHECK_IN</span>
+                        </td>
+                        <td class="small" th:text="${#temporals.format(ev.performedAt, 'dd/MM/yyyy HH:mm')}">01/09/2026 09:30</td>
+                        <td>
+                            <span class="fw-semibold text-dark" th:text="${ev.performedBy != null ? ev.performedBy.username : '—'}">cán bộ</span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark" th:text="${ev.contract != null && ev.contract.student != null ? ev.contract.student.fullName : '—'}">Nguyễn Văn A</div>
+                            <small class="text-muted" th:text="${ev.contract != null && ev.contract.student != null ? ev.contract.student.studentCode : '—'}">SV001</small>
+                        </td>
+                        <td>
+                            <a th:if="${ev.contract != null}" th:href="@{/admin/contracts/{id}(id=${ev.contract.id})}"
+                               class="text-decoration-none fw-bold font-monospace" th:text="${ev.contract.contractNo}">HD-2026-000001</a>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border me-1"
+                                  th:text="${ev.contract != null && ev.contract.bed != null && ev.contract.bed.room != null && ev.contract.bed.room.building != null ? ev.contract.bed.room.building.code : '—'}">A</span>
+                            <span th:text="${ev.contract != null && ev.contract.bed != null && ev.contract.bed.room != null ? 'P.' + ev.contract.bed.room.roomNumber : ''}">P.101</span>
+                            <span class="text-muted small" th:text="${ev.contract != null && ev.contract.bed != null ? ' - ' + ev.contract.bed.bedCode : ''}"> - G1</span>
+                        </td>
+                        <td>
+                            <span th:if="${ev.ok}" class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Bình thường</span>
+                            <span th:unless="${ev.ok}" class="badge bg-danger-subtle text-danger"><i class="bi bi-exclamation-circle me-1"></i>Có hư hại</span>
+                        </td>
+                        <td class="pe-3 small text-muted" th:text="${ev.assetNote != null ? ev.assetNote : '—'}">—</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>

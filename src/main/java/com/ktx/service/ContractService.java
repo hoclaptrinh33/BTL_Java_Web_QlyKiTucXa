@@ -2,9 +2,13 @@ package com.ktx.service;
 
 import java.time.LocalDate;
 
+import java.util.Collection;
+import java.util.List;
+
 import com.ktx.domain.Bed;
 import com.ktx.domain.Contract;
 import com.ktx.domain.RoomApplication;
+import com.ktx.domain.enums.ContractStatus;
 
 public interface ContractService {
 
@@ -17,4 +21,30 @@ public interface ContractService {
      * Hủy hợp đồng DRAFT và nhả giường về VACANT
      */
     void cancelDraft(Long contractId);
+
+    /**
+     * Lấy thông tin hợp đồng theo ID
+     */
+    Contract getById(Long id);
+
+    /**
+     * Lấy thông tin hợp đồng kèm chi tiết phòng, giường, sinh viên
+     */
+    Contract getByIdWithDetails(Long id);
+
+    /**
+     * Tìm kiếm và lọc danh sách hợp đồng
+     */
+    List<Contract> searchContracts(Long buildingId, ContractStatus status, String keyword);
+
+    /**
+     * Danh sách hợp đồng theo tòa và nhóm trạng thái
+     */
+    List<Contract> findByBuildingAndStatus(Long buildingId, Collection<ContractStatus> statuses);
+
+    /**
+     * Chấm dứt hợp đồng ACTIVE -> TERMINATED (vi phạm kỷ luật hoặc điểm rèn luyện 0).
+     * Giường VẪN giữ OCCUPIED cho đến khi checkout (§04-04).
+     */
+    void terminate(Long contractId, boolean forfeitDeposit);
 }

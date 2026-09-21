@@ -89,5 +89,48 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     List<Contract> findExpiringContracts(
             @Param("statuses") Collection<ContractStatus> statuses,
             @Param("targetDate") LocalDate targetDate);
+
+    @Query("""
+            SELECT c FROM Contract c
+            JOIN FETCH c.student s
+            JOIN FETCH c.bed b
+            JOIN FETCH b.room r
+            JOIN FETCH r.building build
+            LEFT JOIN FETCH c.application app
+            WHERE c.id = :id
+            """)
+    java.util.Optional<Contract> findByIdWithDetails(@Param("id") Long id);
+
+    @Query("""
+            SELECT c FROM Contract c
+            JOIN FETCH c.student s
+            JOIN FETCH c.bed b
+            JOIN FETCH b.room r
+            JOIN FETCH r.building build
+            WHERE (:buildingId IS NULL OR r.building.id = :buildingId)
+              AND (:status IS NULL OR c.status = :status)
+              AND (:keyword IS NULL OR :keyword = ''
+                   OR LOWER(s.studentCode) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(s.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(c.contractNo) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            ORDER BY c.id DESC
+            """)
+    List<Contract> searchContracts(@Param("buildingId") Long buildingId,
+                                   @Param("status") ContractStatus status,
+                                   @Param("keyword") String keyword);
+
+    @Query("""
+            SELECT c FROM Contract c
+            JOIN FETCH c.student s
+            JOIN FETCH c.bed b
+            JOIN FETCH b.room r
+            JOIN FETCH r.building build
+            WHERE r.building.id = :buildingId
+              AND c.status IN :statuses
+            ORDER BY r.floor DESC, r.roomNumber ASC, b.bedCode ASC
+            """)
+    List<Contract> findByBuildingIdAndStatusInWithDetails(
+            @Param("buildingId") Long buildingId,
+            @Param("statuses") Collection<ContractStatus> statuses);
 }
 

@@ -184,4 +184,41 @@ class ContractServiceTest {
         assertThrows(BusinessException.class, () -> contractService.cancelDraft(10L));
         verify(bedRepository, never()).vacateBed(any(Long.class));
     }
+
+    @Test
+    @DisplayName("terminate chuyển ACTIVE sang TERMINATED, cọc FORFEITED và giường VẪN OCCUPIED")
+    void terminate_success() {
+        Bed bed = new Bed();
+        bed.setId(50L);
+        bed.setStatus(BedStatus.OCCUPIED);
+
+        Contract contract = new Contract();
+        contract.setId(10L);
+        contract.setStatus(ContractStatus.ACTIVE);
+        contract.setDepositStatus(DepositStatus.HELD);
+        contract.setBed(bed);
+
+        when(contractRepository.findById(10L)).thenReturn(Optional.of(contract));
+
+        contractService.terminate(10L, true);
+
+        assertEquals(ContractStatus.TERMINATED, contract.getStatus());
+        assertEquals(DepositStatus.FORFEITED, contract.getDepositStatus());
+        verify(contractRepository).save(contract);
+        // Giường VẪN OCCUPIED, không được nhả giường khi terminate (§04-04)
+        verify(bedRepository, never()).vacateBed(any(Long.class));
+    }
+
+    @Test
+    @DisplayName("terminate ném ngoại lệ nếu hợp đồng không phải ACTIVE")
+    void terminate_notActive() {
+        Contract contract = new Contract();
+        contract.setId(10L);
+        contract.setStatus(ContractStatus.DRAFT);
+
+        when(contractRepository.findById(10L)).thenReturn(Optional.of(contract));
+
+        assertThrows(BusinessException.class, () -> contractService.terminate(10L, false));
+        verify(contractRepository, never()).save(any(Contract.class));
+    }
 }

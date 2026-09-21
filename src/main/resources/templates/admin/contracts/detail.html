@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <!-- Thanh tiêu đề & nút hành động -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a th:href="@{/admin/contracts}" class="btn btn-sm btn-outline-secondary rounded-circle" title="Quay lại">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h1 class="h3 mb-0 text-dark fw-bold" th:text="${'Hợp đồng ' + contract.contractNo}">HD-2026-000001</h1>
+                <span class="badge fs-6"
+                      th:classappend="${contract.status != null ? (contract.status.name() == 'ACTIVE' ? 'bg-success' : (contract.status.name() == 'DRAFT' ? 'bg-warning text-dark' : (contract.status.name() == 'TERMINATED' ? 'bg-danger' : (contract.status.name() == 'EXPIRED' ? 'bg-secondary' : 'bg-dark')))) : 'bg-secondary'}"
+                      th:text="${contract.status}">ACTIVE</span>
+            </div>
+            <p class="text-muted mb-0 small">Hồ sơ lưu trú, nghĩa vụ tài chính và lịch sử bàn giao tài sản ký túc xá</p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <!-- Nút Check-in nếu DRAFT -->
+            <button th:if="${contract.status != null && contract.status.name() == 'DRAFT'}"
+                    type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#checkInModal">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Thực hiện Check-in
+            </button>
+
+            <!-- Nút Hủy DRAFT nếu DRAFT -->
+            <form th:if="${contract.status != null && contract.status.name() == 'DRAFT'}"
+                  th:action="@{/admin/contracts/{id}/cancel-draft(id=${contract.id})}" method="post"
+                  data-confirm="Bạn có chắc chắn muốn hủy hợp đồng DRAFT này? Giường sẽ được nhả ngay về trạng thái VACANT."
+                  data-confirm-title="Xác nhận hủy hợp đồng DRAFT"
+                  data-confirm-type="danger"
+                  data-confirm-button="Hủy hợp đồng">
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="bi bi-x-circle me-1"></i>Hủy hợp đồng nháp
+                </button>
+            </form>
+
+            <!-- Nút Check-out nếu ACTIVE, EXPIRED hoặc TERMINATED -->
+            <button th:if="${contract.status != null && (contract.status.name() == 'ACTIVE' || contract.status.name() == 'EXPIRED' || contract.status.name() == 'TERMINATED')}"
+                    type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#checkOutModal">
+                <i class="bi bi-box-arrow-left me-1"></i>Thực hiện Check-out
+            </button>
+
+            <!-- Nút Terminate nếu ACTIVE -->
+            <button th:if="${contract.status != null && contract.status.name() == 'ACTIVE'}"
+                    type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#terminateModal">
+                <i class="bi bi-slash-circle me-1"></i>Chấm dứt HĐ (Terminate)
+            </button>
+        </div>
+    </div>
+
+    <!-- Cảnh báo nếu có hóa đơn quá hạn -->
+    <div th:if="${hasOverdue}" class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
+        <div>
+            <strong>Cảnh báo nợ phí:</strong> Sinh viên hiện có hóa đơn <strong>QUÁ HẠN</strong> chưa thanh toán. Thủ tục Check-out thông thường sẽ bị chặn trừ khi Quản trị viên kích hoạt tùy chọn buộc check-out.
+        </div>
+    </div>
+
+    <!-- Thẻ KPI tóm tắt -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-4">
+        <div class="col">
+            <div class="card shadow-sm border-0 h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-3 bg-primary-subtle text-primary fs-3"><i class="bi bi-door-closed"></i></div>
+                    <div>
+                        <div class="text-muted small">Phòng & Giường</div>
+                        <div class="fw-bold text-dark fs-5"
+                             th:text="${contract.bed != null && contract.bed.room != null ? (contract.bed.room.building.code + ' - P.' + contract.bed.room.roomNumber) : '—'}">A - P.101</div>
+                        <div class="text-secondary small" th:text="${contract.bed != null ? 'Giường ' + contract.bed.bedCode : ''}">Giường G1</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card shadow-sm border-0 h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-3 bg-success-subtle text-success fs-3"><i class="bi bi-cash-stack"></i></div>
+                    <div>
+                        <div class="text-muted small">Tiền phòng / kỳ</div>
+                        <div class="fw-bold text-dark fs-5"
+                             th:text="${contract.roomFee != null ? #numbers.formatInteger(contract.roomFee, 1, 'POINT') + ' đ' : '0 đ'}">1.200.000 đ</div>
+                        <div class="text-secondary small">Theo loại phòng</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card shadow-sm border-0 h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-3 bg-warning-subtle text-warning fs-3"><i class="bi bi-shield-check"></i></div>
+                    <div>
+                        <div class="text-muted small">Tiền đặt cọc (50%)</div>
+                        <div class="fw-bold text-dark fs-5"
+                             th:text="${contract.depositAmount != null ? #numbers.formatInteger(contract.depositAmount, 1, 'POINT') + ' đ' : '0 đ'}">600.000 đ</div>
+                        <span class="badge"
+                              th:classappend="${contract.depositStatus != null ? (contract.depositStatus.name() == 'HELD' ? 'bg-warning-subtle text-warning' : (contract.depositStatus.name() == 'REFUNDED' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger')) : 'bg-secondary'}"
+                              th:text="${'Trạng thái: ' + contract.depositStatus}">Trạng thái: HELD</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card shadow-sm border-0 h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-3 bg-info-subtle text-info fs-3"><i class="bi bi-calendar-event"></i></div>
+                    <div>
+                        <div class="text-muted small">Thời hạn lưu trú</div>
+                        <div class="fw-bold text-dark"
+                             th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy') + ' → ' + #temporals.format(contract.endDate, 'dd/MM/yyyy')}">...</div>
+                        <div class="text-secondary small" th:if="${contract.completionReason != null}"
+                             th:text="${'Lý do kết thúc: ' + contract.completionReason}">NORMAL_CHECKOUT</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Thông tin sinh viên & phòng ở -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-person text-primary"></i>Thông tin sinh viên thuê phòng
+                    </h5>
+                </div>
+                <div class="card-body pt-0">
+                    <table class="table table-borderless small mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted" style="width: 35%;">Họ và tên:</td>
+                                <td class="fw-bold text-dark" th:text="${contract.student != null ? contract.student.fullName : '—'}">Nguyễn Văn A</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Mã sinh viên (MSSV):</td>
+                                <td class="fw-semibold text-primary font-monospace" th:text="${contract.student != null ? contract.student.studentCode : '—'}">SV001</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Giới tính:</td>
+                                <td th:text="${contract.student != null && contract.student.gender != null ? (contract.student.gender.name() == 'MALE' ? 'Nam' : 'Nữ') : '—'}">Nam</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Lớp / Khoa:</td>
+                                <td th:text="${(contract.student != null && contract.student.classCode != null ? contract.student.classCode : '—') + ' / ' + (contract.student != null && contract.student.facultyCode != null ? contract.student.facultyCode : '—')}">D22CNTT</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Số điện thoại:</td>
+                                <td th:text="${contract.student != null ? contract.student.phone : '—'}">0912345678</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Người liên hệ khẩn cấp:</td>
+                                <td th:text="${contract.student != null ? (contract.student.emergencyName + ' (' + contract.student.emergencyPhone + ')') : '—'}">—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chi tiết hợp đồng & phòng -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-building text-primary"></i>Chi tiết chỗ ở & Điều khoản
+                    </h5>
+                </div>
+                <div class="card-body pt-0">
+                    <table class="table table-borderless small mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted" style="width: 35%;">Tòa nhà:</td>
+                                <td class="fw-semibold text-dark" th:text="${contract.bed != null && contract.bed.room != null ? (contract.bed.room.building.name + ' (' + contract.bed.room.building.code + ')') : '—'}">Tòa A</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Chính sách giới tính:</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border"
+                                          th:text="${contract.bed != null && contract.bed.room != null && contract.bed.room.building.genderPolicy != null ? (contract.bed.room.building.genderPolicy.name() == 'MALE' ? 'Tòa Nam' : 'Tòa Nữ') : '—'}">Nam</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Phòng & Tầng:</td>
+                                <td class="fw-semibold text-dark" th:text="${contract.bed != null && contract.bed.room != null ? ('Phòng ' + contract.bed.room.roomNumber + ' (Tầng ' + contract.bed.room.floor + ')') : '—'}">Phòng 101</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Giường & Trạng thái:</td>
+                                <td>
+                                    <span class="fw-bold text-primary" th:text="${contract.bed != null ? contract.bed.bedCode : '—'}">G1</span>
+                                    <span class="badge bg-primary-subtle text-primary ms-1" th:text="${contract.bed != null ? contract.bed.status : ''}">OCCUPIED</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Thời điểm ký kết:</td>
+                                <td th:text="${contract.signedAt != null ? #temporals.format(contract.signedAt, 'dd/MM/yyyy HH:mm') : 'Chưa ký'}">Chưa ký</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Đơn nguyện vọng:</td>
+                                <td>
+                                    <span th:if="${contract.application != null}" class="text-muted" th:text="${'Đơn #' + contract.application.id}">Đơn #10</span>
+                                    <span th:if="${contract.application == null}" class="badge bg-secondary-subtle text-secondary">Gán phòng tay</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lịch sử Check-in / Check-out -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-0 py-3">
+            <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-clock-history text-primary"></i>Nhật ký sự kiện Check-in / Check-out
+            </h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Sự kiện</th>
+                        <th>Thời gian thực hiện</th>
+                        <th>Người thực hiện</th>
+                        <th>Tình trạng bàn giao</th>
+                        <th>Ghi chú bàn giao tài sản</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(checkInOutList)}">
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            Chưa có sự kiện Check-in hoặc Check-out nào được ghi nhận cho hợp đồng này.
+                        </td>
+                    </tr>
+                    <tr th:each="ev : ${checkInOutList}">
+                        <td class="ps-3">
+                            <span class="badge"
+                                  th:classappend="${ev.eventType != null && ev.eventType.name() == 'CHECK_IN' ? 'bg-success' : 'bg-primary'}"
+                                  th:text="${ev.eventType}">CHECK_IN</span>
+                        </td>
+                        <td th:text="${#temporals.format(ev.performedAt, 'dd/MM/yyyy HH:mm:ss')}">01/09/2026 09:00:00</td>
+                        <td>
+                            <span class="fw-semibold text-dark" th:text="${ev.performedBy != null ? ev.performedBy.username : '—'}">cán bộ</span>
+                        </td>
+                        <td>
+                            <span th:if="${ev.ok}" class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Bình thường (OK)</span>
+                            <span th:unless="${ev.ok}" class="badge bg-danger-subtle text-danger"><i class="bi bi-exclamation-circle me-1"></i>Có sự cố / hư hỏng</span>
+                        </td>
+                        <td class="text-muted" th:text="${ev.assetNote != null ? ev.assetNote : '—'}">—</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Hóa đơn liên quan đến hợp đồng -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-0 py-3">
+            <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-receipt text-primary"></i>Hóa đơn tài chính liên quan
+            </h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Số hóa đơn</th>
+                        <th>Loại khoản phí</th>
+                        <th class="text-end">Số tiền</th>
+                        <th>Hạn thanh toán</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th>Ngày thanh toán</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(invoices)}">
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            Chưa có hóa đơn nào được phát hành cho hợp đồng này.
+                        </td>
+                    </tr>
+                    <tr th:each="inv : ${invoices}">
+                        <td class="ps-3 font-monospace fw-bold text-primary" th:text="${inv.invoiceNo}">INV-2026-000001</td>
+                        <td>
+                            <span class="badge bg-light text-dark border" th:text="${inv.invoiceType}">DEPOSIT</span>
+                        </td>
+                        <td class="text-end font-monospace fw-semibold" th:text="${#numbers.formatInteger(inv.total, 1, 'POINT') + ' đ'}">600.000 đ</td>
+                        <td th:text="${#temporals.format(inv.dueDate, 'dd/MM/yyyy')}">10/09/2026</td>
+                        <td class="text-center">
+                            <span class="badge"
+                                  th:classappend="${inv.status != null ? (inv.status.name() == 'PAID' ? 'bg-success' : (inv.status.name() == 'UNPAID' ? 'bg-warning text-dark' : (inv.status.name() == 'OVERDUE' ? 'bg-danger' : 'bg-secondary'))) : 'bg-secondary'}"
+                                  th:text="${inv.status}">UNPAID</span>
+                        </td>
+                        <td th:text="${inv.paidAt != null ? #temporals.format(inv.paidAt, 'dd/MM/yyyy HH:mm') : '—'}">—</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Danh mục tài sản trong phòng -->
+    <div class="card shadow-sm border-0 mb-4" th:if="${not #lists.isEmpty(roomAssets)}">
+        <div class="card-header bg-white border-0 py-3">
+            <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-box-seam text-primary"></i>Danh mục trang thiết bị phòng ở
+            </h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Tên tài sản</th>
+                        <th>Loại tài sản</th>
+                        <th>Số lượng</th>
+                        <th>Tình trạng</th>
+                        <th>Ghi chú / Seri</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="a : ${roomAssets}">
+                        <td class="ps-3 fw-semibold text-dark" th:text="${a.name}">Quạt trần</td>
+                        <td th:text="${a.category}">FAN</td>
+                        <td th:text="${a.quantity}">1</td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${a.condition != null ? (a.condition.name() == 'GOOD' ? 'bg-success-subtle text-success' : (a.condition.name() == 'DAMAGED' ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-warning')) : 'bg-secondary'}"
+                                  th:text="${a.condition}">GOOD</span>
+                        </td>
+                        <td class="text-muted" th:text="${a.note != null ? a.note : (a.serialNumber != null ? a.serialNumber : '—')}">—</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL CHECK-IN -->
+    <div class="modal fade" id="checkInModal" tabindex="-1" aria-labelledby="checkInModalLabel" aria-hidden="true"
+         th:if="${contract.status != null && contract.status.name() == 'DRAFT'}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <form th:action="@{/admin/contracts/{id}/check-in(id=${contract.id})}" method="post">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title fw-bold" id="checkInModalLabel">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Xác nhận Check-in sinh viên
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="alert alert-info small mb-3">
+                            <i class="bi bi-info-circle me-1"></i>Check-in sẽ kích hoạt hợp đồng sang <strong>ACTIVE</strong> và tự động phát hành <strong>hóa đơn đặt cọc (50% giá phòng)</strong>.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary small">Trạng thái bàn giao tài sản</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="ok" id="checkinOkTrue" value="true" checked>
+                                <label class="form-check-label" for="checkinOkTrue">
+                                    Đầy đủ, hoạt động bình thường (OK)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="ok" id="checkinOkFalse" value="false">
+                                <label class="form-check-label" for="checkinOkFalse">
+                                    Có sự cố / thiếu hụt cần ghi nhận
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="checkinAssetNote" class="form-label fw-semibold text-secondary small">Ghi chú bàn giao tài sản</label>
+                            <textarea id="checkinAssetNote" name="assetNote" class="form-control" rows="3"
+                                      placeholder="Ví dụ: Bàn giao 01 giường tầng, 01 bàn ghế, chìa khóa phòng..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-success shadow-sm">
+                            <i class="bi bi-check-circle me-1"></i>Xác nhận Check-in
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHECK-OUT -->
+    <div class="modal fade" id="checkOutModal" tabindex="-1" aria-labelledby="checkOutModalLabel" aria-hidden="true"
+         th:if="${contract.status != null && (contract.status.name() == 'ACTIVE' || contract.status.name() == 'EXPIRED' || contract.status.name() == 'TERMINATED')}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <form th:action="@{/admin/contracts/{id}/check-out(id=${contract.id})}" method="post">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title fw-bold" id="checkOutModalLabel">
+                            <i class="bi bi-box-arrow-left me-1"></i>Xác nhận Check-out &amp; Nhả giường
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="alert alert-warning small mb-3">
+                            <i class="bi bi-exclamation-triangle me-1"></i>Check-out sẽ chuyển hợp đồng sang <strong>COMPLETED</strong> và nhả giường về trạng thái <strong>VACANT</strong>.
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="depositDecisionSelect" class="form-label fw-semibold text-secondary small">Xử lý tiền cọc</label>
+                            <select id="depositDecisionSelect" name="depositDecision" class="form-select">
+                                <option value="REFUNDED" selected>Hoàn trả toàn bộ cọc (REFUNDED)</option>
+                                <option value="FORFEITED">Tịch thu cọc do vi phạm / đền bù hư hỏng (FORFEITED)</option>
+                                <option value="HELD">Tạm giữ cọc (HELD)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary small">Hiện trạng bàn giao phòng</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="ok" id="checkoutOkTrue" value="true" checked>
+                                <label class="form-check-label" for="checkoutOkTrue">
+                                    Tài sản nguyên vẹn, phòng sạch sẽ (OK)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="ok" id="checkoutOkFalse" value="false">
+                                <label class="form-check-label" for="checkoutOkFalse">
+                                    Có hư hại / mất mát tài sản
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="checkoutAssetNote" class="form-label fw-semibold text-secondary small">Biên bản bàn giao khi rời KTX</label>
+                            <textarea id="checkoutAssetNote" name="assetNote" class="form-control" rows="3"
+                                      placeholder="Ghi chú chi tiết về tình trạng phòng và bàn giao chìa khóa..."></textarea>
+                        </div>
+
+                        <div th:if="${hasOverdue}" class="form-check mb-3 p-3 bg-danger-subtle rounded border border-danger-subtle">
+                            <input class="form-check-input" type="checkbox" name="force" value="true" id="forceCheckout">
+                            <label class="form-check-label text-danger fw-semibold" for="forceCheckout">
+                                Bắt buộc check-out dù sinh viên còn nợ hóa đơn quá hạn
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary shadow-sm">
+                            <i class="bi bi-check-circle me-1"></i>Hoàn tất Check-out
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TERMINATE -->
+    <div class="modal fade" id="terminateModal" tabindex="-1" aria-labelledby="terminateModalLabel" aria-hidden="true"
+         th:if="${contract.status != null && contract.status.name() == 'ACTIVE'}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <form th:action="@{/admin/contracts/{id}/terminate(id=${contract.id})}" method="post">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title fw-bold" id="terminateModalLabel">
+                            <i class="bi bi-slash-circle me-1"></i>Chấm dứt hợp đồng (Terminate)
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="alert alert-danger small mb-3">
+                            <i class="bi bi-exclamation-octagon me-1"></i>Hợp đồng sẽ chuyển sang <strong>TERMINATED</strong> (áp dụng cho trường hợp bị buộc rời KTX hoặc vi phạm nặng). <strong>Giường vẫn được giữ</strong> cho đến khi thực hiện Check-out.
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="forfeitDeposit" value="true" id="forfeitDepositCheck" checked>
+                            <label class="form-check-label fw-semibold" for="forfeitDepositCheck">
+                                Tịch thu tiền cọc (Chuyển trạng thái cọc sang FORFEITED)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-danger shadow-sm">
+                            <i class="bi bi-slash-circle me-1"></i>Xác nhận Chấm dứt HĐ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>
