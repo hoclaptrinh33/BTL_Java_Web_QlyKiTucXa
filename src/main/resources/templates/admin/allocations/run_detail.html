@@ -269,6 +269,9 @@
                                     <div th:if="${it.reason != null and it.reason == 'RELAXED_ROOM_TYPE'}" class="small text-warning-emphasis mt-1 fw-semibold">
                                         <i class="bi bi-exclamation-circle me-1"></i>Đã bỏ loại phòng
                                     </div>
+                                    <div th:if="${it.reason != null and it.reason == 'RELAXED_BOTH'}" class="small text-warning-emphasis mt-1 fw-semibold">
+                                        <i class="bi bi-exclamation-circle me-1"></i>Đã bỏ tòa &amp; loại phòng
+                                    </div>
                                     <!-- Thao tác hợp đồng nháp khi đã chốt phân bổ (§PR-08 / Task 22) -->
                                     <div th:if="${!run.dryRun and it.bed != null and it.bed.currentContractId != null}" class="mt-2">
                                         <form th:action="@{/admin/allocations/contracts/{contractId}/cancel-draft(contractId=${it.bed.currentContractId}, runId=${run.id})}"

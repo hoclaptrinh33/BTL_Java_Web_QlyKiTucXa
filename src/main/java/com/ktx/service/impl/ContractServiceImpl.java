@@ -91,9 +91,13 @@ public class ContractServiceImpl implements ContractService {
         contract.setCompletionReason(CompletionReason.CANCELLED_BEFORE_CHECKIN);
         contractRepository.save(contract);
 
-        // Nhả giường về VACANT
+        // Nhả giường về VACANT và xóa current_contract_id (§04-04)
         if (contract.getBed() != null) {
-            bedRepository.vacateBed(contract.getBed().getId());
+            int vacated = bedRepository.vacateBed(contract.getBed().getId());
+            if (vacated != 1) {
+                throw new BusinessException("Không thể nhả giường #" + contract.getBed().getId()
+                        + ", giường không ở trạng thái OCCUPIED");
+            }
         }
     }
 }

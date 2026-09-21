@@ -144,6 +144,7 @@ class ContractServiceTest {
         contract.setBed(bed);
 
         when(contractRepository.findById(10L)).thenReturn(Optional.of(contract));
+        when(bedRepository.vacateBed(50L)).thenReturn(1);
 
         contractService.cancelDraft(10L);
 
@@ -151,6 +152,24 @@ class ContractServiceTest {
         assertEquals(CompletionReason.CANCELLED_BEFORE_CHECKIN, contract.getCompletionReason());
         verify(contractRepository).save(contract);
         verify(bedRepository).vacateBed(50L);
+    }
+
+    @Test
+    @DisplayName("cancelDraft ném ngoại lệ nếu vacateBed != 1")
+    void cancelDraft_vacateFailed() {
+        Bed bed = new Bed();
+        bed.setId(50L);
+        bed.setStatus(BedStatus.OCCUPIED);
+
+        Contract contract = new Contract();
+        contract.setId(10L);
+        contract.setStatus(ContractStatus.DRAFT);
+        contract.setBed(bed);
+
+        when(contractRepository.findById(10L)).thenReturn(Optional.of(contract));
+        when(bedRepository.vacateBed(50L)).thenReturn(0);
+
+        assertThrows(BusinessException.class, () -> contractService.cancelDraft(10L));
     }
 
     @Test

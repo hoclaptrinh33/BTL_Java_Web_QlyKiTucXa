@@ -34,11 +34,11 @@ public interface BedRepository extends JpaRepository<Bed, Long> {
             """)
     List<Bed> findByBuildingId(@org.springframework.data.repository.query.Param("buildingId") Long buildingId);
 
-    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Bed b SET b.status = com.ktx.domain.enums.BedStatus.OCCUPIED, b.currentContractId = :contractId WHERE b.id = :bedId AND b.status = com.ktx.domain.enums.BedStatus.VACANT")
     int occupyBed(@org.springframework.data.repository.query.Param("bedId") Long bedId, @org.springframework.data.repository.query.Param("contractId") Long contractId);
 
-    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Bed b SET b.status = com.ktx.domain.enums.BedStatus.VACANT, b.currentContractId = null WHERE b.id = :bedId AND b.status = com.ktx.domain.enums.BedStatus.OCCUPIED")
     int vacateBed(@org.springframework.data.repository.query.Param("bedId") Long bedId);
 
