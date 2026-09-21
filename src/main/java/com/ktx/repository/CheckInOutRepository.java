@@ -11,7 +11,13 @@ import com.ktx.domain.enums.CheckInOutType;
 
 public interface CheckInOutRepository extends JpaRepository<CheckInOut, Long> {
 
-    List<CheckInOut> findByContractIdOrderByPerformedAtDesc(Long contractId);
+    @Query("""
+            SELECT c FROM CheckInOut c
+            JOIN FETCH c.performedBy
+            WHERE c.contract.id = :contractId
+            ORDER BY c.performedAt DESC
+            """)
+    List<CheckInOut> findByContractIdOrderByPerformedAtDesc(@Param("contractId") Long contractId);
 
     boolean existsByContractIdAndEventType(Long contractId, CheckInOutType eventType);
 

@@ -162,7 +162,6 @@ public class StaffCheckInController {
                              @RequestParam(value = "assetNote", required = false) String assetNote,
                              @RequestParam(value = "ok", defaultValue = "true") Boolean ok,
                              @RequestParam(value = "depositDecision", required = false) DepositStatus depositDecision,
-                             @RequestParam(value = "force", defaultValue = "false") boolean force,
                              @RequestParam Map<String, String> allParams,
                              Authentication auth,
                              RedirectAttributes redirectAttributes) {
@@ -173,7 +172,8 @@ public class StaffCheckInController {
             Map<Long, AssetCondition> assetConditions = extractAssetConditions(allParams);
             Long staffUserId = getUserId(auth);
 
-            checkInOutService.checkOut(id, staffUserId, assetNote, ok, depositDecision, force, assetConditions);
+            // §04-04: chỉ ADMIN được force checkout khi còn hóa đơn OVERDUE
+            checkInOutService.checkOut(id, staffUserId, assetNote, ok, depositDecision, false, assetConditions);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Check-out thành công cho sinh viên " + contract.getStudent().getFullName()
                             + "! Giường đã được giải phóng (VACANT).");

@@ -181,11 +181,9 @@
                                       placeholder="Ví dụ: Đã nhận lại 01 chìa khóa phòng, phòng dọn sạch sẽ, tài sản không hư hỏng..."></textarea>
                         </div>
 
-                        <div th:if="${hasOverdue}" class="form-check mb-4 p-3 bg-danger-subtle rounded border border-danger-subtle">
-                            <input class="form-check-input" type="checkbox" name="force" value="true" id="forceCheckout">
-                            <label class="form-check-label text-danger fw-semibold" for="forceCheckout">
-                                Xác nhận bắt buộc Check-out dù sinh viên còn hóa đơn quá hạn chưa thanh toán
-                            </label>
+                        <div th:if="${hasOverdue}" class="alert alert-danger mb-4">
+                            Sinh viên còn hóa đơn quá hạn. Cán bộ tòa không được buộc check-out.
+                            Liên hệ quản trị viên nếu cần force checkout.
                         </div>
 
                         <div class="d-flex justify-content-end gap-2">

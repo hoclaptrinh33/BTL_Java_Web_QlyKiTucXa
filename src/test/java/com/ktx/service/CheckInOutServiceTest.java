@@ -287,7 +287,7 @@ class CheckInOutServiceTest {
     }
 
     @Test
-    @DisplayName("checkOut: Thành công khi còn hóa đơn OVERDUE nếu force = true (admin/staff buộc checkout)")
+    @DisplayName("checkOut: Thành công khi còn hóa đơn OVERDUE nếu force = true (chỉ admin)")
     void checkOut_overdueForced_success() {
         Contract contract = createSampleContract(1L, ContractStatus.ACTIVE);
         User staff = createSampleUser(2L);

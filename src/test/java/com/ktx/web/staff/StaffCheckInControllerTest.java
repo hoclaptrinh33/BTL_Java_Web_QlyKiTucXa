@@ -10,18 +10,22 @@ import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.ktx.domain.Bed;
@@ -29,16 +33,19 @@ import com.ktx.domain.Building;
 import com.ktx.domain.Contract;
 import com.ktx.domain.Room;
 import com.ktx.domain.Student;
+import com.ktx.domain.User;
 import com.ktx.domain.enums.BedStatus;
 import com.ktx.domain.enums.BuildingGenderPolicy;
 import com.ktx.domain.enums.ContractStatus;
 import com.ktx.domain.enums.Gender;
+import com.ktx.domain.enums.Role;
 import com.ktx.repository.BuildingRepository;
 import com.ktx.repository.InvoiceRepository;
 import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.RoomAssetRepository;
 import com.ktx.repository.StaffRepository;
 import com.ktx.repository.UserRepository;
+import com.ktx.security.KtxUserDetails;
 import com.ktx.security.KtxUserDetailsService;
 import com.ktx.security.LoginAttemptService;
 import com.ktx.security.LoginFailureHandler;
@@ -182,5 +189,65 @@ class StaffCheckInControllerTest {
                 .andExpect(content().string(containsString("Thủ tục Check-in")))
                 .andExpect(content().string(containsString("HD-2026-000001")))
                 .andExpect(content().string(containsString("Nguyen Van A")));
+    }
+
+    @Test
+    void staffCheckoutIgnoresForceAndDoesNotShowForceCheckbox() throws Exception {
+        Building b = new Building();
+        b.setId(1L);
+        b.setCode("A");
+        b.setGenderPolicy(BuildingGenderPolicy.MALE);
+
+        Room room = new Room();
+        room.setId(10L);
+        room.setRoomNumber("101");
+        room.setBuilding(b);
+
+        Bed bed = new Bed();
+        bed.setId(100L);
+        bed.setBedCode("G1");
+        bed.setStatus(BedStatus.OCCUPIED);
+        bed.setRoom(room);
+
+        Student student = new Student();
+        student.setId(5L);
+        student.setStudentCode("SV001");
+        student.setFullName("Nguyen Van A");
+        student.setGender(Gender.MALE);
+
+        Contract contract = new Contract();
+        contract.setId(1L);
+        contract.setContractNo("HD-2026-000001");
+        contract.setStudent(student);
+        contract.setBed(bed);
+        contract.setStatus(ContractStatus.ACTIVE);
+
+        when(contractService.getByIdWithDetails(1L)).thenReturn(contract);
+        when(roomAssetRepository.findByRoomIdOrderByIdAsc(10L)).thenReturn(List.of());
+        when(invoiceRepository.existsByStudentIdAndStatus(eq(5L), any())).thenReturn(true);
+
+        mockMvc.perform(get("/staff/checkout/1").with(user("staffA").roles("STAFF")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("hóa đơn quá hạn")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("name=\"force\""))));
+
+        User staffUser = new User();
+        staffUser.setId(8L);
+        staffUser.setUsername("staffA");
+        staffUser.setEmail("staffA@ktx.com");
+        staffUser.setPasswordHash("hash");
+        staffUser.setRole(Role.STAFF);
+        staffUser.setEnabled(true);
+        KtxUserDetails staff = new KtxUserDetails(staffUser);
+
+        mockMvc.perform(post("/staff/checkout/1")
+                        .with(csrf())
+                        .with(user(staff))
+                        .param("ok", "true")
+                        .param("force", "true"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/staff/checkin"));
+
+        verify(checkInOutService).checkOut(eq(1L), eq(8L), any(), eq(true), any(), eq(false), any());
     }
 }
