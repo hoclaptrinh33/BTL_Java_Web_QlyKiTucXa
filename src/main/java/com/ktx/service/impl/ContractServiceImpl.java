@@ -18,6 +18,7 @@ import com.ktx.repository.BedRepository;
 import com.ktx.repository.ContractRepository;
 import com.ktx.service.ContractService;
 import com.ktx.service.DocumentNumberService;
+import com.ktx.service.SystemConfigService;
 
 @Service
 public class ContractServiceImpl implements ContractService {
@@ -25,13 +26,16 @@ public class ContractServiceImpl implements ContractService {
     private final ContractRepository contractRepository;
     private final BedRepository bedRepository;
     private final DocumentNumberService documentNumberService;
+    private final SystemConfigService systemConfigService;
 
     public ContractServiceImpl(ContractRepository contractRepository,
                                BedRepository bedRepository,
-                               DocumentNumberService documentNumberService) {
+                               DocumentNumberService documentNumberService,
+                               SystemConfigService systemConfigService) {
         this.contractRepository = contractRepository;
         this.bedRepository = bedRepository;
         this.documentNumberService = documentNumberService;
+        this.systemConfigService = systemConfigService;
     }
 
     @Override
@@ -46,8 +50,15 @@ public class ContractServiceImpl implements ContractService {
             pricePerTerm = bed.getRoom().getPricePerTerm();
         }
 
-        // Cọc: 50% giá phòng/kỳ làm tròn HALF_UP ra số nguyên VND (§04-04)
-        BigDecimal depositAmount = pricePerTerm.multiply(new BigDecimal("0.5")).setScale(0, RoundingMode.HALF_UP);
+        // Cọc: tính theo tỷ lệ cấu hình contract.deposit.ratio (mặc định 0.5 = 50%) làm tròn HALF_UP (§04-04)
+        BigDecimal depositRatio = new BigDecimal("0.5");
+        if (systemConfigService != null) {
+            BigDecimal configured = systemConfigService.getBigDecimal("contract.deposit.ratio", depositRatio);
+            if (configured != null) {
+                depositRatio = configured;
+            }
+        }
+        BigDecimal depositAmount = pricePerTerm.multiply(depositRatio).setScale(0, RoundingMode.HALF_UP);
 
         int year = termStart.getYear();
         String contractNo = documentNumberService.nextContractNo(year);

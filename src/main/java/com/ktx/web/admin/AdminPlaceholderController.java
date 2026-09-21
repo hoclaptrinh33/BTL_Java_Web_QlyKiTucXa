@@ -26,14 +26,6 @@ public class AdminPlaceholderController {
                 "Sinh viên đang ở, hóa đơn quá hạn, lấp đầy theo tòa.");
     }
 
-
-
-    @GetMapping("/admin/configs")
-    public String configs(Model model) {
-        return page(model, "configs", "Cài đặt hệ thống", "Trọng số phân bổ, giá điện nước, điểm rèn luyện",
-                "Đổi cấu hình trên system_configs.");
-    }
-
     private static String page(Model model, String menu, String title, String subtitle, String hint) {
         model.addAttribute("activeMenu", menu);
         model.addAttribute("pageTitle", title);

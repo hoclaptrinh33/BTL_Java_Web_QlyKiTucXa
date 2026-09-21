@@ -18,6 +18,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     List<Notification> findByUserIdAndType(Long userId, NotificationType type);
 
+    List<Notification> findByUserIdOrderByCreatedAtDesc(Long userId);
+
     @Query("""
             SELECT CASE WHEN COUNT(n) > 0 THEN true ELSE false END
             FROM Notification n

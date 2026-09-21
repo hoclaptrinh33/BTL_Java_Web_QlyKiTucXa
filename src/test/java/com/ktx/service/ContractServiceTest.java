@@ -44,11 +44,14 @@ class ContractServiceTest {
     @Mock
     private DocumentNumberService documentNumberService;
 
+    @Mock
+    private SystemConfigService systemConfigService;
+
     private ContractService contractService;
 
     @BeforeEach
     void setUp() {
-        contractService = new ContractServiceImpl(contractRepository, bedRepository, documentNumberService);
+        contractService = new ContractServiceImpl(contractRepository, bedRepository, documentNumberService, systemConfigService);
     }
 
     @Test
