@@ -1,8 +1,6 @@
 package com.ktx.web.student;
 
-import java.math.BigDecimal;
 import java.security.Principal;
-import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Controller;
@@ -76,8 +74,8 @@ public class StudentContractController {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn chưa có hợp đồng phòng ở để gia hạn.");
             return "redirect:/student/renewals";
         }
-        redirectAttributes.addFlashAttribute("successMessage",
-                "Đã gửi đơn xin gia hạn thêm " + termMonths + " tháng thành công! Ban quản lý sẽ xét duyệt trước kỳ mới.");
+        redirectAttributes.addFlashAttribute("errorMessage",
+                "Chức năng gia hạn hợp đồng chưa triển khai (module hợp đồng). Đơn chưa được lưu.");
         return "redirect:/student/renewals";
     }
 
@@ -102,8 +100,8 @@ public class StudentContractController {
                                    @RequestParam(value = "preferredBuilding", required = false) String preferredBuilding,
                                    Principal principal,
                                    RedirectAttributes redirectAttributes) {
-        redirectAttributes.addFlashAttribute("successMessage",
-                "Đã tiếp nhận đơn xin chuyển phòng! Ban quản lý sẽ rà soát chỗ trống và phản hồi cho bạn qua thông báo.");
+        redirectAttributes.addFlashAttribute("errorMessage",
+                "Chức năng chuyển phòng chưa triển khai (module hợp đồng). Đơn chưa được lưu.");
         return "redirect:/student/room-change";
     }
 
@@ -129,8 +127,8 @@ public class StudentContractController {
                                    @RequestParam("bankName") String bankName,
                                    Principal principal,
                                    RedirectAttributes redirectAttributes) {
-        redirectAttributes.addFlashAttribute("successMessage",
-                "Đã tiếp nhận yêu cầu trả phòng vào ngày " + returnDate + "! Vui lòng gặp cán bộ quản lý tòa nhà để kiểm kê tài sản và nhận hoàn cọc.");
+        redirectAttributes.addFlashAttribute("errorMessage",
+                "Chức năng trả phòng chưa triển khai (module hợp đồng). Yêu cầu chưa được lưu.");
         return "redirect:/student/return-room";
     }
 
