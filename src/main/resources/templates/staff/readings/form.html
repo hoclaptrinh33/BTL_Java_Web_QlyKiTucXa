@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <!-- Nút quay lại & Tiêu đề -->
+    <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <a th:href="@{/staff/readings(buildingId=${room.building.id}, month=${selectedMonth})}"
+               class="btn btn-sm btn-outline-secondary rounded-circle" title="Quay lại danh sách">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div>
+                <h2 class="h3 mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-lightning-charge text-primary"></i>
+                    <span>Ghi chỉ số điện nước — Phòng </span>
+                    <span class="text-primary font-monospace" th:text="${room.roomNumber}">101</span>
+                </h2>
+                <p class="text-muted small mb-0"
+                   th:text="${'Tòa ' + room.building.code + ' (' + room.building.name + ') — Tầng ' + room.floor + ' — Tháng ' + selectedMonth}">
+                    Tòa A — Tầng 1 — Tháng 2026-09
+                </p>
+            </div>
+        </div>
+        <div class="badge bg-light text-dark border px-3 py-2 font-monospace fs-6"
+             th:text="${'Tháng ' + selectedMonth}">Tháng 2026-09</div>
+    </div>
+
+    <!-- Cảnh báo nếu đã có hóa đơn hoạt động (khóa sửa) -->
+    <div th:if="${hasActiveInvoice}" class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+        <i class="bi bi-lock-fill fs-4 me-3 text-warning"></i>
+        <div>
+            <div class="fw-bold">Phòng đã phát hành hóa đơn điện nước cho tháng này!</div>
+            <div class="small">Chỉ số đã được chốt và khóa chỉnh sửa để đảm bảo tính toàn vẹn dữ liệu kế toán. Để chỉnh sửa, quản trị viên cần hủy các hóa đơn liên quan trước.</div>
+        </div>
+    </div>
+
+    <form th:action="@{/staff/readings/record}" th:object="${readingForm}" method="post" id="readingRecordForm">
+        <input type="hidden" th:field="*{roomId}"/>
+        <input type="hidden" th:field="*{billingMonth}"/>
+
+        <div class="row g-4 mb-4">
+            <!-- CỘT 1: CHỈ SỐ ĐIỆN -->
+            <div class="col-lg-6">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                            <i class="bi bi-lightning-charge-fill text-warning"></i>Chỉ số Điện (kWh)
+                        </h5>
+                    </div>
+                    <div class="card-body pt-0">
+                        <!-- Cờ thay công tơ điện -->
+                        <div class="form-check form-switch mb-3 p-3 bg-light rounded border">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   th:field="*{elecReplaced}" id="elecReplacedSwitch"
+                                   th:disabled="${hasActiveInvoice}"
+                                   onchange="toggleElecReplaced()"/>
+                            <label class="form-check-label fw-bold text-dark" for="elecReplacedSwitch">
+                                <i class="bi bi-arrow-repeat text-primary me-1"></i>Có thay công tơ điện trong tháng
+                            </label>
+                            <div class="form-text text-muted small">Bật tùy chọn này nếu trong tháng phòng được lắp công tơ điện mới.</div>
+                        </div>
+
+                        <!-- Trường hợp bình thường (không thay công tơ) -->
+                        <div id="elecNormalSection">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-secondary small">Chỉ số cũ (Đầu kỳ)</label>
+                                    <input type="number" min="0" class="form-control" th:field="*{elecPrev}"
+                                           id="elecPrevNormal" th:disabled="${hasActiveInvoice}"
+                                           placeholder="Chỉ số tháng trước"/>
+                                    <div class="form-text small">Chỉ số cuối tháng trước</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-dark small">Chỉ số mới (Hiện tại) <span class="text-danger">*</span></label>
+                                    <input type="number" min="0" class="form-control fw-bold" th:field="*{elecCurr}"
+                                           id="elecCurrNormal" th:disabled="${hasActiveInvoice}"
+                                           placeholder="Số đọc hiện tại" required/>
+                                    <div class="form-text small">Yêu cầu &ge; Chỉ số cũ</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trường hợp thay công tơ mới (cần 4 chỉ số) -->
+                        <div id="elecReplacedSection" style="display: none;">
+                            <div class="alert alert-info py-2 px-3 small mb-3">
+                                <i class="bi bi-info-circle me-1"></i>Công thức tính: <code>(Chốt cũ - Đầu kỳ) + (Hiện tại mới - Bắt đầu mới)</code>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-secondary small">Chỉ số đầu kỳ cũ</label>
+                                    <input type="number" min="0" class="form-control" th:field="*{elecPrev}"
+                                           id="elecPrevReplaced" th:disabled="${hasActiveInvoice}"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-danger small">Chỉ số chốt công tơ cũ <span class="text-danger">*</span></label>
+                                    <input type="number" min="0" class="form-control" th:field="*{elecOldFinal}"
+                                           id="elecOldFinal" th:disabled="${hasActiveInvoice}"
+                                           placeholder="Số khi tháo dỡ"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-primary small">Chỉ số bắt đầu công tơ mới <span class="text-danger">*</span></label>
+                                    <input type="number" min="0" class="form-control" th:field="*{elecNewStart}"
+                                           id="elecNewStart" th:disabled="${hasActiveInvoice}"
+                                           placeholder="Thường là 0"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-dark small">Chỉ số hiện tại công tơ mới <span class="text-danger">*</span></label>
+                                    <input type="number" min="0" class="form-control fw-bold" th:field="*{elecCurr}"
+                                           id="elecCurrReplaced" th:disabled="${hasActiveInvoice}"
+                                           placeholder="Số đọc hiện tại"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview tiêu thụ điện -->
+                        <div class="mt-4 p-3 bg-light rounded border d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold text-secondary small">Sản lượng điện ước tính:</span>
+                            <span class="h5 mb-0 fw-bold text-warning" id="elecPreview">— kWh</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CỘT 2: CHỈ SỐ NƯỚC -->
+            <div class="col-lg-6">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                            <i class="bi bi-droplet-fill text-info"></i>Chỉ số Nước (m³)
+                        </h5>
+                    </div>
+                    <div class="card-body pt-0">
+                        <!-- Cờ thay đồng hồ nước -->
+                        <div class="form-check form-switch mb-3 p-3 bg-light rounded border">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   th:field="*{waterReplaced}" id="waterReplacedSwitch"
+                                   th:disabled="${hasActiveInvoice}"
+                                   onchange="toggleWaterReplaced()"/>
+                            <label class="form-check-label fw-bold text-dark" for="waterReplacedSwitch">
+                                <i class="bi bi-arrow-repeat text-info me-1"></i>Có thay đồng hồ nước trong tháng
+                            </label>
+                            <div class="form-text text-muted small">Bật tùy chọn này nếu trong tháng phòng được lắp đồng hồ nước mới.</div>
+                        </div>
+
+                        <!-- Trường hợp bình thường (không thay đồng hồ) -->
+                        <div id="waterNormalSection">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-secondary small">Chỉ số cũ (Đầu kỳ)</label>
+                                    <input type="number" min="0" class="form-control" th:field="*{waterPrev}"
+                                           id="waterPrevNormal" th:disabled="${hasActiveInvoice}"
+                                           placeholder="Chỉ số tháng trước"/>
+                                    <div class="form-text small">Chỉ số cuối tháng trước</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-dark small">Chỉ số mới (Hiện tại) <span class="text-danger">*</span></label>
+                                    <input type="number" min="0" class="form-control fw-bold" th:field="*{waterCurr}"
+                                           id="waterCurrNormal" th:disabled="${hasActiveInvoice}"
+                                           placeholder="Số đọc hiện tại" required/>
+                                    <div class="form-text small">Yêu cầu &ge; Chỉ số cũ</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trường hợp thay đồng hồ mới (cần 4 chỉ số) -->
+                        <div id="waterReplacedSection" style="display: none;">
+                            <div class="alert alert-info py-2 px-3 small mb-3">
+                                <i class="bi bi-info-circle me-1"></i>Công thức tính: <code>(Chốt cũ - Đầu kỳ) + (Hiện tại mới - Bắt đầu mới)</code>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-secondary small">Chỉ số đầu kỳ cũ</label>
+                                    <input type="number" min="0" class="form-control" th:field="*{waterPrev}"
+                                           id="waterPrevReplaced" th:disabled="${hasActiveInvoice}"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-danger small">Chỉ số chốt đồng hồ cũ <span class="text-danger">*</span></label>
+                                    <input type="number" min="0" class="form-control" th:field="*{waterOldFinal}"
+                                           id="waterOldFinal" th:disabled="${hasActiveInvoice}"
+                                           placeholder="Số khi tháo dỡ"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-primary small">Chỉ số bắt đầu đồng hồ mới <span class="text-danger">*</span></label>
+                                    <input type="number" min="0" class="form-control" th:field="*{waterNewStart}"
+                                           id="waterNewStart" th:disabled="${hasActiveInvoice}"
+                                           placeholder="Thường là 0"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-dark small">Chỉ số hiện tại đồng hồ mới <span class="text-danger">*</span></label>
+                                    <input type="number" min="0" class="form-control fw-bold" th:field="*{waterCurr}"
+                                           id="waterCurrReplaced" th:disabled="${hasActiveInvoice}"
+                                           placeholder="Số đọc hiện tại"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview tiêu thụ nước -->
+                        <div class="mt-4 p-3 bg-light rounded border d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold text-secondary small">Sản lượng nước ước tính:</span>
+                            <span class="h5 mb-0 fw-bold text-info" id="waterPreview">— m³</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tùy chọn bổ sung & Nút Lưu -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" th:field="*{newBuildingMeter}" id="newBuildingMeter"
+                           th:disabled="${hasActiveInvoice}"/>
+                    <label class="form-check-label text-muted small" for="newBuildingMeter">
+                        Phòng mới đưa vào sử dụng lần đầu (Bỏ qua ràng buộc chỉ số mới &ge; chỉ số cũ nếu bắt đầu từ 0)
+                    </label>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/staff/readings(buildingId=${room.building.id}, month=${selectedMonth})}"
+                       class="btn btn-outline-secondary">
+                        Hủy bỏ
+                    </a>
+                    <button type="submit" class="btn btn-primary fw-semibold px-4" th:disabled="${hasActiveInvoice}">
+                        <i class="bi bi-check2-circle me-1"></i>Lưu chỉ số
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Script điều khiển toggle hiển thị khi bật cờ thay công tơ -->
+    <script>
+        function toggleElecReplaced() {
+            const isReplaced = document.getElementById('elecReplacedSwitch').checked;
+            const normalSec = document.getElementById('elecNormalSection');
+            const replacedSec = document.getElementById('elecReplacedSection');
+
+            if (isReplaced) {
+                normalSec.style.display = 'none';
+                replacedSec.style.display = 'block';
+                document.getElementById('elecCurrNormal').removeAttribute('required');
+                document.getElementById('elecOldFinal').setAttribute('required', 'required');
+                document.getElementById('elecNewStart').setAttribute('required', 'required');
+                document.getElementById('elecCurrReplaced').setAttribute('required', 'required');
+            } else {
+                normalSec.style.display = 'block';
+                replacedSec.style.display = 'none';
+                document.getElementById('elecCurrNormal').setAttribute('required', 'required');
+                document.getElementById('elecOldFinal').removeAttribute('required');
+                document.getElementById('elecNewStart').removeAttribute('required');
+                document.getElementById('elecCurrReplaced').removeAttribute('required');
+            }
+            calcElecPreview();
+        }
+
+        function toggleWaterReplaced() {
+            const isReplaced = document.getElementById('waterReplacedSwitch').checked;
+            const normalSec = document.getElementById('waterNormalSection');
+            const replacedSec = document.getElementById('waterReplacedSection');
+
+            if (isReplaced) {
+                normalSec.style.display = 'none';
+                replacedSec.style.display = 'block';
+                document.getElementById('waterCurrNormal').removeAttribute('required');
+                document.getElementById('waterOldFinal').setAttribute('required', 'required');
+                document.getElementById('waterNewStart').setAttribute('required', 'required');
+                document.getElementById('waterCurrReplaced').setAttribute('required', 'required');
+            } else {
+                normalSec.style.display = 'block';
+                replacedSec.style.display = 'none';
+                document.getElementById('waterCurrNormal').setAttribute('required', 'required');
+                document.getElementById('waterOldFinal').removeAttribute('required');
+                document.getElementById('waterNewStart').removeAttribute('required');
+                document.getElementById('waterCurrReplaced').removeAttribute('required');
+            }
+            calcWaterPreview();
+        }
+
+        function calcElecPreview() {
+            const isReplaced = document.getElementById('elecReplacedSwitch').checked;
+            const preview = document.getElementById('elecPreview');
+            try {
+                if (isReplaced) {
+                    const prev = parseInt(document.getElementById('elecPrevReplaced').value) || 0;
+                    const oldFinal = parseInt(document.getElementById('elecOldFinal').value);
+                    const newStart = parseInt(document.getElementById('elecNewStart').value);
+                    const curr = parseInt(document.getElementById('elecCurrReplaced').value);
+                    if (!isNaN(oldFinal) && !isNaN(newStart) && !isNaN(curr)) {
+                        const kwh = (oldFinal - prev) + (curr - newStart);
+                        preview.textContent = (kwh >= 0 ? kwh : 'Lỗi') + ' kWh';
+                        return;
+                    }
+                } else {
+                    const prev = parseInt(document.getElementById('elecPrevNormal').value) || 0;
+                    const curr = parseInt(document.getElementById('elecCurrNormal').value);
+                    if (!isNaN(curr)) {
+                        const kwh = curr - prev;
+                        preview.textContent = (kwh >= 0 ? kwh : 'Lỗi') + ' kWh';
+                        return;
+                    }
+                }
+            } catch (e) {}
+            preview.textContent = '— kWh';
+        }
+
+        function calcWaterPreview() {
+            const isReplaced = document.getElementById('waterReplacedSwitch').checked;
+            const preview = document.getElementById('waterPreview');
+            try {
+                if (isReplaced) {
+                    const prev = parseInt(document.getElementById('waterPrevReplaced').value) || 0;
+                    const oldFinal = parseInt(document.getElementById('waterOldFinal').value);
+                    const newStart = parseInt(document.getElementById('waterNewStart').value);
+                    const curr = parseInt(document.getElementById('waterCurrReplaced').value);
+                    if (!isNaN(oldFinal) && !isNaN(newStart) && !isNaN(curr)) {
+                        const m3 = (oldFinal - prev) + (curr - newStart);
+                        preview.textContent = (m3 >= 0 ? m3 : 'Lỗi') + ' m³';
+                        return;
+                    }
+                } else {
+                    const prev = parseInt(document.getElementById('waterPrevNormal').value) || 0;
+                    const curr = parseInt(document.getElementById('waterCurrNormal').value);
+                    if (!isNaN(curr)) {
+                        const m3 = curr - prev;
+                        preview.textContent = (m3 >= 0 ? m3 : 'Lỗi') + ' m³';
+                        return;
+                    }
+                }
+            } catch (e) {}
+            preview.textContent = '— m³';
+        }
+
+        // Initialize state on load
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleElecReplaced();
+            toggleWaterReplaced();
+
+            document.querySelectorAll('#elecNormalSection input, #elecReplacedSection input').forEach(input => {
+                input.addEventListener('input', calcElecPreview);
+            });
+            document.querySelectorAll('#waterNormalSection input, #waterReplacedSection input').forEach(input => {
+                input.addEventListener('input', calcWaterPreview);
+            });
+        });
+    </script>
+</main>
+</body>
+</html>

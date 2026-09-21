@@ -3,6 +3,8 @@ package com.ktx.domain;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.ktx.common.exception.BusinessException;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -197,5 +199,57 @@ public class UtilityReading {
 
     public void setRecordedAt(LocalDateTime recordedAt) {
         this.recordedAt = recordedAt;
+    }
+
+    public int calculateKwh() {
+        if (Boolean.TRUE.equals(elecReplaced)) {
+            if (elecOldFinal == null || elecNewStart == null || elecCurr == null || elecPrev == null) {
+                throw new BusinessException("Thay công tơ điện bắt buộc nhập đủ: chỉ số chốt cũ, chỉ số bắt đầu mới và chỉ số hiện tại");
+            }
+            int part1 = elecOldFinal - elecPrev;
+            int part2 = elecCurr - elecNewStart;
+            if (part1 < 0 || part2 < 0) {
+                throw new BusinessException("Chỉ số công tơ điện không hợp lệ: chỉ số mới phải lớn hơn hoặc bằng chỉ số cũ");
+            }
+            return part1 + part2;
+        } else {
+            if (elecCurr == null || elecPrev == null) {
+                throw new BusinessException("Chỉ số điện hiện tại và kỳ trước không được để trống");
+            }
+            if (!Boolean.TRUE.equals(newBuildingMeter) && elecCurr < elecPrev) {
+                throw new BusinessException("Chỉ số điện hiện tại (" + elecCurr + ") phải lớn hơn hoặc bằng kỳ trước (" + elecPrev + ")");
+            }
+            int kwh = elecCurr - elecPrev;
+            if (kwh < 0) {
+                throw new BusinessException("Sản lượng điện tiêu thụ không thể âm");
+            }
+            return kwh;
+        }
+    }
+
+    public int calculateM3() {
+        if (Boolean.TRUE.equals(waterReplaced)) {
+            if (waterOldFinal == null || waterNewStart == null || waterCurr == null || waterPrev == null) {
+                throw new BusinessException("Thay công tơ nước bắt buộc nhập đủ: chỉ số chốt cũ, chỉ số bắt đầu mới và chỉ số hiện tại");
+            }
+            int part1 = waterOldFinal - waterPrev;
+            int part2 = waterCurr - waterNewStart;
+            if (part1 < 0 || part2 < 0) {
+                throw new BusinessException("Chỉ số công tơ nước không hợp lệ: chỉ số mới phải lớn hơn hoặc bằng chỉ số cũ");
+            }
+            return part1 + part2;
+        } else {
+            if (waterCurr == null || waterPrev == null) {
+                throw new BusinessException("Chỉ số nước hiện tại và kỳ trước không được để trống");
+            }
+            if (!Boolean.TRUE.equals(newBuildingMeter) && waterCurr < waterPrev) {
+                throw new BusinessException("Chỉ số nước hiện tại (" + waterCurr + ") phải lớn hơn hoặc bằng kỳ trước (" + waterPrev + ")");
+            }
+            int m3 = waterCurr - waterPrev;
+            if (m3 < 0) {
+                throw new BusinessException("Sản lượng nước tiêu thụ không thể âm");
+            }
+            return m3;
+        }
     }
 }

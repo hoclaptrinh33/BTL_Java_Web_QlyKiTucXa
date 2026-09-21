@@ -30,6 +30,11 @@
            th:classappend="${activeMenu == 'checkin'} ? 'is-active'">
             <i class="bi bi-door-open"></i> <span>Check-in / out</span>
         </a>
+        <a th:href="@{/staff/readings}"
+           sec:authorize="hasRole('STAFF')"
+           th:classappend="${activeMenu == 'readings'} ? 'is-active'">
+            <i class="bi bi-lightning-charge"></i> <span>Điện nước</span>
+        </a>
         <a th:href="@{/staff/tickets}"
            sec:authorize="hasRole('STAFF')"
            th:classappend="${activeMenu == 'tickets'} ? 'is-active'">
@@ -74,6 +79,9 @@
             </a>
             <a th:href="@{/admin/invoices}" th:classappend="${activeMenu == 'invoices'} ? 'is-active'">
                 <i class="bi bi-receipt"></i> <span>Hóa đơn</span>
+            </a>
+            <a th:href="@{/admin/readings}" th:classappend="${activeMenu == 'readings'} ? 'is-active'">
+                <i class="bi bi-lightning-charge"></i> <span>Điện nước</span>
             </a>
 
             <p class="ktx-nav__label">Vận hành</p>
