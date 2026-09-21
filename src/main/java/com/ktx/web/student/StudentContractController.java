@@ -25,11 +25,20 @@ public class StudentContractController {
 
     private final StudentRepository studentRepository;
     private final ContractRepository contractRepository;
+    private final com.ktx.repository.CheckInOutRepository checkInOutRepository;
+    private final com.ktx.repository.InvoiceRepository invoiceRepository;
+    private final com.ktx.repository.RoomAssetRepository roomAssetRepository;
 
     public StudentContractController(StudentRepository studentRepository,
-                                     ContractRepository contractRepository) {
+                                     ContractRepository contractRepository,
+                                     com.ktx.repository.CheckInOutRepository checkInOutRepository,
+                                     com.ktx.repository.InvoiceRepository invoiceRepository,
+                                     com.ktx.repository.RoomAssetRepository roomAssetRepository) {
         this.studentRepository = studentRepository;
         this.contractRepository = contractRepository;
+        this.checkInOutRepository = checkInOutRepository;
+        this.invoiceRepository = invoiceRepository;
+        this.roomAssetRepository = roomAssetRepository;
     }
 
     @GetMapping("/contract")
@@ -39,8 +48,22 @@ public class StudentContractController {
                 student.getId(), OccupyingStatuses.OCCUPYING);
         Contract activeContract = contracts.isEmpty() ? null : contracts.get(0);
 
+        List<com.ktx.domain.CheckInOut> checkInOutList = List.of();
+        List<com.ktx.domain.Invoice> invoices = List.of();
+        List<com.ktx.domain.RoomAsset> roomAssets = List.of();
+        if (activeContract != null) {
+            checkInOutList = checkInOutRepository.findByContractIdOrderByPerformedAtDesc(activeContract.getId());
+            invoices = invoiceRepository.findByContractIdOrderByDueDateDesc(activeContract.getId());
+            if (activeContract.getBed() != null && activeContract.getBed().getRoom() != null) {
+                roomAssets = roomAssetRepository.findByRoomIdOrderByIdAsc(activeContract.getBed().getRoom().getId());
+            }
+        }
+
         model.addAttribute("student", student);
         model.addAttribute("contract", activeContract);
+        model.addAttribute("checkInOutList", checkInOutList);
+        model.addAttribute("invoices", invoices);
+        model.addAttribute("roomAssets", roomAssets);
         model.addAttribute("pageTitle", "Hợp đồng lưu trú");
         model.addAttribute("pageSubtitle", "Thông tin hợp đồng và quy chế phòng ở");
         model.addAttribute("activeMenu", "contract");

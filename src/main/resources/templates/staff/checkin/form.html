@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <div class="mb-4">
+        <a th:href="@{/staff/checkin}" class="btn btn-sm btn-outline-secondary rounded-circle mb-2" title="Quay lại">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="h3 mb-1 fw-bold text-dark">Thủ tục Check-in — Tiếp nhận sinh viên</h2>
+        <p class="text-muted small">Kiểm tra thông tin sinh viên, kiểm kê tài sản phòng và bàn giao chìa khóa chỗ ở</p>
+    </div>
+
+    <form th:action="@{/staff/checkin/{id}(id=${contract.id})}" method="post">
+        <div class="row g-4 mb-4">
+            <!-- Cột trái: Thông tin sinh viên & hợp đồng -->
+            <div class="col-lg-5">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                            <i class="bi bi-person-badge text-primary"></i>Thông tin sinh viên
+                        </h5>
+                    </div>
+                    <div class="card-body pt-0">
+                        <table class="table table-borderless small mb-0">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted" style="width: 35%;">Họ và tên:</td>
+                                    <td class="fw-bold text-dark" th:text="${contract.student != null ? contract.student.fullName : '—'}">Nguyễn Văn A</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Mã sinh viên:</td>
+                                    <td class="fw-semibold text-primary font-monospace" th:text="${contract.student != null ? contract.student.studentCode : '—'}">SV001</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Giới tính:</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border"
+                                              th:text="${contract.student != null && contract.student.gender != null ? (contract.student.gender.name() == 'MALE' ? 'Nam' : 'Nữ') : '—'}">Nam</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Lớp / Khoa:</td>
+                                    <td th:text="${(contract.student != null && contract.student.classCode != null ? contract.student.classCode : '—') + ' / ' + (contract.student != null && contract.student.facultyCode != null ? contract.student.facultyCode : '—')}">D22CNTT</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Số điện thoại:</td>
+                                    <td th:text="${contract.student != null ? contract.student.phone : '—'}">0912345678</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                            <i class="bi bi-file-earmark-text text-primary"></i>Thông tin hợp đồng &amp; Chỗ ở
+                        </h5>
+                    </div>
+                    <div class="card-body pt-0">
+                        <table class="table table-borderless small mb-0">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted" style="width: 35%;">Mã hợp đồng:</td>
+                                    <td class="fw-bold font-monospace text-primary" th:text="${contract.contractNo}">HD-2026-000001</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Phòng ở:</td>
+                                    <td class="fw-semibold text-dark"
+                                        th:text="${contract.bed != null && contract.bed.room != null ? (contract.bed.room.building.code + ' - Phòng ' + contract.bed.room.roomNumber) : '—'}">A - Phòng 101</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Vị trí giường:</td>
+                                    <td>
+                                        <span class="badge bg-primary fs-6" th:text="${contract.bed != null ? contract.bed.bedCode : '—'}">G1</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Thời hạn:</td>
+                                    <td th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy') + ' → ' + #temporals.format(contract.endDate, 'dd/MM/yyyy')}">...</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Tiền phòng:</td>
+                                    <td class="font-monospace" th:text="${contract.roomFee != null ? #numbers.formatInteger(contract.roomFee, 1, 'POINT') + ' đ/kỳ' : '0 đ'}">1.200.000 đ</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Tiền đặt cọc:</td>
+                                    <td class="font-monospace fw-bold text-success"
+                                        th:text="${contract.depositAmount != null ? #numbers.formatInteger(contract.depositAmount, 1, 'POINT') + ' đ (50%)' : '0 đ'}">600.000 đ</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cột phải: Checklist tài sản & Xác nhận Check-in -->
+            <div class="col-lg-7">
+                <!-- Checklist tài sản -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                            <i class="bi bi-box-seam text-primary"></i>Checklist tài sản phòng ở khi nhận phòng
+                        </h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Tài sản</th>
+                                    <th>Số lượng</th>
+                                    <th>Tình trạng bàn giao</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(roomAssets)}">
+                                    <td colspan="3" class="text-center py-4 text-muted">
+                                        Không có danh mục tài sản nào được gán cho phòng này.
+                                    </td>
+                                </tr>
+                                <tr th:each="a : ${roomAssets}">
+                                    <td class="ps-3">
+                                        <div class="fw-semibold text-dark" th:text="${a.name}">Quạt trần</div>
+                                        <small class="text-muted" th:text="${a.category}">FAN</small>
+                                    </td>
+                                    <td class="fw-bold" th:text="${a.quantity}">1</td>
+                                    <td>
+                                        <select class="form-select form-select-sm" th:name="${'asset_condition_' + a.id}">
+                                            <option value="GOOD" th:selected="${a.condition != null && a.condition.name() == 'GOOD'}">Tốt (GOOD)</option>
+                                            <option value="MAINTENANCE" th:selected="${a.condition != null && a.condition.name() == 'MAINTENANCE'}">Bảo trì (MAINTENANCE)</option>
+                                            <option value="DAMAGED" th:selected="${a.condition != null && a.condition.name() == 'DAMAGED'}">Hư hỏng (DAMAGED)</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Biên bản bàn giao & Xác nhận -->
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                            <i class="bi bi-clipboard-check text-success"></i>Xác nhận nhận phòng &amp; Bàn giao
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info small mb-3">
+                            <i class="bi bi-info-circle-fill me-1"></i>
+                            Khi bấm xác nhận Check-in, hợp đồng sẽ chính thức đổi sang trạng thái <strong>ACTIVE</strong> và hệ thống tự động phát hành <strong>hóa đơn đặt cọc (50% giá phòng)</strong>.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary small">Hiện trạng nhận phòng</label>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="ok" id="checkinOkTrue" value="true" checked>
+                                <label class="form-check-label" for="checkinOkTrue">
+                                    <strong class="text-success">Đạt yêu cầu (OK)</strong> — Bàn giao đủ tài sản và chìa khóa, phòng sẵn sàng sử dụng.
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="ok" id="checkinOkFalse" value="false">
+                                <label class="form-check-label" for="checkinOkFalse">
+                                    <strong class="text-warning">Có lưu ý / sự cố</strong> — Có hạng mục cần sửa chữa hoặc thiếu trang thiết bị.
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="assetNote" class="form-label fw-semibold text-secondary small">Ghi chú bàn giao khi Check-in</label>
+                            <textarea id="assetNote" name="assetNote" class="form-control" rows="3"
+                                      placeholder="Ví dụ: Đã cấp 01 chìa khóa phòng, kiểm tra công tơ điện nước hoạt động bình thường..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a th:href="@{/staff/checkin}" class="btn btn-secondary">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-success shadow-sm px-4">
+                                <i class="bi bi-check-circle me-1"></i>Xác nhận Check-in &amp; Kích hoạt HĐ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+</main>
+</body>
+</html>

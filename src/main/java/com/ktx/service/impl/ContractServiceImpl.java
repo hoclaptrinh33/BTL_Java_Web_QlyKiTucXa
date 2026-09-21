@@ -100,4 +100,46 @@ public class ContractServiceImpl implements ContractService {
             }
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Contract getById(Long id) {
+        return contractRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy hợp đồng #" + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Contract getByIdWithDetails(Long id) {
+        return contractRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy hợp đồng #" + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<Contract> searchContracts(Long buildingId, ContractStatus status, String keyword) {
+        String kw = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+        return contractRepository.searchContracts(buildingId, status, kw);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<Contract> findByBuildingAndStatus(Long buildingId, java.util.Collection<ContractStatus> statuses) {
+        return contractRepository.findByBuildingIdAndStatusInWithDetails(buildingId, statuses);
+    }
+
+    @Override
+    @Transactional
+    public void terminate(Long contractId, boolean forfeitDeposit) {
+        Contract contract = getById(contractId);
+        if (contract.getStatus() != ContractStatus.ACTIVE) {
+            throw new BusinessException("Chỉ có thể chấm dứt hợp đồng đang ở trạng thái ACTIVE");
+        }
+        contract.setStatus(ContractStatus.TERMINATED);
+        if (forfeitDeposit) {
+            contract.setDepositStatus(DepositStatus.FORFEITED);
+        }
+        // Giường VẪN giữ OCCUPIED cho đến khi checkout (§04-04)
+        contractRepository.save(contract);
+    }
 }

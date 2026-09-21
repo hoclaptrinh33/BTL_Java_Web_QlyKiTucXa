@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <!-- Header thông tin tòa của cán bộ -->
+    <div class="card shadow-sm border-0 mb-4 bg-primary text-white">
+        <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h4 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-door-open"></i>
+                    <span th:if="${building != null}" th:text="${'Bàn tiếp nhận sinh viên — ' + building.name + ' (' + building.code + ')'}">Tòa A</span>
+                    <span th:if="${building == null}">Bàn tiếp nhận sinh viên ký túc xá</span>
+                </h4>
+                <p class="mb-0 opacity-75 small">Quản lý nhận phòng (Check-in) từ hợp đồng DRAFT và thủ tục trả phòng (Check-out) nhả giường</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a th:href="@{/staff/buildings/rooms}" class="btn btn-light btn-sm text-primary fw-semibold shadow-sm">
+                    <i class="bi bi-grid-3x3 me-1"></i>Xem sơ đồ phòng
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs chuyển đổi các danh sách -->
+    <ul class="nav nav-pills mb-4" id="checkinTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold d-flex align-items-center gap-2" id="draft-tab" data-bs-toggle="tab" data-bs-target="#draft-pane" type="button" role="tab">
+                <i class="bi bi-box-arrow-in-right"></i>
+                <span>Chờ Check-in (DRAFT)</span>
+                <span class="badge bg-warning text-dark rounded-pill" th:text="${#lists.size(draftContracts)}">0</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold d-flex align-items-center gap-2" id="checkout-tab" data-bs-toggle="tab" data-bs-target="#checkout-pane" type="button" role="tab">
+                <i class="bi bi-box-arrow-left"></i>
+                <span>Chờ / Có thể Check-out</span>
+                <span class="badge bg-primary rounded-pill" th:text="${#lists.size(checkoutContracts)}">0</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold d-flex align-items-center gap-2" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-pane" type="button" role="tab">
+                <i class="bi bi-clock-history"></i>
+                <span>Nhật ký gần đây</span>
+                <span class="badge bg-secondary rounded-pill" th:text="${#lists.size(recentHistory)}">0</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="checkinTabContent">
+        <!-- TAB 1: DANH SÁCH CHỜ CHECK-IN (DRAFT) -->
+        <div class="tab-pane fade show active" id="draft-pane" role="tabpanel" tabindex="0">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-person-check text-warning"></i>
+                        <span>Danh sách hợp đồng DRAFT chờ sinh viên nhận phòng</span>
+                    </h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Số HĐ</th>
+                                <th>Sinh viên</th>
+                                <th>Phòng / Giường</th>
+                                <th>Thời hạn</th>
+                                <th class="text-end">Tiền cọc (50%)</th>
+                                <th class="text-end pe-3">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(draftContracts)}">
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-check2-all fs-2 d-block mb-2 text-success"></i>
+                                    Hiện không có hợp đồng DRAFT nào đang chờ nhận phòng tại tòa này.
+                                </td>
+                            </tr>
+                            <tr th:each="c : ${draftContracts}">
+                                <td class="ps-3 fw-bold text-primary" th:text="${c.contractNo}">HD-2026-000001</td>
+                                <td>
+                                    <div class="fw-semibold text-dark" th:text="${c.student != null ? c.student.fullName : '—'}">Nguyễn Văn A</div>
+                                    <small class="text-muted" th:text="${c.student != null ? (c.student.studentCode + ' · ' + c.student.gender) : '—'}">SV001 · MALE</small>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-dark" th:text="${c.bed != null && c.bed.room != null ? ('P.' + c.bed.room.roomNumber) : '—'}">P.101</span>
+                                    <span class="badge bg-light text-dark border ms-1" th:text="${c.bed != null ? c.bed.bedCode : '—'}">G1</span>
+                                </td>
+                                <td>
+                                    <span class="small" th:text="${#temporals.format(c.startDate, 'dd/MM/yyyy') + ' → ' + #temporals.format(c.endDate, 'dd/MM/yyyy')}">...</span>
+                                </td>
+                                <td class="text-end font-monospace fw-semibold" th:text="${c.depositAmount != null ? #numbers.formatInteger(c.depositAmount, 1, 'POINT') + ' đ' : '0 đ'}">600.000 đ</td>
+                                <td class="text-end pe-3">
+                                    <a th:href="@{/staff/checkin/{id}(id=${c.id})}" class="btn btn-sm btn-success shadow-sm">
+                                        <i class="bi bi-box-arrow-in-right me-1"></i>Check-in
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: DANH SÁCH CHECK-OUT (ACTIVE / EXPIRED / TERMINATED) -->
+        <div class="tab-pane fade" id="checkout-pane" role="tabpanel" tabindex="0">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-box-arrow-left text-primary"></i>
+                        <span>Danh sách sinh viên đang ở / hết hạn / bị chấm dứt chờ trả phòng</span>
+                    </h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Số HĐ</th>
+                                <th>Sinh viên</th>
+                                <th>Phòng / Giường</th>
+                                <th>Trạng thái HĐ</th>
+                                <th>Hết hạn ngày</th>
+                                <th class="text-end pe-3">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(checkoutContracts)}">
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                    Không có sinh viên nào trong danh sách trả phòng.
+                                </td>
+                            </tr>
+                            <tr th:each="c : ${checkoutContracts}">
+                                <td class="ps-3 fw-bold text-primary" th:text="${c.contractNo}">HD-2026-000001</td>
+                                <td>
+                                    <div class="fw-semibold text-dark" th:text="${c.student != null ? c.student.fullName : '—'}">Nguyễn Văn A</div>
+                                    <small class="text-muted" th:text="${c.student != null ? c.student.studentCode : '—'}">SV001</small>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-dark" th:text="${c.bed != null && c.bed.room != null ? ('P.' + c.bed.room.roomNumber) : '—'}">P.101</span>
+                                    <span class="badge bg-light text-dark border ms-1" th:text="${c.bed != null ? c.bed.bedCode : '—'}">G1</span>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${c.status != null ? (c.status.name() == 'ACTIVE' ? 'bg-success' : (c.status.name() == 'TERMINATED' ? 'bg-danger' : 'bg-secondary')) : 'bg-secondary'}"
+                                          th:text="${c.status}">ACTIVE</span>
+                                </td>
+                                <td>
+                                    <span class="small" th:text="${#temporals.format(c.endDate, 'dd/MM/yyyy')}">31/01/2027</span>
+                                </td>
+                                <td class="text-end pe-3">
+                                    <a th:href="@{/staff/checkout/{id}(id=${c.id})}" class="btn btn-sm btn-primary shadow-sm">
+                                        <i class="bi bi-box-arrow-left me-1"></i>Check-out
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: NHẬT KÝ SỰ KIỆN GẦN ĐÂY -->
+        <div class="tab-pane fade" id="history-pane" role="tabpanel" tabindex="0">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-secondary"></i>
+                        <span>Lịch sử nhận và trả phòng gần đây</span>
+                    </h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Sự kiện</th>
+                                <th>Thời gian</th>
+                                <th>Cán bộ</th>
+                                <th>Sinh viên</th>
+                                <th>Phòng / Giường</th>
+                                <th>Tình trạng</th>
+                                <th class="pe-3">Ghi chú</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(recentHistory)}">
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    Chưa có nhật ký sự kiện nào được ghi nhận.
+                                </td>
+                            </tr>
+                            <tr th:each="ev : ${recentHistory}">
+                                <td class="ps-3">
+                                    <span class="badge"
+                                          th:classappend="${ev.eventType != null && ev.eventType.name() == 'CHECK_IN' ? 'bg-success' : 'bg-primary'}"
+                                          th:text="${ev.eventType}">CHECK_IN</span>
+                                </td>
+                                <td class="small" th:text="${#temporals.format(ev.performedAt, 'dd/MM/yyyy HH:mm')}">...</td>
+                                <td class="fw-semibold text-dark" th:text="${ev.performedBy != null ? ev.performedBy.username : '—'}">—</td>
+                                <td>
+                                    <span class="fw-semibold" th:text="${ev.contract != null && ev.contract.student != null ? ev.contract.student.fullName : '—'}">—</span>
+                                    <small class="text-muted d-block" th:text="${ev.contract != null && ev.contract.student != null ? ev.contract.student.studentCode : ''}"></small>
+                                </td>
+                                <td>
+                                    <span th:text="${ev.contract != null && ev.contract.bed != null && ev.contract.bed.room != null ? ('P.' + ev.contract.bed.room.roomNumber + ' - ' + ev.contract.bed.bedCode) : '—'}">—</span>
+                                </td>
+                                <td>
+                                    <span th:if="${ev.ok}" class="badge bg-success-subtle text-success">Bình thường</span>
+                                    <span th:unless="${ev.ok}" class="badge bg-danger-subtle text-danger">Có hư hại</span>
+                                </td>
+                                <td class="pe-3 small text-muted" th:text="${ev.assetNote != null ? ev.assetNote : '—'}">—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>

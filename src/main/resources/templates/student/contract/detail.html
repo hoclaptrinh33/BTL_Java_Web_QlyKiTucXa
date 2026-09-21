@@ -48,7 +48,9 @@
                         <div>
                             <div class="text-muted small">Số hợp đồng</div>
                             <div class="fw-bold text-dark" th:text="${contract.contractNo}">HD-001</div>
-                            <span class="badge bg-success-subtle text-success mt-1">Đang hiệu lực</span>
+                            <span class="badge mt-1"
+                                  th:classappend="${contract.status != null ? (contract.status.name() == 'ACTIVE' ? 'bg-success-subtle text-success' : (contract.status.name() == 'DRAFT' ? 'bg-warning-subtle text-warning' : (contract.status.name() == 'TERMINATED' ? 'bg-danger-subtle text-danger' : (contract.status.name() == 'EXPIRED' ? 'bg-secondary-subtle text-secondary' : 'bg-dark-subtle text-dark')))) : 'bg-secondary'}"
+                                  th:text="${contract.status != null ? (contract.status.name() == 'ACTIVE' ? 'Đang hiệu lực' : (contract.status.name() == 'DRAFT' ? 'Chờ nhận phòng' : (contract.status.name() == 'TERMINATED' ? 'Đã chấm dứt' : (contract.status.name() == 'EXPIRED' ? 'Hết hạn' : 'Đã kết thúc')))) : '—'}">Đang hiệu lực</span>
                         </div>
                     </div>
                 </div>
@@ -131,50 +133,102 @@
                 </div>
 
                 <!-- Tài sản bàn giao -->
-                <div class="ktx-card">
+                <div class="ktx-card mb-4">
                     <div class="ktx-card__head mb-3">
-                        <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-box-seam me-2 text-primary"></i>Danh mục trang thiết bị bàn giao</h2>
+                        <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-box-seam me-2 text-primary"></i>Danh mục trang thiết bị phòng ở</h2>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle ktx-table mb-0">
                             <thead>
                                 <tr>
                                     <th>Trang thiết bị</th>
-                                    <th>Khu vực</th>
+                                    <th>Phân loại</th>
                                     <th>Số lượng</th>
-                                    <th>Tình trạng bàn giao</th>
+                                    <th>Tình trạng</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td><i class="bi bi-laptop me-2 text-secondary"></i>Bàn ghế học cá nhân</td>
-                                    <td>Vị trí giường</td>
-                                    <td>1 bộ</td>
-                                    <td><span class="badge bg-success-subtle text-success">Hoạt động tốt</span></td>
+                                <tr th:if="${#lists.isEmpty(roomAssets)}">
+                                    <td colspan="4" class="text-center py-3 text-muted">Chưa có danh mục trang thiết bị chi tiết.</td>
                                 </tr>
-                                <tr>
-                                    <td><i class="bi bi-layers me-2 text-secondary"></i>Giường tầng & Giáp giường</td>
-                                    <td>Vị trí giường</td>
-                                    <td>1 chiếc</td>
-                                    <td><span class="badge bg-success-subtle text-success">Hoạt động tốt</span></td>
+                                <tr th:each="a : ${roomAssets}">
+                                    <td class="fw-semibold text-dark" th:text="${a.name}">Bàn ghế học cá nhân</td>
+                                    <td class="text-muted" th:text="${a.category}">OTHER</td>
+                                    <td th:text="${a.quantity}">1</td>
+                                    <td>
+                                        <span class="badge"
+                                              th:classappend="${a.condition != null && a.condition.name() == 'GOOD' ? 'bg-success-subtle text-success' : (a.condition != null && a.condition.name() == 'DAMAGED' ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-warning')}"
+                                              th:text="${a.condition}">Hoạt động tốt</span>
+                                    </td>
                                 </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Lịch sử Check-in / Check-out -->
+                <div class="ktx-card mb-4" th:if="${not #lists.isEmpty(checkInOutList)}">
+                    <div class="ktx-card__head mb-3">
+                        <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Lịch sử nhận / trả phòng</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle ktx-table mb-0">
+                            <thead>
                                 <tr>
-                                    <td><i class="bi bi-snow me-2 text-secondary"></i>Điều hòa nhiệt độ</td>
-                                    <td>Dùng chung phòng</td>
-                                    <td>1 máy</td>
-                                    <td><span class="badge bg-success-subtle text-success">Hoạt động tốt</span></td>
+                                    <th>Sự kiện</th>
+                                    <th>Thời gian</th>
+                                    <th>Tình trạng</th>
+                                    <th>Ghi chú bàn giao</th>
                                 </tr>
-                                <tr>
-                                    <td><i class="bi bi-water me-2 text-secondary"></i>Bình nước nóng / Thiết bị vệ sinh</td>
-                                    <td>Phòng tắm</td>
-                                    <td>1 bộ</td>
-                                    <td><span class="badge bg-success-subtle text-success">Hoạt động tốt</span></td>
+                            </thead>
+                            <tbody>
+                                <tr th:each="ev : ${checkInOutList}">
+                                    <td>
+                                        <span class="badge"
+                                              th:classappend="${ev.eventType != null && ev.eventType.name() == 'CHECK_IN' ? 'bg-success' : 'bg-primary'}"
+                                              th:text="${ev.eventType}">CHECK_IN</span>
+                                    </td>
+                                    <td class="small" th:text="${#temporals.format(ev.performedAt, 'dd/MM/yyyy HH:mm')}">01/09/2026</td>
+                                    <td>
+                                        <span th:if="${ev.ok}" class="badge bg-success-subtle text-success">Bình thường</span>
+                                        <span th:unless="${ev.ok}" class="badge bg-danger-subtle text-danger">Có sự cố</span>
+                                    </td>
+                                    <td class="small text-muted" th:text="${ev.assetNote != null ? ev.assetNote : '—'}">—</td>
                                 </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Hóa đơn tài chính của hợp đồng -->
+                <div class="ktx-card" th:if="${not #lists.isEmpty(invoices)}">
+                    <div class="ktx-card__head mb-3">
+                        <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-receipt me-2 text-primary"></i>Hóa đơn tài chính hợp đồng</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle ktx-table mb-0">
+                            <thead>
                                 <tr>
-                                    <td><i class="bi bi-lightning-charge me-2 text-secondary"></i>Công tơ điện tử & Đồng hồ nước</td>
-                                    <td>Cửa phòng</td>
-                                    <td>1 hệ thống</td>
-                                    <td><span class="badge bg-success-subtle text-success">Đã kiểm định</span></td>
+                                    <th>Số hóa đơn</th>
+                                    <th>Khoản phí</th>
+                                    <th class="text-end">Số tiền</th>
+                                    <th>Hạn nộp</th>
+                                    <th class="text-center">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="inv : ${invoices}">
+                                    <td>
+                                        <a th:href="@{/student/invoices/{id}(id=${inv.id})}" class="fw-bold font-monospace text-primary text-decoration-none" th:text="${inv.invoiceNo}">INV-001</a>
+                                    </td>
+                                    <td th:text="${inv.invoiceType}">DEPOSIT</td>
+                                    <td class="text-end font-monospace fw-semibold" th:text="${#numbers.formatInteger(inv.total, 1, 'POINT') + ' đ'}">600.000 đ</td>
+                                    <td class="small" th:text="${#temporals.format(inv.dueDate, 'dd/MM/yyyy')}">...</td>
+                                    <td class="text-center">
+                                        <span class="badge"
+                                              th:classappend="${inv.status != null ? (inv.status.name() == 'PAID' ? 'bg-success' : (inv.status.name() == 'UNPAID' ? 'bg-warning text-dark' : 'bg-danger')) : 'bg-secondary'}"
+                                              th:text="${inv.status}">UNPAID</span>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>

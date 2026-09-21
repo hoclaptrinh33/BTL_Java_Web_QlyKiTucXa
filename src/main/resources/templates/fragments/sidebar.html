@@ -25,6 +25,11 @@
            th:classappend="${activeMenu == 'rooms'} ? 'is-active'">
             <i class="bi bi-door-closed"></i> <span>Phòng tòa</span>
         </a>
+        <a th:href="@{/staff/checkin}"
+           sec:authorize="hasRole('STAFF')"
+           th:classappend="${activeMenu == 'checkin'} ? 'is-active'">
+            <i class="bi bi-door-open"></i> <span>Check-in / out</span>
+        </a>
         <a th:href="@{/staff/tickets}"
            sec:authorize="hasRole('STAFF')"
            th:classappend="${activeMenu == 'tickets'} ? 'is-active'">
@@ -55,6 +60,9 @@
             </a>
             <a th:href="@{/admin/allocations}" th:classappend="${activeMenu == 'allocations'} ? 'is-active'">
                 <i class="bi bi-grid-3x3-gap"></i> <span>Phân bổ chỗ ở</span>
+            </a>
+            <a th:href="@{/admin/contracts}" th:classappend="${activeMenu == 'contracts'} ? 'is-active'">
+                <i class="bi bi-file-earmark-check"></i> <span>Hợp đồng</span>
             </a>
 
             <p class="ktx-nav__label">Thanh toán</p>

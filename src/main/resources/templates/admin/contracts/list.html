@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <!-- Bộ lọc tìm kiếm hợp đồng -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" th:action="@{/admin/contracts}" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="buildingSelect" class="form-label fw-semibold text-secondary small">Tòa nhà</label>
+                    <select id="buildingSelect" name="buildingId" class="form-select">
+                        <option value="">-- Tất cả tòa nhà --</option>
+                        <option th:each="b : ${buildings}"
+                                th:value="${b.id}"
+                                th:selected="${b.id == selectedBuildingId}"
+                                th:text="${b.name + ' (' + b.code + ')'}">Tòa A</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="statusSelect" class="form-label fw-semibold text-secondary small">Trạng thái hợp đồng</label>
+                    <select id="statusSelect" name="status" class="form-select">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option th:each="st : ${statuses}"
+                                th:value="${st}"
+                                th:selected="${st == selectedStatus}"
+                                th:text="${st.name()}">ACTIVE</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="keywordInput" class="form-label fw-semibold text-secondary small">Tìm kiếm</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="keywordInput" name="keyword" class="form-control"
+                               placeholder="MSSV, tên sinh viên, số HĐ..." th:value="${keyword}"/>
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                        <i class="bi bi-funnel me-1"></i>Lọc
+                    </button>
+                    <a th:href="@{/admin/contracts}" class="btn btn-outline-secondary" title="Đặt lại bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách hợp đồng -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-text text-primary"></i>
+                <span>Danh sách hợp đồng lưu trú</span>
+                <span class="badge bg-secondary-subtle text-secondary" th:text="${#lists.size(contracts)}">0</span>
+            </h5>
+            <div class="d-flex gap-2">
+                <a th:href="@{/admin/check-in-out}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-door-open me-1"></i>Nhật ký Check-in/out
+                </a>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Số HĐ</th>
+                        <th>Sinh viên</th>
+                        <th>Chỗ ở</th>
+                        <th>Thời hạn</th>
+                        <th class="text-end">Tiền phòng</th>
+                        <th class="text-end">Tiền cọc</th>
+                        <th class="text-center">Trạng thái cọc</th>
+                        <th class="text-center">Trạng thái HĐ</th>
+                        <th class="text-end pe-3">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(contracts)}">
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                            Không tìm thấy hợp đồng lưu trú nào phù hợp với bộ lọc.
+                        </td>
+                    </tr>
+                    <tr th:each="c : ${contracts}">
+                        <td class="ps-3 fw-bold text-primary">
+                            <a th:href="@{/admin/contracts/{id}(id=${c.id})}" th:text="${c.contractNo}" class="text-decoration-none text-primary">HD-2026-000001</a>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark" th:text="${c.student != null ? c.student.fullName : '—'}">Nguyễn Văn A</div>
+                            <small class="text-muted" th:text="${c.student != null ? c.student.studentCode : '—'}">SV001</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border me-1"
+                                  th:text="${c.bed != null && c.bed.room != null && c.bed.room.building != null ? c.bed.room.building.code : '—'}">A</span>
+                            <span th:text="${c.bed != null && c.bed.room != null ? 'P.' + c.bed.room.roomNumber : ''}">P.101</span>
+                            <span class="text-muted small" th:text="${c.bed != null ? ' - Giường ' + c.bed.bedCode : ''}"> - Giường G1</span>
+                        </td>
+                        <td>
+                            <span class="small" th:text="${#temporals.format(c.startDate, 'dd/MM/yyyy') + ' → ' + #temporals.format(c.endDate, 'dd/MM/yyyy')}">01/09/2026 → 31/01/2027</span>
+                        </td>
+                        <td class="text-end font-monospace" th:text="${c.roomFee != null ? #numbers.formatInteger(c.roomFee, 1, 'POINT') + ' đ' : '0 đ'}">1.200.000 đ</td>
+                        <td class="text-end font-monospace fw-semibold" th:text="${c.depositAmount != null ? #numbers.formatInteger(c.depositAmount, 1, 'POINT') + ' đ' : '0 đ'}">600.000 đ</td>
+                        <td class="text-center">
+                            <span class="badge"
+                                  th:classappend="${c.depositStatus != null ? (c.depositStatus.name() == 'HELD' ? 'bg-warning-subtle text-warning' : (c.depositStatus.name() == 'REFUNDED' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger')) : 'bg-secondary'}"
+                                  th:text="${c.depositStatus}">HELD</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge"
+                                  th:classappend="${c.status != null ? (c.status.name() == 'ACTIVE' ? 'bg-success' : (c.status.name() == 'DRAFT' ? 'bg-warning text-dark' : (c.status.name() == 'TERMINATED' ? 'bg-danger' : (c.status.name() == 'EXPIRED' ? 'bg-secondary' : 'bg-dark')))) : 'bg-secondary'}"
+                                  th:text="${c.status}">ACTIVE</span>
+                        </td>
+                        <td class="text-end pe-3">
+                            <a th:href="@{/admin/contracts/{id}(id=${c.id})}" class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
+                                <i class="bi bi-eye me-1"></i>Chi tiết
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>
