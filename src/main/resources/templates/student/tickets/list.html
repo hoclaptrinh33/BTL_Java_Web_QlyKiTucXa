@@ -82,32 +82,42 @@
                         </td>
                     </tr>
                     <tr th:each="t : ${tickets}">
-                        <td><span class="ktx-chip" th:text="${t.code}">#TK-2041</span></td>
+                        <td><span class="ktx-chip" th:text="${'#TK-' + t.id}">#TK-2041</span></td>
                         <td>
-                            <strong class="text-dark">
-                                <i class="bi me-1" th:classappend="${t.categoryIcon + ' ' + t.categoryColor}"></i>
-                                <span th:text="${t.category}">Điện & Chiếu sáng</span>
-                            </strong>
-                            <div class="small text-muted" th:text="${t.subCategory}">Bóng tuýp LED trần</div>
+                            <strong class="text-dark" th:text="${t.title}">Báo hỏng thiết bị</strong>
+                            <div class="small text-muted" th:text="${t.room != null ? t.room.building.name + ' — P.' + t.room.roomNumber : ''}">Phòng 101</div>
                         </td>
-                        <td th:text="${t.description}">Bóng đèn trần phòng nhấp nháy liên tục rồi tắt hẳn, cần thay bóng mới.</td>
-                        <td><span class="badge" th:classappend="${t.severityClass}" th:text="${t.severity}">Khẩn cấp</span></td>
-                        <td th:text="${t.createdAt}">24/08/2026</td>
-                        <td><span class="ktx-pill" th:classappend="${t.statusClass}" th:text="${t.statusLabel}">Chờ tiếp nhận</span></td>
+                        <td th:text="${t.description}">Mô tả chi tiết sự cố</td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${t.priority != null && t.priority.name() == 'HIGH' ? 'bg-danger-subtle text-danger' : (t.priority != null && t.priority.name() == 'MEDIUM' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary')}"
+                                  th:text="${t.priority != null ? t.priority : 'MEDIUM'}">Bình thường</span>
+                        </td>
+                        <td th:text="${#temporals.format(t.createdAt, 'dd/MM/yyyy HH:mm')}">24/08/2026</td>
+                        <td>
+                            <span class="ktx-pill"
+                                  th:classappend="${t.status != null && t.status.name() == 'OPEN' ? 'bg-warning-subtle text-warning' : (t.status != null && t.status.name() == 'IN_PROGRESS' ? 'bg-info-subtle text-info' : (t.status != null && t.status.name() == 'RESOLVED' ? 'bg-primary-subtle text-primary' : (t.status != null && t.status.name() == 'REJECTED' ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success')))}"
+                                  th:text="${t.status != null ? t.status : 'OPEN'}">OPEN</span>
+                        </td>
                         <td class="text-end">
-                            <!-- Nút Đóng ticket khi Đã sửa xong -->
-                            <form th:if="${t.status == 'RESOLVED'}" th:action="@{'/student/tickets/' + ${t.id} + '/close'}" method="post" class="d-inline">
+                            <!-- Nút Đóng ticket khi Đã sửa xong (RESOLVED) -->
+                            <form th:if="${t.status != null && t.status.name() == 'RESOLVED'}" th:action="@{'/student/tickets/' + ${t.id} + '/close'}" method="post" class="d-inline">
                                 <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">
                                     <i class="bi bi-check2 me-1"></i>Đóng ticket
                                 </button>
                             </form>
                             <!-- Trạng thái Đã đóng -->
-                            <span th:if="${t.status == 'CLOSED'}" class="text-muted small">
+                            <span th:if="${t.status != null && t.status.name() == 'CLOSED'}" class="text-muted small">
                                 <i class="bi bi-check-all text-success me-1"></i>Đã đóng
                             </span>
-                            <!-- Trạng thái khác -->
-                            <span th:if="${t.status != 'RESOLVED' && t.status != 'CLOSED'}" class="text-muted small" th:text="${t.actionNote}">
-                                Đang đợi thợ
+                            <span th:if="${t.status != null && t.status.name() == 'OPEN'}" class="text-muted small">
+                                Chờ tiếp nhận
+                            </span>
+                            <span th:if="${t.status != null && t.status.name() == 'IN_PROGRESS'}" class="text-muted small">
+                                Đang xử lý
+                            </span>
+                            <span th:if="${t.status != null && t.status.name() == 'REJECTED'}" class="text-danger small">
+                                Đã từ chối
                             </span>
                         </td>
                     </tr>

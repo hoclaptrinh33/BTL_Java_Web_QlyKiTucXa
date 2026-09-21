@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+    <!-- Tiêu đề & Nút tạo mới -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800">Kỷ luật & Báo cáo vi phạm</h1>
+            <p class="text-muted mb-0">Ghi nhận biên bản vi phạm nội quy và điểm rèn luyện ký túc xá</p>
+        </div>
+        <div>
+            <a th:href="@{/staff/violations/new}" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-plus-lg me-1"></i>Lập biên bản vi phạm
+            </a>
+        </div>
+    </div>
+
+    <!-- Danh sách vi phạm -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="bi bi-shield-exclamation me-2 text-danger"></i>Danh sách biên bản vi phạm trong tòa
+            </h5>
+            <span class="badge bg-secondary-subtle text-secondary" th:text="${#lists.size(violations)} + ' biên bản'">
+                0 biên bản
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div th:if="${#lists.isEmpty(violations)}" class="text-center py-5 text-muted">
+                <i class="bi bi-folder2-open fs-1 d-block mb-2 text-secondary"></i>
+                <p class="mb-0">Chưa có biên bản vi phạm nào được ghi nhận trong tòa.</p>
+            </div>
+
+            <div th:if="${!#lists.isEmpty(violations)}" class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Thời gian</th>
+                            <th>Sinh viên</th>
+                            <th>Hành vi vi phạm</th>
+                            <th>Mức độ</th>
+                            <th>Điểm trừ</th>
+                            <th>Biện pháp xử lý</th>
+                            <th>Cán bộ ghi nhận</th>
+                            <th class="pe-4">Mô tả</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="v : ${violations}">
+                            <td class="ps-4 small" th:text="${#temporals.format(v.occurredAt, 'dd/MM/yyyy HH:mm')}">24/08/2026</td>
+                            <td>
+                                <div class="fw-bold text-dark" th:text="${v.student.fullName}">Nguyễn Văn A</div>
+                                <div class="small text-muted" th:text="${v.student.studentCode + ' (Điểm: ' + v.student.conductScore + ')'}">B22DCCN001</div>
+                            </td>
+                            <td>
+                                <span class="fw-semibold text-dark" th:text="${v.violationType}">LATE_RETURN</span>
+                            </td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${v.severity != null && v.severity.name() == 'SEVERE' ? 'bg-danger-subtle text-danger' : (v.severity != null && v.severity.name() == 'MAJOR' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary')}"
+                                      th:text="${v.severity}">Nhẹ</span>
+                            </td>
+                            <td class="text-danger fw-bold" th:text="${'-' + v.pointsDeducted + ' điểm'}">-5 điểm</td>
+                            <td>
+                                <span class="ktx-pill"
+                                      th:classappend="${v.action != null && v.action.name() == 'TERMINATE' ? 'bg-danger-subtle text-danger' : (v.action != null && v.action.name() == 'POINT_DEDUCT' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary')}"
+                                      th:text="${v.action}">POINT_DEDUCT</span>
+                            </td>
+                            <td th:text="${v.recordedBy != null ? (v.recordedBy.fullName != null ? v.recordedBy.fullName : v.recordedBy.username) : 'Hệ thống'}">Cán bộ</td>
+                            <td class="pe-4 small text-muted text-truncate" style="max-width: 250px;" th:text="${v.description}">Mô tả vi phạm</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
