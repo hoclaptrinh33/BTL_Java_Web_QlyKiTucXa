@@ -29,19 +29,19 @@ Seeder tạo đủ giường để demo hết chỗ / waitlist / gom lớp.
 
 # 22. Phụ lục B — Checklist chấp nhận (rút gọn)
 
-- [ ] Login MSSV và email; sai 5 lần bị tạm khóa.
-- [ ] SV không vào `/admin/**`.
-- [ ] Không gán nam vào tòa nữ (UI + service + engine).
-- [ ] Hai request gán cùng giường: một thành, một lỗi rõ.
-- [ ] Preview không đổi bed; commit tạo HĐ DRAFT.
-- [ ] Waitlist khi hết giường khớp.
-- [ ] Hóa đơn case A 280 kWh / 5 người và case B residual [mục 6.5.2](./04-05-dien-nuoc.md) khớp từng đồng.
-- [ ] Hủy DRAFT nhả giường; TERMINATED sau check-in vẫn chiếm giường đến checkout.
-- [ ] Checkout từ ACTIVE/EXPIRED/TERMINATED nhả giường VACANT.
-- [ ] Hai thread assignManual cùng giường trên MySQL: một thành, một lỗi (IT opt-in).
-- [ ] Vi phạm trừ điểm; 0 điểm không nộp đơn mới.
-- [ ] Xuất được xlsx danh sách nội trú.
-- [ ] UI đúng [§24](./13-thiet-ke-ui-ux.md) và mock `docs/image/exampleUI.png`: nền sáng, sidebar trắng, CTA tím, chip mã, modal chốt, badge EXPIRED ≠ đã trả.
+- [x] Login MSSV và email; sai 5 lần bị tạm khóa.
+- [x] SV không vào `/admin/**`.
+- [x] Không gán nam vào tòa nữ (UI + service + engine).
+- [x] Hai request gán cùng giường: một thành, một lỗi rõ.
+- [x] Preview không đổi bed; commit tạo HĐ DRAFT.
+- [x] Waitlist khi hết giường khớp.
+- [x] Hóa đơn case A 280 kWh / 5 người và case B residual [mục 6.5.2](./04-05-dien-nuoc.md) khớp từng đồng.
+- [x] Hủy DRAFT nhả giường; TERMINATED sau check-in vẫn chiếm giường đến checkout.
+- [x] Checkout từ ACTIVE/EXPIRED/TERMINATED nhả giường VACANT.
+- [x] Hai thread assignManual cùng giường trên MySQL: một thành, một lỗi (IT opt-in).
+- [x] Vi phạm trừ điểm; 0 điểm không nộp đơn mới.
+- [x] Xuất được xlsx danh sách nội trú.
+- [x] UI đúng [§24](./13-thiet-ke-ui-ux.md) và mock `docs/image/exampleUI.png`: nền sáng, sidebar trắng, CTA tím, chip mã, modal chốt, badge EXPIRED ≠ đã trả.
 
 ---
 
