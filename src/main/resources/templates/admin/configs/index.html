@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content">
+    <!-- Top Action / Info bar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h4 fw-bold mb-1">Cấu hình hệ thống</h1>
+            <p class="text-muted mb-0">
+                Quản lý các tham số vận hành toàn cục theo Phụ lục C (Trọng số phân bổ, Đặt cọc, Đơn giá điện nước, Điểm rèn luyện).
+            </p>
+        </div>
+        <div>
+            <span class="ktx-pill is-mint py-2 px-3" th:if="${mailEnabled}">
+                <i class="bi bi-envelope-check-fill me-1"></i> Spring Mail: Đang BẬT
+            </span>
+            <span class="ktx-pill is-muted py-2 px-3" th:unless="${mailEnabled}">
+                <i class="bi bi-envelope-slash me-1"></i> Spring Mail: Đang TẮT (Opt-in)
+            </span>
+        </div>
+    </div>
+
+    <!-- Email Status Card -->
+    <section class="ktx-card mb-4">
+        <div class="d-flex align-items-start gap-3">
+            <div class="ktx-toast-icon" style="font-size: 1.5rem; color: var(--violet);">
+                <i class="bi bi-info-circle-fill"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h6 class="fw-bold mb-1">Trạng thái gửi Email (Spring Mail)</h6>
+                <p class="text-muted mb-1 small">
+                    Hệ thống hoạt động độc lập không bắt buộc kết nối SMTP. Khi <code class="fw-semibold">ktx.mail.enabled=true</code> và có thông số SMTP trong cấu hình môi trường, hệ thống sẽ tự động kích hoạt gửi thông báo qua email cho sinh viên.
+                </p>
+                <div class="d-flex gap-3 align-items-center mt-2 small">
+                    <span>Trạng thái hiện tại: 
+                        <strong th:if="${mailEnabled}" class="text-success">Đã kích hoạt gửi mail</strong>
+                        <strong th:unless="${mailEnabled}" class="text-secondary">Chưa kích hoạt (Opt-in mode)</strong>
+                    </span>
+                    <span class="text-muted">|</span>
+                    <span class="text-muted">Cấu hình qua biến môi trường: <code>KTX_MAIL_ENABLED=true</code></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Config Navigation Tabs -->
+    <ul class="nav nav-tabs mb-4" id="configTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold" id="alloc-tab" data-bs-toggle="tab" data-bs-target="#alloc-pane" type="button" role="tab">
+                <i class="bi bi-grid-3x3-gap me-1"></i> Phân bổ chỗ ở (alloc)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold" id="contract-tab" data-bs-toggle="tab" data-bs-target="#contract-pane" type="button" role="tab">
+                <i class="bi bi-file-earmark-text me-1"></i> Hợp đồng &amp; Cọc (contract)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold" id="billing-tab" data-bs-toggle="tab" data-bs-target="#billing-pane" type="button" role="tab">
+                <i class="bi bi-lightning-charge me-1"></i> Điện nước &amp; Biểu phí (billing)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold" id="conduct-tab" data-bs-toggle="tab" data-bs-target="#conduct-pane" type="button" role="tab">
+                <i class="bi bi-award me-1"></i> Điểm rèn luyện (conduct)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold" id="other-tab" data-bs-toggle="tab" data-bs-target="#other-pane" type="button" role="tab">
+                <i class="bi bi-sliders me-1"></i> Cấu hình khác
+            </button>
+        </li>
+    </ul>
+
+    <!-- Config Panes Content -->
+    <div class="tab-content" id="configTabContent">
+
+        <!-- Tab 1: Allocation -->
+        <div class="tab-pane fade show active" id="alloc-pane" role="tabpanel">
+            <form th:action="@{/admin/configs}" method="post">
+                <section class="ktx-card p-0">
+                    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold mb-0">Tham số thuật toán phân bổ (AllocationEngine)</h6>
+                            <small class="text-muted">Các trọng số tính điểm ưu tiên khi duyệt và xếp chỗ ở tự động.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Lưu nhóm phân bổ
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 ktx-table">
+                            <thead>
+                            <tr>
+                                <th style="width: 25%;">Khóa cấu hình</th>
+                                <th style="width: 12%;">Kiểu</th>
+                                <th style="width: 35%;">Mô tả</th>
+                                <th style="width: 28%;">Giá trị</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="cfg : ${groupedConfigs['alloc']}">
+                                <td>
+                                    <span class="ktx-chip" th:text="${cfg.configKey}">alloc.weight.policy</span>
+                                </td>
+                                <td>
+                                    <span class="ktx-pill is-violet" th:text="${cfg.valueType}">INT</span>
+                                </td>
+                                <td>
+                                    <span class="small text-muted" th:text="${cfg.description}">Mô tả</span>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm"
+                                           th:name="${cfg.configKey}"
+                                           th:value="${cfg.configValue}" required />
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(groupedConfigs['alloc'])}">
+                                <td colspan="4" class="text-center text-muted py-3">Chưa có cấu hình nào trong nhóm này.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </form>
+        </div>
+
+        <!-- Tab 2: Contract -->
+        <div class="tab-pane fade" id="contract-pane" role="tabpanel">
+            <form th:action="@{/admin/configs}" method="post">
+                <section class="ktx-card p-0">
+                    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold mb-0">Tham số hợp đồng &amp; Tiền cọc</h6>
+                            <small class="text-muted">Tỉ lệ đặt cọc, thời hạn hợp đồng kỳ và thời gian nhắc hạn.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Lưu nhóm hợp đồng
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 ktx-table">
+                            <thead>
+                            <tr>
+                                <th style="width: 25%;">Khóa cấu hình</th>
+                                <th style="width: 12%;">Kiểu</th>
+                                <th style="width: 35%;">Mô tả</th>
+                                <th style="width: 28%;">Giá trị</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="cfg : ${groupedConfigs['contract']}">
+                                <td>
+                                    <span class="ktx-chip" th:text="${cfg.configKey}">contract.deposit.ratio</span>
+                                </td>
+                                <td>
+                                    <span class="ktx-pill is-peach" th:text="${cfg.valueType}">DECIMAL</span>
+                                </td>
+                                <td>
+                                    <span class="small text-muted" th:text="${cfg.description}">Mô tả</span>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm"
+                                           th:name="${cfg.configKey}"
+                                           th:value="${cfg.configValue}" required />
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(groupedConfigs['contract'])}">
+                                <td colspan="4" class="text-center text-muted py-3">Chưa có cấu hình nào trong nhóm này.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </form>
+        </div>
+
+        <!-- Tab 3: Billing -->
+        <div class="tab-pane fade" id="billing-pane" role="tabpanel">
+            <form th:action="@{/admin/configs}" method="post">
+                <section class="ktx-card p-0">
+                    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold mb-0">Tham số điện nước &amp; Biểu phí dịch vụ</h6>
+                            <small class="text-muted">Bậc thang điện EVN, đơn giá nước, các loại phí dịch vụ và tỉ lệ phạt quá hạn.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Lưu nhóm điện nước
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 ktx-table">
+                            <thead>
+                            <tr>
+                                <th style="width: 25%;">Khóa cấu hình</th>
+                                <th style="width: 12%;">Kiểu</th>
+                                <th style="width: 30%;">Mô tả</th>
+                                <th style="width: 33%;">Giá trị</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="cfg : ${groupedConfigs['billing']}">
+                                <td>
+                                    <span class="ktx-chip" th:text="${cfg.configKey}">billing.water.price_per_m3</span>
+                                </td>
+                                <td>
+                                    <span class="ktx-pill is-sky" th:if="${cfg.valueType == 'INT'}">INT</span>
+                                    <span class="ktx-pill is-peach" th:if="${cfg.valueType == 'DECIMAL'}">DECIMAL</span>
+                                    <span class="ktx-pill is-rose" th:if="${cfg.valueType == 'JSON'}">JSON</span>
+                                    <span class="ktx-pill is-mint" th:if="${cfg.valueType == 'BOOLEAN'}">BOOLEAN</span>
+                                    <span class="ktx-pill is-muted" th:if="${cfg.valueType != 'INT' and cfg.valueType != 'DECIMAL' and cfg.valueType != 'JSON' and cfg.valueType != 'BOOLEAN'}" th:text="${cfg.valueType}">STRING</span>
+                                </td>
+                                <td>
+                                    <span class="small text-muted" th:text="${cfg.description}">Mô tả</span>
+                                </td>
+                                <td>
+                                    <textarea th:if="${cfg.valueType == 'JSON'}" class="form-control form-control-sm font-monospace"
+                                              th:name="${cfg.configKey}"
+                                              rows="3" th:text="${cfg.configValue}" required></textarea>
+                                    <select th:if="${cfg.valueType == 'BOOLEAN'}" class="form-select form-select-sm"
+                                            th:name="${cfg.configKey}">
+                                        <option value="true" th:selected="${cfg.configValue == 'true'}">true</option>
+                                        <option value="false" th:selected="${cfg.configValue == 'false'}">false</option>
+                                    </select>
+                                    <input th:if="${cfg.valueType != 'JSON' and cfg.valueType != 'BOOLEAN'}"
+                                           type="text" class="form-control form-control-sm"
+                                           th:name="${cfg.configKey}"
+                                           th:value="${cfg.configValue}" required />
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(groupedConfigs['billing'])}">
+                                <td colspan="4" class="text-center text-muted py-3">Chưa có cấu hình nào trong nhóm này.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </form>
+        </div>
+
+        <!-- Tab 4: Conduct -->
+        <div class="tab-pane fade" id="conduct-pane" role="tabpanel">
+            <form th:action="@{/admin/configs}" method="post">
+                <section class="ktx-card p-0">
+                    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold mb-0">Quy định điểm rèn luyện</h6>
+                            <small class="text-muted">Điểm khởi tạo đầu kỳ và ngưỡng cảnh cáo vi phạm nội quy.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Lưu nhóm điểm rèn luyện
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 ktx-table">
+                            <thead>
+                            <tr>
+                                <th style="width: 25%;">Khóa cấu hình</th>
+                                <th style="width: 12%;">Kiểu</th>
+                                <th style="width: 35%;">Mô tả</th>
+                                <th style="width: 28%;">Giá trị</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="cfg : ${groupedConfigs['conduct']}">
+                                <td>
+                                    <span class="ktx-chip" th:text="${cfg.configKey}">conduct.initial</span>
+                                </td>
+                                <td>
+                                    <span class="ktx-pill is-violet" th:text="${cfg.valueType}">INT</span>
+                                </td>
+                                <td>
+                                    <span class="small text-muted" th:text="${cfg.description}">Mô tả</span>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm"
+                                           th:name="${cfg.configKey}"
+                                           th:value="${cfg.configValue}" required />
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(groupedConfigs['conduct'])}">
+                                <td colspan="4" class="text-center text-muted py-3">Chưa có cấu hình nào trong nhóm này.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </form>
+        </div>
+
+        <!-- Tab 5: Other -->
+        <div class="tab-pane fade" id="other-pane" role="tabpanel">
+            <form th:action="@{/admin/configs}" method="post">
+                <section class="ktx-card p-0">
+                    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold mb-0">Cấu hình vận hành khác</h6>
+                            <small class="text-muted">Sức chứa phòng VIP, thời hạn tự động đóng sự cố,...</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Lưu nhóm cấu hình khác
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 ktx-table">
+                            <thead>
+                            <tr>
+                                <th style="width: 25%;">Khóa cấu hình</th>
+                                <th style="width: 12%;">Kiểu</th>
+                                <th style="width: 35%;">Mô tả</th>
+                                <th style="width: 28%;">Giá trị</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="cfg : ${groupedConfigs['other']}">
+                                <td>
+                                    <span class="ktx-chip" th:text="${cfg.configKey}">room.type.vip.capacity</span>
+                                </td>
+                                <td>
+                                    <span class="ktx-pill is-muted" th:text="${cfg.valueType}">INT</span>
+                                </td>
+                                <td>
+                                    <span class="small text-muted" th:text="${cfg.description}">Mô tả</span>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm"
+                                           th:name="${cfg.configKey}"
+                                           th:value="${cfg.configValue}" required />
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(groupedConfigs['other'])}">
+                                <td colspan="4" class="text-center text-muted py-3">Chưa có cấu hình nào trong nhóm này.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </form>
+        </div>
+
+    </div>
+</main>
+</body>
+</html>
