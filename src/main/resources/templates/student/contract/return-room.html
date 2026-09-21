@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-3">
+    <!-- Tiêu đề -->
+    <div class="mb-4">
+        <h1 class="h3 mb-1 text-gray-800">Thủ tục trả phòng & Thanh lý chỗ ở</h1>
+        <p class="text-muted mb-0">Đăng ký trả phòng trước hạn hoặc hoàn tất kỳ lưu trú để nhận lại tiền cọc</p>
+    </div>
+
+
+
+    <div class="row g-4">
+        <!-- Form đăng ký trả phòng -->
+        <div class="col-lg-7">
+            <div class="ktx-card">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-box-arrow-left me-2 text-danger"></i>Đơn đăng ký trả phòng</h2>
+                </div>
+
+                <div th:if="${contract == null}" class="text-center py-4 text-muted">
+                    <i class="bi bi-info-circle fs-1 d-block mb-2 text-secondary"></i>
+                    <p class="mb-0">Bạn hiện không có hợp đồng phòng ở nào cần làm thủ tục trả phòng.</p>
+                </div>
+
+                <form th:if="${contract != null}" th:action="@{/student/return-room}" method="post" class="d-flex flex-column gap-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-semibold">Hợp đồng phòng ở</label>
+                            <input type="text" class="form-control bg-light" readonly
+                                   th:value="${contract.contractNo + ' (' + contract.bed.room.building.name + '-' + contract.bed.room.roomNumber + ')'}"/>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="returnDate" class="form-label fw-semibold text-dark">Ngày dự kiến trả phòng <span class="text-danger">*</span></label>
+                            <input type="date" id="returnDate" name="returnDate" class="form-control" required/>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="reason" class="form-label fw-semibold text-dark">Lý do trả phòng <span class="text-danger">*</span></label>
+                        <select id="reason" name="reason" class="form-select" required>
+                            <option value="Hết thời hạn học kỳ / tốt nghiệp">Hết thời hạn học kỳ / Tốt nghiệp ra trường</option>
+                            <option value="Chuyển ra ngoài thuê trọ">Chuyển ra ngoài thuê trọ cùng gia đình/bạn bè</option>
+                            <option value="Lý do cá nhân / sức khỏe">Lý do cá nhân / Sức khỏe / Nghỉ học tạm thời</option>
+                            <option value="Khác">Khác...</option>
+                        </select>
+                    </div>
+
+                    <div class="pt-2 border-top">
+                        <h3 class="h6 fw-bold text-primary mb-2"><i class="bi bi-bank me-2"></i>Thông tin tài khoản nhận hoàn tiền cọc</h3>
+                        <p class="text-muted small mb-3">Tiền đặt cọc (50% giá phòng) sẽ được BQL chuyển khoản lại trong vòng 3-5 ngày làm việc sau khi cán bộ nghiệm thu phòng.</p>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="bankName" class="form-label fw-semibold text-dark small">Ngân hàng <span class="text-danger">*</span></label>
+                                <input type="text" id="bankName" name="bankName" class="form-control" placeholder="Ví dụ: Vietcombank, MB, BIDV..." required/>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="bankAccount" class="form-label fw-semibold text-dark small">Số tài khoản <span class="text-danger">*</span></label>
+                                <input type="text" id="bankAccount" name="bankAccount" class="form-control" placeholder="Nhập chính xác số tài khoản..." required/>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-muted small">Chủ tài khoản (mặc định theo họ tên SV)</label>
+                                <input type="text" class="form-control bg-light" readonly th:value="${student.fullName}"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 mt-3">
+                        <i class="bi bi-check2-circle me-1"></i>Xác nhận nộp đơn trả phòng
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Hướng dẫn thủ tục bàn giao -->
+        <div class="col-lg-5">
+            <div class="ktx-card">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-list-check me-2 text-primary"></i>Quy trình bàn giao & Hoàn cọc</h2>
+                </div>
+                <ol class="small d-flex flex-column gap-3 mb-0 ps-3 text-secondary">
+                    <li>
+                        <strong class="text-dark">Bước 1: Nộp đơn trực tuyến</strong>
+                        <div>Gửi đơn trả phòng tại trang này trước ít nhất <strong>3 ngày</strong> so với ngày rời KTX.</div>
+                    </li>
+                    <li>
+                        <strong class="text-dark">Bước 2: Dọn dẹp phòng & Vệ sinh</strong>
+                        <div>Thu dọn đồ đạc cá nhân, vệ sinh sạch sẽ khu vực giường và bàn học của mình.</div>
+                    </li>
+                    <li>
+                        <strong class="text-dark">Bước 3: Thanh toán nợ điện nước</strong>
+                        <div>Đảm bảo phòng đã chốt và thanh toán toàn bộ hóa đơn tiền điện nước tính đến ngày trả.</div>
+                    </li>
+                    <li>
+                        <strong class="text-dark">Bước 4: Kiểm kê và trả chìa khóa</strong>
+                        <div>Báo cán bộ phụ trách tòa nhà đến kiểm tra trang thiết bị phòng và ký biên bản checkout.</div>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

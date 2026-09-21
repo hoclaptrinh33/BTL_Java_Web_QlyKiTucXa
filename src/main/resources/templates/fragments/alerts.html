@@ -1,10 +1,74 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-<div th:fragment="alerts">
-    <div th:if="${successMessage}" class="alert alert-success" role="status" th:text="${successMessage}"></div>
-    <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
-    <div th:if="${warningMessage}" class="alert alert-warning" role="status" th:text="${warningMessage}"></div>
+<div th:fragment="alerts" id="ktxGlobalAlerts" class="ktx-toast-container" aria-live="polite" aria-atomic="true">
+    <!-- Thông báo thành công (Thêm, Sửa, Cập nhật...) -->
+    <div th:if="${successMessage}" 
+         class="ktx-toast ktx-toast--success" 
+         role="status">
+        <div class="ktx-toast-icon">
+            <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <div class="ktx-toast-body">
+            <div class="ktx-toast-title">Thành công</div>
+            <div class="ktx-toast-text" th:text="${successMessage}">Thao tác thành công!</div>
+        </div>
+        <button type="button" class="ktx-toast-close" aria-label="Đóng">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <div class="ktx-toast-progress"></div>
+    </div>
+
+    <!-- Thông báo lỗi -->
+    <div th:if="${errorMessage}" 
+         class="ktx-toast ktx-toast--danger" 
+         role="alert">
+        <div class="ktx-toast-icon">
+            <i class="bi bi-exclamation-circle-fill"></i>
+        </div>
+        <div class="ktx-toast-body">
+            <div class="ktx-toast-title">Lỗi thao tác</div>
+            <div class="ktx-toast-text" th:text="${errorMessage}">Đã xảy ra lỗi!</div>
+        </div>
+        <button type="button" class="ktx-toast-close" aria-label="Đóng">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <div class="ktx-toast-progress"></div>
+    </div>
+
+    <!-- Thông báo cảnh báo -->
+    <div th:if="${warningMessage}" 
+         class="ktx-toast ktx-toast--warning" 
+         role="status">
+        <div class="ktx-toast-icon">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div class="ktx-toast-body">
+            <div class="ktx-toast-title">Cảnh báo</div>
+            <div class="ktx-toast-text" th:text="${warningMessage}">Vui lòng lưu ý!</div>
+        </div>
+        <button type="button" class="ktx-toast-close" aria-label="Đóng">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <div class="ktx-toast-progress"></div>
+    </div>
+
+    <!-- Thông báo thông tin -->
+    <div th:if="${infoMessage}" 
+         class="ktx-toast ktx-toast--info" 
+         role="status">
+        <div class="ktx-toast-icon">
+            <i class="bi bi-info-circle-fill"></i>
+        </div>
+        <div class="ktx-toast-body">
+            <div class="ktx-toast-title">Thông báo</div>
+            <div class="ktx-toast-text" th:text="${infoMessage}">Thông báo hệ thống</div>
+        </div>
+        <button type="button" class="ktx-toast-close" aria-label="Đóng">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <div class="ktx-toast-progress"></div>
+    </div>
 </div>
 </body>
 </html>

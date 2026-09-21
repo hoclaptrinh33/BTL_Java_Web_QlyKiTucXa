@@ -82,6 +82,59 @@
                 <i class="bi bi-gear"></i> <span>Cài đặt hệ thống</span>
             </a>
         </th:block>
+
+        <!-- PHÂN HỆ SINH VIÊN (ROLE_STUDENT) - ĐẦY ĐỦ 13 CHỨC NĂNG -->
+        <th:block sec:authorize="hasRole('STUDENT')">
+            <a th:href="@{/student/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
+                <i class="bi bi-house"></i> <span>Tổng quan</span>
+            </a>
+
+            <p class="ktx-nav__label">Đăng ký chỗ ở</p>
+            <a th:href="@{/student/applications}" th:classappend="${activeMenu == 'applications'} ? 'is-active'">
+                <i class="bi bi-calendar-event"></i> <span>Các đợt mở &amp; Đơn ở</span>
+            </a>
+            <a th:href="@{/student/applications/new}" th:classappend="${activeMenu == 'applications-new'} ? 'is-active'">
+                <i class="bi bi-pencil-square"></i> <span>Nộp đơn nguyện vọng</span>
+            </a>
+
+            <p class="ktx-nav__label">Hợp đồng &amp; Lưu trú</p>
+            <a th:href="@{/student/contract}" th:classappend="${activeMenu == 'contract'} ? 'is-active'">
+                <i class="bi bi-file-text"></i> <span>Hợp đồng lưu trú</span>
+            </a>
+            <a th:href="@{/student/renewals}" th:classappend="${activeMenu == 'renewals'} ? 'is-active'">
+                <i class="bi bi-calendar-plus"></i> <span>Gia hạn hợp đồng</span>
+            </a>
+            <a th:href="@{/student/room-change}" th:classappend="${activeMenu == 'room-change'} ? 'is-active'">
+                <i class="bi bi-arrow-left-right"></i> <span>Đơn xin chuyển phòng</span>
+            </a>
+            <a th:href="@{/student/return-room}" th:classappend="${activeMenu == 'return-room'} ? 'is-active'">
+                <i class="bi bi-box-arrow-left"></i> <span>Đơn xin trả phòng</span>
+            </a>
+
+            <p class="ktx-nav__label">Thanh toán</p>
+            <a th:href="@{/student/invoices}" th:classappend="${activeMenu == 'invoices'} ? 'is-active'">
+                <i class="bi bi-receipt"></i> <span>Hóa đơn &amp; Tiền phòng</span>
+            </a>
+
+            <p class="ktx-nav__label">Vận hành &amp; Sự cố</p>
+            <a th:href="@{/student/tickets}" th:classappend="${activeMenu == 'tickets'} ? 'is-active'">
+                <i class="bi bi-tools"></i> <span>Danh sách báo hỏng</span>
+            </a>
+            <a th:href="@{/student/tickets/new}" th:classappend="${activeMenu == 'tickets-new'} ? 'is-active'">
+                <i class="bi bi-plus-circle"></i> <span>Tạo phiếu báo hỏng</span>
+            </a>
+            <a th:href="@{/student/violations}" th:classappend="${activeMenu == 'violations'} ? 'is-active'">
+                <i class="bi bi-shield-exclamation"></i> <span>Vi phạm &amp; Rèn luyện</span>
+            </a>
+
+            <p class="ktx-nav__label">Tài khoản</p>
+            <a th:href="@{/student/profile}" th:classappend="${activeMenu == 'profile'} ? 'is-active'">
+                <i class="bi bi-person"></i> <span>Thông tin cá nhân</span>
+            </a>
+            <a th:href="@{/student/password}" th:classappend="${activeMenu == 'password'} ? 'is-active'">
+                <i class="bi bi-shield-lock"></i> <span>Đổi mật khẩu</span>
+            </a>
+        </th:block>
     </nav>
 </div>
 </body>

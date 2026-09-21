@@ -20,13 +20,28 @@
                 </div>
                 <div>
                     <form th:action="@{/student/applications/new}" method="post" th:object="${form}">
-                        <!-- Hidden field cho periodId -->
-                        <input type="hidden" name="periodId" th:value="${period.id}"/>
-
-                        <!-- Tên đợt hiển thị tĩnh -->
+                        <!-- Chọn đợt đăng ký áp dụng -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold text-secondary">Đợt đăng ký áp dụng</label>
-                            <input type="text" class="form-control bg-light" th:value="${period.name}" readonly="readonly"/>
+                            <label for="periodSelect" class="form-label fw-semibold text-secondary">
+                                Đợt đăng ký áp dụng <span class="text-danger">*</span>
+                            </label>
+                            <select id="periodSelect" name="periodId" class="form-select fw-semibold"
+                                    onchange="window.location.href='/student/applications/new?periodId=' + this.value">
+                                <option th:each="p : ${availablePeriods}"
+                                        th:value="${p.id}"
+                                        th:selected="${p.id == period.id}"
+                                        th:text="${p.name + ' (' + (p.periodType.name() == 'FRESHMAN' ? 'Tân sinh viên' : (p.periodType.name() == 'NEW_ACADEMIC_YEAR' ? 'Năm học mới' : 'Hè')) + ')'}">
+                                    Học Kỳ 2 - 2026-2027
+                                </option>
+                            </select>
+                            <div class="form-text mt-1">
+                                <span th:if="${#lists.size(availablePeriods) > 1}">
+                                    <i class="bi bi-info-circle me-1 text-primary"></i> Hiện có <strong th:text="${#lists.size(availablePeriods)}">2</strong> đợt đang mở, bạn có thể chọn đợt muốn đăng ký ở trên.
+                                </span>
+                                <span th:if="${#lists.size(availablePeriods) == 1}">
+                                    <i class="bi bi-check-circle me-1 text-success"></i> Đây là đợt đăng ký khả dụng đang mở nhận đơn.
+                                </span>
+                            </div>
                         </div>
 
                         <!-- 1. Chọn tòa nhà nguyện vọng -->

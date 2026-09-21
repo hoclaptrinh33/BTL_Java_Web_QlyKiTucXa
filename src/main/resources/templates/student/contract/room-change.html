@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-3">
+    <!-- Tiêu đề -->
+    <div class="mb-4">
+        <h1 class="h3 mb-1 text-gray-800">Đơn xin chuyển phòng ở</h1>
+        <p class="text-muted mb-0">Đăng ký đổi sang phòng hoặc giường khác khi có nguyện vọng hợp lý</p>
+    </div>
+
+
+    <div class="row g-4">
+        <!-- Form nộp đơn xin chuyển phòng -->
+        <div class="col-lg-6">
+            <div class="ktx-card h-100">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-arrow-left-right me-2 text-warning"></i>Nộp nguyện vọng chuyển phòng</h2>
+                </div>
+
+                <div th:if="${contract == null}" class="text-center py-4 text-muted">
+                    <i class="bi bi-info-circle fs-1 d-block mb-2 text-secondary"></i>
+                    <p class="mb-0">Bạn chưa có phòng ở tại KTX để thực hiện chuyển phòng.</p>
+                </div>
+
+                <form th:if="${contract != null}" th:action="@{/student/room-change}" method="post" class="d-flex flex-column gap-3">
+                    <div>
+                        <label class="form-label text-muted small fw-semibold">Vị trí phòng ở hiện tại</label>
+                        <input type="text" class="form-control bg-light" readonly
+                               th:value="${contract.bed.room.building.name + ' — Phòng ' + contract.bed.room.roomNumber + ' (Giường ' + contract.bed.bedCode + ')'}"/>
+                    </div>
+
+                    <div>
+                        <label for="preferredBuilding" class="form-label fw-semibold text-dark">Tòa nhà mong muốn</label>
+                        <select id="preferredBuilding" name="preferredBuilding" class="form-select">
+                            <option value="">Cùng tòa nhà hiện tại</option>
+                            <option value="A" th:if="${student.gender.name() == 'MALE'}">Tòa A (Nam)</option>
+                            <option value="B" th:if="${student.gender.name() == 'FEMALE'}">Tòa B (Nữ)</option>
+                        </select>
+                        <div class="form-text">Hệ thống chỉ cho phép chuyển sang tòa cùng chính sách giới tính.</div>
+                    </div>
+
+                    <div>
+                        <label for="targetRoomType" class="form-label fw-semibold text-dark">Loại phòng mong muốn <span class="text-danger">*</span></label>
+                        <select id="targetRoomType" name="targetRoomType" class="form-select" required>
+                            <option value="STANDARD_4">Phòng 4 giường (1.200.000 đ/kỳ)</option>
+                            <option value="STANDARD_6">Phòng 6 giường (900.000 đ/kỳ)</option>
+                            <option value="STANDARD_8">Phòng 8 giường (650.000 đ/kỳ)</option>
+                            <option value="VIP">Phòng VIP khép kín (2.500.000 đ/kỳ)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="reason" class="form-label fw-semibold text-dark">Lý do xin chuyển phòng <span class="text-danger">*</span></label>
+                        <textarea id="reason" name="reason" class="form-control" rows="3" required
+                                  placeholder="Nêu rõ lý do (ví dụ: sức khỏe, ghép chung lớp, bất hòa sinh hoạt...)..."></textarea>
+                    </div>
+
+                    <div class="p-3 bg-warning-subtle text-warning-emphasis rounded-3 small">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Lưu ý: Sau khi được BQL phê duyệt, bạn có tối đa <strong>48 giờ</strong> để hoàn tất việc dọn dẹp và bàn giao giường cũ sang giường mới.
+                    </div>
+
+                    <button type="submit" class="btn btn-warning rounded-pill px-4 mt-2 text-dark fw-semibold">
+                        <i class="bi bi-send me-1"></i>Gửi đơn xin chuyển
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lịch sử các lần xin chuyển -->
+        <div class="col-lg-6">
+            <div class="ktx-card h-100">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Lịch sử yêu cầu đổi phòng</h2>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle ktx-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Ngày nộp</th>
+                                <th>Loại phòng xin</th>
+                                <th>Lý do</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>12/03/2026</strong></td>
+                                <td>Phòng 4 giường</td>
+                                <td class="small text-muted">Ghép lớp học tập</td>
+                                <td><span class="badge bg-success-subtle text-success">Đã duyệt</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-muted small mt-3 p-2 bg-light rounded text-center">
+                    Nếu có thắc mắc về quá trình điều chuyển phòng, vui lòng liên hệ BQL tại phòng thường trực.
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

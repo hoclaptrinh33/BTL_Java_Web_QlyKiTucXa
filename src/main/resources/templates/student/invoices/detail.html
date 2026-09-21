@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-3">
+    <!-- Nút quay lại & Tiêu đề -->
+    <div class="mb-4">
+        <a th:href="@{/student/invoices}" class="text-decoration-none text-muted small d-inline-flex align-items-center mb-2">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách hóa đơn
+        </a>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1 class="h3 mb-1 text-gray-800" th:text="${invoice != null ? 'Hóa đơn #' + invoice.invoiceNo : 'Hóa đơn chi tiết'}">Chi tiết hóa đơn</h1>
+                <p class="text-muted mb-0">Biên lai thu phí và bảng đối soát chỉ số chi tiết</p>
+            </div>
+            <div th:if="${invoice != null}">
+                <span class="ktx-pill fs-6 px-3 py-2"
+                      th:classappend="${invoice.status.name() == 'PAID' ? 'is-mint' : (invoice.status.name() == 'OVERDUE' ? 'is-rose' : 'is-peach')}"
+                      th:text="${invoice.status.name() == 'PAID' ? 'ĐÃ THANH TOÁN' : (invoice.status.name() == 'OVERDUE' ? 'QUÁ HẠN NỘP' : 'CHỜ THANH TOÁN')}">
+                    Trạng thái
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- NẾU KHÔNG TÌM THẤY HÓA ĐƠN -->
+    <div class="ktx-card text-center py-5" th:if="${invoice == null}">
+        <i class="bi bi-file-earmark-x fs-1 d-block mb-2 text-secondary"></i>
+        <h2 class="h5 fw-bold text-dark">Không tìm thấy thông tin hóa đơn</h2>
+        <p class="text-muted mb-4">Hóa đơn không tồn tại hoặc bạn không có quyền truy cập.</p>
+        <a th:href="@{/student/invoices}" class="btn btn-primary rounded-pill px-4">Quay lại danh sách</a>
+    </div>
+
+    <!-- NẾU CÓ HÓA ĐƠN -->
+    <div class="row g-4" th:if="${invoice != null}">
+        <!-- Cột trái: Biên lai chi tiết -->
+        <div class="col-lg-8">
+            <div class="ktx-card mb-4">
+                <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
+                    <div>
+                        <span class="text-muted small">Loại khoản thu</span>
+                        <h2 class="h5 fw-bold text-dark mb-0"
+                            th:text="${invoice.invoiceType.name() == 'ROOM_FEE' ? 'Tiền phòng ký túc xá' : (invoice.invoiceType.name() == 'DEPOSIT' ? 'Tiền đặt cọc lưu trú' : 'Điện nước & Tiện ích sinh hoạt')}">
+                            Khoản thu
+                        </h2>
+                    </div>
+                    <div class="text-end">
+                        <span class="text-muted small">Tổng tiền phải đóng</span>
+                        <div class="h4 fw-bold text-primary mb-0" th:text="${#numbers.formatInteger(invoice.total, 1, 'POINT')} + ' đ'">0 đ</div>
+                    </div>
+                </div>
+
+                <div class="row g-3 small mb-4">
+                    <div class="col-sm-6">
+                        <div class="text-muted">Sinh viên nộp:</div>
+                        <strong class="text-dark" th:text="${student.fullName + ' (' + student.studentCode + ')'}">...</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted">Hạn thanh toán:</div>
+                        <strong class="text-danger" th:text="${#temporals.format(invoice.dueDate, 'dd/MM/yyyy')}">...</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted">Kỳ thu phí:</div>
+                        <strong class="text-dark" th:text="${invoice.billingMonth != null ? 'Tháng ' + #temporals.format(invoice.billingMonth, 'MM/yyyy') : 'Học kỳ'}">...</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted">Ngày phát hành:</div>
+                        <strong class="text-dark" th:text="${#temporals.format(invoice.createdAt, 'dd/MM/yyyy HH:mm')}">...</strong>
+                    </div>
+                </div>
+
+                <!-- Bảng chi tiết khoản phí (Items) -->
+                <div class="table-responsive border rounded-3 overflow-hidden mb-3">
+                    <table class="table table-striped align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Khoản mục</th>
+                                <th>Chi tiết / Chỉ số</th>
+                                <th>Đơn giá</th>
+                                <th class="text-end">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Nếu là hóa đơn tiền phòng -->
+                            <tr th:if="${invoice.invoiceType.name() == 'ROOM_FEE'}">
+                                <td><strong>Phí lưu trú ký túc xá</strong></td>
+                                <td>Học kỳ chuẩn (5 tháng)</td>
+                                <td th:text="${#numbers.formatInteger(invoice.total, 1, 'POINT')} + ' đ'">...</td>
+                                <td class="text-end fw-bold" th:text="${#numbers.formatInteger(invoice.total, 1, 'POINT')} + ' đ'">...</td>
+                            </tr>
+                            <!-- Nếu là hóa đơn tiền cọc -->
+                            <tr th:if="${invoice.invoiceType.name() == 'DEPOSIT'}">
+                                <td><strong>Tiền bảo đảm tài sản (Đặt cọc)</strong></td>
+                                <td>50% giá phòng học kỳ (Hoàn trả khi trả phòng)</td>
+                                <td th:text="${#numbers.formatInteger(invoice.total, 1, 'POINT')} + ' đ'">...</td>
+                                <td class="text-end fw-bold" th:text="${#numbers.formatInteger(invoice.total, 1, 'POINT')} + ' đ'">...</td>
+                            </tr>
+                            <!-- Nếu là hóa đơn điện nước -->
+                            <tr th:if="${invoice.invoiceType.name() == 'UTILITY'}">
+                                <td><strong>Tiền điện sinh hoạt</strong></td>
+                                <td>Chỉ số công tơ phòng (Chia đều N người)</td>
+                                <td>Bậc thang EVN</td>
+                                <td class="text-end fw-bold" th:text="${#numbers.formatInteger(invoice.total.multiply(new java.math.BigDecimal('0.7')), 1, 'POINT')} + ' đ'">...</td>
+                            </tr>
+                            <tr th:if="${invoice.invoiceType.name() == 'UTILITY'}">
+                                <td><strong>Tiền nước sinh hoạt</strong></td>
+                                <td>Đồng hồ nước phòng (Chia đều N người)</td>
+                                <td>15.000 đ/m³</td>
+                                <td class="text-end fw-bold" th:text="${#numbers.formatInteger(invoice.total.multiply(new java.math.BigDecimal('0.3')), 1, 'POINT')} + ' đ'">...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="3" class="text-end">Tổng cộng:</th>
+                                <th class="text-end text-primary fs-6" th:text="${#numbers.formatInteger(invoice.total, 1, 'POINT')} + ' đ'">0 đ</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Bảng giải trình điện nước nếu là hóa đơn điện nước -->
+                <div th:if="${invoice.invoiceType.name() == 'UTILITY'}" class="p-3 bg-light rounded-3 small text-secondary mt-3">
+                    <h3 class="h6 fw-bold text-dark mb-2"><i class="bi bi-calculator me-1 text-primary"></i>Công thức tính điện nước theo đặc tả:</h3>
+                    <ul class="mb-0 ps-3">
+                        <li><strong>Điện:</strong> Tính theo chỉ số thực tế ghi nhận của phòng, áp dụng bậc thang 6 mức giá điện sinh hoạt của Bộ Công Thương.</li>
+                        <li><strong>Nước:</strong> Tính theo số khối tiêu thụ thực tế $\times$ đơn giá nước sạch KTX.</li>
+                        <li><strong>Chia đều:</strong> Tổng tiền điện + nước của cả phòng được chia đều chính xác cho số lượng sinh viên đang ở thực tế trong phòng vào thời điểm phát hành.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Hướng dẫn đóng tiền -->
+        <div class="col-lg-4">
+            <div class="ktx-card">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-qr-code me-2 text-primary"></i>Phương thức thanh toán</h2>
+                </div>
+
+                <div class="d-flex flex-column gap-3 small">
+                    <!-- Cách 1: Chuyển khoản -->
+                    <div class="p-3 border rounded-3 bg-light">
+                        <div class="fw-bold text-dark mb-2"><i class="bi bi-bank me-1 text-primary"></i>1. Chuyển khoản qua ngân hàng</div>
+                        <div class="mb-1"><span class="text-muted">Ngân hàng:</span> <strong>Vietcombank (VCB)</strong></div>
+                        <div class="mb-1"><span class="text-muted">Số tài khoản:</span> <strong class="text-primary font-monospace">1023456789</strong></div>
+                        <div class="mb-1"><span class="text-muted">Chủ tài khoản:</span> <strong>BAN QUAN LY KTX SINH VIEN</strong></div>
+                        <div class="mt-2 p-2 bg-white rounded border">
+                            <span class="text-muted d-block small">Nội dung chuyển khoản (bắt buộc):</span>
+                            <strong class="text-danger font-monospace" th:text="${student.studentCode + ' ' + invoice.invoiceNo}">D22CQCN001 HD-00001</strong>
+                        </div>
+                    </div>
+
+                    <!-- Cách 2: Tiền mặt -->
+                    <div class="p-3 border rounded-3 bg-light">
+                        <div class="fw-bold text-dark mb-2"><i class="bi bi-cash me-1 text-success"></i>2. Nộp tiền mặt trực tiếp</div>
+                        <div>Sinh viên đến nộp trực tiếp tại <strong>Phòng Kế toán - Tầng 1 Nhà Điều hành KTX</strong> trong giờ hành chính (8:00 - 17:00, Thứ 2 đến Thứ 6).</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

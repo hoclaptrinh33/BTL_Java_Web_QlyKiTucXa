@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-3">
+    <!-- Tiêu đề -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800">Hóa đơn & Nghĩa vụ tài chính</h1>
+            <p class="text-muted mb-0">Theo dõi công nợ tiền phòng, tiền đặt cọc và hóa đơn điện nước hàng tháng</p>
+        </div>
+    </div>
+
+    <!-- 3 Thẻ chỉ số tài chính -->
+    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+        <div class="col">
+            <div class="ktx-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-circle bg-danger-subtle text-danger fs-3"><i class="bi bi-exclamation-octagon"></i></div>
+                    <div>
+                        <div class="text-muted small">Cần thanh toán ngay</div>
+                        <div class="h4 fw-bold text-danger mb-0" th:text="${unpaidCount > 0 ? #numbers.formatInteger(totalUnpaidAmount, 1, 'POINT') + ' đ' : '0 đ'}">0 đ</div>
+                        <div class="small text-muted" th:text="${unpaidCount + ' hóa đơn chưa đóng'}">0 hóa đơn</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="ktx-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-circle bg-primary-subtle text-primary fs-3"><i class="bi bi-receipt"></i></div>
+                    <div>
+                        <div class="text-muted small">Tổng hóa đơn phát hành</div>
+                        <div class="h4 fw-bold text-dark mb-0" th:text="${invoices != null ? invoices.size() : 0}">0</div>
+                        <div class="small text-muted">Bao gồm cọc, phòng & điện nước</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="ktx-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-circle bg-success-subtle text-success fs-3"><i class="bi bi-check2-circle"></i></div>
+                    <div>
+                        <div class="text-muted small">Hình thức thanh toán</div>
+                        <div class="fw-bold text-dark mb-0">Tiền mặt / Chuyển khoản</div>
+                        <div class="small text-muted">Tại quầy tài vụ BQL KTX</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách hóa đơn -->
+    <div class="ktx-card">
+        <div class="ktx-card__head mb-3">
+            <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-list-ul me-2 text-primary"></i>Danh sách tất cả hóa đơn</h2>
+        </div>
+
+        <div class="table-responsive" th:if="${invoices != null && !invoices.empty}">
+            <table class="table table-hover align-middle ktx-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Mã hóa đơn</th>
+                        <th>Loại phí</th>
+                        <th>Tháng / Kỳ áp dụng</th>
+                        <th>Hạn thanh toán</th>
+                        <th>Số tiền (VNĐ)</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="i : ${invoices}">
+                        <td>
+                            <a th:href="@{'/student/invoices/' + ${i.id}}" class="fw-bold text-primary text-decoration-none">
+                                <span class="ktx-chip" th:text="${i.invoiceNo}">HD-00001</span>
+                            </a>
+                        </td>
+                        <td>
+                            <strong class="text-dark" th:text="${i.invoiceType.name() == 'ROOM_FEE' ? 'Tiền thuê phòng' : (i.invoiceType.name() == 'DEPOSIT' ? 'Tiền đặt cọc' : 'Điện nước & Tiện ích')}">Loại phí</strong>
+                        </td>
+                        <td th:text="${i.billingMonth != null ? #temporals.format(i.billingMonth, 'MM/yyyy') : 'Theo học kỳ'}">—</td>
+                        <td>
+                            <div th:text="${#temporals.format(i.dueDate, 'dd/MM/yyyy')}">20/09/2026</div>
+                            <small class="text-danger fw-semibold" th:if="${i.status.name() == 'OVERDUE'}">Đã quá hạn</small>
+                        </td>
+                        <td>
+                            <strong class="text-dark fs-6" th:text="${#numbers.formatInteger(i.total, 1, 'POINT')} + ' đ'">0 đ</strong>
+                        </td>
+                        <td>
+                            <span class="ktx-pill"
+                                  th:classappend="${i.status.name() == 'PAID' ? 'is-mint' : (i.status.name() == 'OVERDUE' ? 'is-rose' : 'is-peach')}"
+                                  th:text="${i.status.name() == 'PAID' ? 'Đã đóng' : (i.status.name() == 'OVERDUE' ? 'Quá hạn' : 'Chưa đóng')}">
+                                Trạng thái
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a th:href="@{'/student/invoices/' + ${i.id}}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                Chi tiết <i class="bi bi-chevron-right ms-1"></i>
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="text-center py-5 text-muted" th:if="${invoices == null || invoices.empty}">
+            <i class="bi bi-receipt-cutoff fs-1 d-block mb-2 text-secondary"></i>
+            <p class="mb-0">Hiện tại bạn không có hóa đơn nào trong hệ thống.</p>
+        </div>
+    </div>
+</main>
+</body>
+</html>
