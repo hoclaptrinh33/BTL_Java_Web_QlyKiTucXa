@@ -64,6 +64,9 @@
             <a th:href="@{/admin/contracts}" th:classappend="${activeMenu == 'contracts'} ? 'is-active'">
                 <i class="bi bi-file-earmark-check"></i> <span>Hợp đồng</span>
             </a>
+            <a th:href="@{/admin/room-changes}" th:classappend="${activeMenu == 'room-changes'} ? 'is-active'">
+                <i class="bi bi-arrow-left-right"></i> <span>Đổi / Trả phòng</span>
+            </a>
 
             <p class="ktx-nav__label">Thanh toán</p>
             <a th:href="@{/admin/payments}" th:classappend="${activeMenu == 'payments'} ? 'is-active'">
