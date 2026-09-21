@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Reusable confirmation modal +§24.5 & §24.12) -->
+<div th:fragment="confirm-modal" class="modal fade" id="ktxConfirmModal" tabindex="-1" aria-labelledby="ktxConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="ktxConfirmModalLabel">
+                    <i class="i bi-exclamation-triangle-fill text-warning me-2"></i><span id="ktxConfirmModalTitle">Xác nhận thao tác</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body py-3 text-secondary" id="ktxConfirmModalBody">
+                Bạn có chắc chắn muốn thực hiện thao tác này không?
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal" id="ktxConfirmModalCancel">Hủy bỏ</button>
+                <button type="button" class="btn btn-primary shadow-sm" id="ktxConfirmModalOk">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

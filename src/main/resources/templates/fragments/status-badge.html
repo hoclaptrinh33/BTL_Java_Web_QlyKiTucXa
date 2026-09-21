@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Status Badge according to §24.6 -->
+<th:block th:fragment="badge (status)">
+    <!-- BedStatus -->
+    <span th:if="${status == 'VACANT' or status?.name() == 'VACANT'}" class="ktx-badge ktx-badge--vacant">Trống</span>
+    <span th:if="${status == 'OCCUPIED' or status?.name() == 'OCCUPIED'}" class="ktx-badge ktx-badge--occupied">Có người</span>
+    <span th:if="${status == 'MAINTENANCE' or status?.name() == 'MAINTENANCE'}" class="ktx-badge ktx-badge--draft">Bảo trì</span>
+
+    <!-- ContractStatus (EXPIRED khác COMPLETED/đã trả) -->
+    <span th:if="${status == 'DRAFT' or status?.name() == 'DRAFT'}" class="ktx-badge ktx-badge--draft">Nháp</span>
+    <span th:if="${status == 'ACTIVE' or status?.name() == 'ACTIVE'}" class="ktx-badge ktx-badge--vacant">Đang ở</span>
+    <span th:if="${status == 'PENDING_RENEWAL' or status?.name() == 'PENDING_RENEWAL'}" class="ktx-badge ktx-badge--wait">Chờ gia hạn</span>
+    <span th:if="${status == 'EXPIRED' or status?.name() == 'EXPIRED'}" class="ktx-badge ktx-badge--wait">Hết hạn</span>
+    <span th:if="${status == 'TERMINATED' or status?.name() == 'TERMINATED'}" class="ktx-badge ktx-badge--occupied">Buộc rời</span>
+    <span th:if="${status == 'COMPLETED' or status?.name() == 'COMPLETED'}" class="ktx-badge ktx-badge--draft">Đã trả</span>
+
+    <!-- ApplicationStatus -->
+    <span th:if="${status == 'SUBMITTED' or status?.name() == 'SUBMITTED'}" class="ktx-badge ktx-badge--violet">Đã nộp</span>
+    <span th:if="${status == 'ALLOCATED' or status?.name() == 'ALLOCATED'}" class="ktx-badge ktx-badge--vacant">Đã xếp</span>
+    <span th:if="${status == 'WAITLISTED' or status?.name() == 'WAITLISTED'}" class="ktx-badge ktx-badge--wait">Chờ chỗ</span>
+    <span th:if="${status == 'REJECTED' or status?.name() == 'REJECTED'}" class="ktx-badge ktx-badge--draft">Từ chối</span>
+    <span th:if="${status == 'WITHDRAWN' or status?.name() == 'WITHDRAWN'}" class="ktx-badge ktx-badge--draft">Đã rút</span>
+
+    <!-- InvoiceStatus -->
+    <span th:if="${status == 'UNPAID' or status?.name() == 'UNPAID'}" class="ktx-badge ktx-badge--wait">Chưa trả</span>
+    <span th:if="${status == 'PAID' or status?.name() == 'PAID'}" class="ktx-badge ktx-badge--vacant">Đã trả</span>
+    <span th:if="${status == 'OVERDUE' or status?.name() == 'OVERDUE'}" class="ktx-badge ktx-badge--occupied">Quá hạn</span>
+
+    <!-- AllocationResult -->
+    <span th:if="${status == 'ASSIGNED' or status?.name() == 'ASSIGNED'}" class="ktx-badge ktx-badge--vacant">Gán</span>
+    <span th:if="${status == 'SKIPPED' or status?.name() == 'SKIPPED'}" class="ktx-badge ktx-badge--draft">Bỏ qua</span>
+</th:block>
+</body>
+</html>

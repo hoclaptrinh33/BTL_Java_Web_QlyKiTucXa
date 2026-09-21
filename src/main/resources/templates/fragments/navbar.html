@@ -11,15 +11,17 @@
     </div>
     <form class="ktx-search d-none d-md-flex" role="search" action="#" method="get">
         <i class="bi bi-search"></i>
-        <input type="search" name="q" placeholder="Tìm sinh viên, phòng, đơn…" aria-label="Tìm kiếm"/>
+        <input type="search" name="q" placeholder="Tìm kiếm sinh viên, phòng, đơn…" aria-label="Tìm kiếm"/>
+        <span class="ktx-search__badge d-none d-xl-inline-block">Ctrl + K</span>
     </form>
-    <button class="btn ktx-icon-btn" type="button" aria-label="Thông báo" disabled>
+    <button class="btn ktx-icon-btn position-relative" type="button" aria-label="Thông báo" disabled>
         <i class="bi bi-bell"></i>
+        <span class="ktx-bell-badge">3</span>
     </button>
     <div class="dropdown">
         <button class="ktx-user" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <span class="ktx-avatar" sec:authorize="hasRole('ADMIN')">ADMIN</span>
-            <span class="ktx-avatar" sec:authorize="hasRole('STAFF')">STAFF</span>
+            <span class="ktx-avatar" sec:authorize="hasRole('ADMIN')">AD</span>
+            <span class="ktx-avatar" sec:authorize="hasRole('STAFF')">ST</span>
             <span class="ktx-avatar" sec:authorize="hasRole('STUDENT')">SV</span>
             <span class="ktx-user__meta">
                 <strong sec:authentication="name">user</strong>
