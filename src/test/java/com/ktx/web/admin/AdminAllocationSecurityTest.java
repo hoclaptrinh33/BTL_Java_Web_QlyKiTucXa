@@ -53,6 +53,49 @@ class AdminAllocationSecurityTest {
     @MockitoBean
     private LoginAttemptService loginAttemptService;
 
+    @MockitoBean
+    private com.ktx.repository.StudentRepository studentRepository;
+
+    @MockitoBean
+    private com.ktx.repository.BedRepository bedRepository;
+
+    @Test
+    @DisplayName("STAFF không được phép truy cập GET /admin/allocations/manual (403)")
+    void staffCannotAccessManualAssign() throws Exception {
+        mockMvc.perform(get("/admin/allocations/manual").with(user("staff1").roles("STAFF")))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/error/403"));
+    }
+
+    @Test
+    @DisplayName("STUDENT không được phép truy cập GET /admin/allocations/manual (403)")
+    void studentCannotAccessManualAssign() throws Exception {
+        mockMvc.perform(get("/admin/allocations/manual").with(user("sv1").roles("STUDENT")))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/error/403"));
+    }
+
+    @Test
+    @DisplayName("STAFF không được phép POST /admin/allocations/manual (403)")
+    void staffCannotSubmitManualAssign() throws Exception {
+        mockMvc.perform(post("/admin/allocations/manual")
+                        .with(user("staff1").roles("STAFF"))
+                        .with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/error/403"));
+    }
+
+    @Test
+    @DisplayName("ADMIN được phép truy cập GET /admin/allocations/manual (200)")
+    void adminCanAccessManualAssign() throws Exception {
+        when(allocationService.getAvailablePeriods()).thenReturn(Collections.emptyList());
+        when(studentRepository.findAllWithUser()).thenReturn(Collections.emptyList());
+        when(bedRepository.findAllWithRoomAndBuilding()).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/admin/allocations/manual").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk());
+    }
+
     @Test
     @DisplayName("STAFF không được phép truy cập /admin/allocations (403)")
     void staffCannotAccessAllocations() throws Exception {

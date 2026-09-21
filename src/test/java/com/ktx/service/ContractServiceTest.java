@@ -182,8 +182,6 @@ class ContractServiceTest {
         contract.setId(10L);
         contract.setStatus(ContractStatus.ACTIVE);
 
-        when(contractRepository.findById(10L)).thenReturn(Optional.of(contract));
-
         assertThrows(BusinessException.class, () -> contractService.cancelDraft(10L));
         verify(bedRepository, never()).vacateBed(any(Long.class));
     }
@@ -223,5 +221,41 @@ class ContractServiceTest {
 
         assertThrows(BusinessException.class, () -> contractService.terminate(10L, false));
         verify(contractRepository, never()).save(any(Contract.class));
+    }
+
+    @Test
+    @DisplayName("createDraft tạo HĐ DRAFT cho sinh viên khi application = null (gán tay)")
+    void createDraft_withoutApplication_success() {
+        Student student = new Student();
+        student.setId(15L);
+
+        Room room = new Room();
+        room.setPricePerTerm(new BigDecimal("2000000"));
+
+        Bed bed = new Bed();
+        bed.setId(60L);
+        bed.setBedCode("B03");
+        bed.setRoom(room);
+
+        LocalDate termStart = LocalDate.of(2026, 9, 1);
+        LocalDate termEnd = LocalDate.of(2027, 1, 31);
+
+        when(documentNumberService.nextContractNo(2026)).thenReturn("HD-2026-9999");
+        when(contractRepository.save(any(Contract.class))).thenAnswer(i -> {
+            Contract c = i.getArgument(0);
+            c.setId(99L);
+            return c;
+        });
+        when(bedRepository.occupyBed(60L, 99L)).thenReturn(1);
+
+        Contract contract = contractService.createDraft(student, null, bed, termStart, termEnd);
+
+        assertNotNull(contract);
+        assertEquals("HD-2026-9999", contract.getContractNo());
+        assertEquals(ContractStatus.DRAFT, contract.getStatus());
+        assertEquals(new BigDecimal("1000000"), contract.getDepositAmount());
+        assertEquals(student, contract.getStudent());
+        assertEquals(bed, contract.getBed());
+        verify(bedRepository).occupyBed(60L, 99L);
     }
 }

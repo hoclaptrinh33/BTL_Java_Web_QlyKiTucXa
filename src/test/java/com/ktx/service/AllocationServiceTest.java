@@ -23,6 +23,7 @@ import com.ktx.common.exception.BusinessException;
 import com.ktx.domain.AllocationItem;
 import com.ktx.domain.AllocationRun;
 import com.ktx.domain.Bed;
+import com.ktx.domain.Contract;
 import com.ktx.domain.RegistrationPeriod;
 import com.ktx.domain.Room;
 import com.ktx.domain.RoomApplication;
@@ -75,6 +76,15 @@ class AllocationServiceTest {
     @Mock
     private RoomApplicationRepository roomApplicationRepository;
 
+    @Mock
+    private com.ktx.repository.StudentRepository studentRepository;
+
+    @Mock
+    private com.ktx.repository.ContractRepository contractRepository;
+
+    @Mock
+    private com.ktx.repository.SystemLockRepository systemLockRepository;
+
     private AllocationService allocationService;
 
     private RegistrationPeriod samplePeriod;
@@ -99,7 +109,10 @@ class AllocationServiceTest {
                 systemConfigRepository,
                 contractService,
                 bedRepository,
-                roomApplicationRepository
+                roomApplicationRepository,
+                studentRepository,
+                contractRepository,
+                systemLockRepository
         );
 
         adminUser = new User();
@@ -374,5 +387,236 @@ class AllocationServiceTest {
 
         assertThrows(BusinessException.class, () -> allocationService.commit(999L, 1L));
         verify(allocationEngine, never()).plan(any(Long.class));
+    }
+
+    @Test
+    @DisplayName("assignManual: Thành công với periodId, cập nhật đơn sang ALLOCATED và tạo HĐ DRAFT")
+    void assignManual_successWithPeriod() {
+        Long studentId = 10L;
+        Long bedId = 20L;
+        Long periodId = 100L;
+
+        samplePeriod.setTermStart(java.time.LocalDate.of(2026, 9, 1));
+        samplePeriod.setTermEnd(java.time.LocalDate.of(2027, 1, 31));
+        when(periodRepository.findByIdForUpdate(periodId)).thenReturn(Optional.of(samplePeriod));
+
+        com.ktx.domain.Building building = new com.ktx.domain.Building();
+        building.setGenderPolicy(com.ktx.domain.enums.BuildingGenderPolicy.MALE);
+
+        Room room = new Room();
+        room.setBuilding(building);
+        room.setPricePerTerm(new java.math.BigDecimal("1500000"));
+
+        Bed bed = new Bed();
+        bed.setId(bedId);
+        bed.setBedCode("B01");
+        bed.setStatus(com.ktx.domain.enums.BedStatus.VACANT);
+        bed.setRoom(room);
+        when(bedRepository.findByIdForUpdate(bedId)).thenReturn(Optional.of(bed));
+
+        Student student = new Student();
+        student.setId(studentId);
+        student.setStudentCode("SV001");
+        student.setGender(Gender.MALE);
+        student.setConductScore(90);
+        student.setBlockedFromHousing(false);
+        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
+
+        when(contractRepository.existsByStudentIdAndStatusIn(studentId, com.ktx.common.util.OccupyingStatuses.OCCUPYING))
+                .thenReturn(false);
+
+        RoomApplication app = new RoomApplication();
+        app.setId(50L);
+        app.setStudent(student);
+        app.setStatus(ApplicationStatus.WAITLISTED);
+        when(roomApplicationRepository.findByPeriodIdAndStudentId(periodId, studentId)).thenReturn(Optional.of(app));
+
+        Contract mockContract = new Contract();
+        mockContract.setId(77L);
+        mockContract.setContractNo("HD-2026-0001");
+        when(contractService.createDraft(student, app, bed, samplePeriod.getTermStart(), samplePeriod.getTermEnd()))
+                .thenReturn(mockContract);
+
+        Contract result = allocationService.assignManual(studentId, bedId, periodId, "Gán bổ sung");
+
+        assertNotNull(result);
+        assertEquals("HD-2026-0001", result.getContractNo());
+        assertEquals(ApplicationStatus.ALLOCATED, app.getStatus());
+        verify(roomApplicationRepository).save(app);
+        verify(bedRepository).findByIdForUpdate(bedId);
+        verify(periodRepository).findByIdForUpdate(periodId);
+    }
+
+    @Test
+    @DisplayName("assignManual: Thành công không có periodId, khóa system_locks.ALLOCATION")
+    void assignManual_successWithoutPeriod() {
+        Long studentId = 10L;
+        Long bedId = 20L;
+
+        com.ktx.domain.SystemLock systemLock = new com.ktx.domain.SystemLock();
+        systemLock.setLockName("ALLOCATION");
+        when(systemLockRepository.findByLockNameForUpdate("ALLOCATION")).thenReturn(Optional.of(systemLock));
+
+        com.ktx.domain.Building building = new com.ktx.domain.Building();
+        building.setGenderPolicy(com.ktx.domain.enums.BuildingGenderPolicy.FEMALE);
+
+        Room room = new Room();
+        room.setBuilding(building);
+        room.setPricePerTerm(new java.math.BigDecimal("1200000"));
+
+        Bed bed = new Bed();
+        bed.setId(bedId);
+        bed.setBedCode("B02");
+        bed.setStatus(com.ktx.domain.enums.BedStatus.VACANT);
+        bed.setRoom(room);
+        when(bedRepository.findByIdForUpdate(bedId)).thenReturn(Optional.of(bed));
+
+        Student student = new Student();
+        student.setId(studentId);
+        student.setStudentCode("SV002");
+        student.setGender(Gender.FEMALE);
+        student.setConductScore(85);
+        student.setBlockedFromHousing(false);
+        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
+
+        when(contractRepository.existsByStudentIdAndStatusIn(studentId, com.ktx.common.util.OccupyingStatuses.OCCUPYING))
+                .thenReturn(false);
+
+        Contract mockContract = new Contract();
+        mockContract.setId(88L);
+        mockContract.setContractNo("HD-2026-0002");
+        when(contractService.createDraft(any(Student.class), any(), any(Bed.class), any(java.time.LocalDate.class), any(java.time.LocalDate.class)))
+                .thenReturn(mockContract);
+
+        Contract result = allocationService.assignManual(studentId, bedId, null, "Gán giữa kỳ");
+
+        assertNotNull(result);
+        assertEquals("HD-2026-0002", result.getContractNo());
+        verify(systemLockRepository).findByLockNameForUpdate("ALLOCATION");
+        verify(bedRepository).findByIdForUpdate(bedId);
+    }
+
+    @Test
+    @DisplayName("assignManual: Từ chối nếu giường đang bảo trì MAINTENANCE")
+    void assignManual_rejectsMaintenanceBed() {
+        Long studentId = 10L;
+        Long bedId = 20L;
+
+        when(systemLockRepository.findByLockNameForUpdate("ALLOCATION"))
+                .thenReturn(Optional.of(new com.ktx.domain.SystemLock()));
+
+        Bed bed = new Bed();
+        bed.setId(bedId);
+        bed.setStatus(com.ktx.domain.enums.BedStatus.MAINTENANCE);
+        when(bedRepository.findByIdForUpdate(bedId)).thenReturn(Optional.of(bed));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> allocationService.assignManual(studentId, bedId, null, "test"));
+        assertTrue(ex.getMessage().contains("bảo trì") || ex.getMessage().contains("MAINTENANCE"));
+    }
+
+    @Test
+    @DisplayName("assignManual: Từ chối nếu giường không còn VACANT")
+    void assignManual_rejectsOccupiedBed() {
+        Long studentId = 10L;
+        Long bedId = 20L;
+
+        when(systemLockRepository.findByLockNameForUpdate("ALLOCATION"))
+                .thenReturn(Optional.of(new com.ktx.domain.SystemLock()));
+
+        Bed bed = new Bed();
+        bed.setId(bedId);
+        bed.setStatus(com.ktx.domain.enums.BedStatus.OCCUPIED);
+        when(bedRepository.findByIdForUpdate(bedId)).thenReturn(Optional.of(bed));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> allocationService.assignManual(studentId, bedId, null, "test"));
+        assertTrue(ex.getMessage().contains("không còn trống") || ex.getMessage().contains("VACANT"));
+    }
+
+    @Test
+    @DisplayName("assignManual: Từ chối nếu sai quy định giới tính tòa nhà")
+    void assignManual_rejectsWrongGender() {
+        Long studentId = 10L;
+        Long bedId = 20L;
+
+        when(systemLockRepository.findByLockNameForUpdate("ALLOCATION"))
+                .thenReturn(Optional.of(new com.ktx.domain.SystemLock()));
+
+        com.ktx.domain.Building building = new com.ktx.domain.Building();
+        building.setGenderPolicy(com.ktx.domain.enums.BuildingGenderPolicy.MALE);
+
+        Room room = new Room();
+        room.setBuilding(building);
+
+        Bed bed = new Bed();
+        bed.setId(bedId);
+        bed.setStatus(com.ktx.domain.enums.BedStatus.VACANT);
+        bed.setRoom(room);
+        when(bedRepository.findByIdForUpdate(bedId)).thenReturn(Optional.of(bed));
+
+        Student student = new Student();
+        student.setId(studentId);
+        student.setGender(Gender.FEMALE);
+        student.setConductScore(80);
+        student.setBlockedFromHousing(false);
+        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> allocationService.assignManual(studentId, bedId, null, "test"));
+        assertTrue(ex.getMessage().contains("giới tính") || ex.getMessage().contains("không phù hợp"));
+    }
+
+    @Test
+    @DisplayName("assignManual: Từ chối nếu sinh viên đã có hợp đồng OCCUPYING")
+    void assignManual_rejectsStudentWithOccupyingContract() {
+        Long studentId = 10L;
+        Long bedId = 20L;
+
+        when(systemLockRepository.findByLockNameForUpdate("ALLOCATION"))
+                .thenReturn(Optional.of(new com.ktx.domain.SystemLock()));
+
+        Bed bed = new Bed();
+        bed.setId(bedId);
+        bed.setStatus(com.ktx.domain.enums.BedStatus.VACANT);
+        when(bedRepository.findByIdForUpdate(bedId)).thenReturn(Optional.of(bed));
+
+        Student student = new Student();
+        student.setId(studentId);
+        student.setGender(Gender.MALE);
+        student.setConductScore(80);
+        student.setBlockedFromHousing(false);
+        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
+
+        when(contractRepository.existsByStudentIdAndStatusIn(studentId, com.ktx.common.util.OccupyingStatuses.OCCUPYING))
+                .thenReturn(true);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> allocationService.assignManual(studentId, bedId, null, "test"));
+        assertTrue(ex.getMessage().contains("OCCUPYING") || ex.getMessage().contains("hợp đồng"));
+    }
+
+    @Test
+    @DisplayName("assignManual: Từ chối nếu sinh viên bị cấm ở hoặc điểm rèn luyện = 0")
+    void assignManual_rejectsBlockedOrZeroScoreStudent() {
+        Long studentId = 10L;
+        Long bedId = 20L;
+
+        when(systemLockRepository.findByLockNameForUpdate("ALLOCATION"))
+                .thenReturn(Optional.of(new com.ktx.domain.SystemLock()));
+
+        Bed bed = new Bed();
+        bed.setId(bedId);
+        bed.setStatus(com.ktx.domain.enums.BedStatus.VACANT);
+        when(bedRepository.findByIdForUpdate(bedId)).thenReturn(Optional.of(bed));
+
+        Student student = new Student();
+        student.setId(studentId);
+        student.setBlockedFromHousing(true);
+        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> allocationService.assignManual(studentId, bedId, null, "test"));
+        assertTrue(ex.getMessage().contains("cấm") || ex.getMessage().contains("điểm rèn luyện"));
     }
 }
