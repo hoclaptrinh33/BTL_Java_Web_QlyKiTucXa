@@ -19,6 +19,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -41,6 +42,9 @@ class NotificationServiceTest {
 
     @Mock
     private JavaMailSender javaMailSender;
+
+    @Mock
+    private ObjectProvider<JavaMailSender> mailSenderProvider;
 
     private NotificationService notificationService;
 
@@ -66,7 +70,8 @@ class NotificationServiceTest {
     @DisplayName("When mail is disabled (opt-in default), creates notification without sending email")
     void notify_whenMailDisabled_doesNotSendEmail() {
         when(mailConfig.isMailEnabled()).thenReturn(false);
-        notificationService = new NotificationServiceImpl(notificationRepository, mailConfig, javaMailSender, "noreply@ktx.edu.vn");
+        when(mailSenderProvider.getIfAvailable()).thenReturn(javaMailSender);
+        notificationService = new NotificationServiceImpl(notificationRepository, mailConfig, mailSenderProvider, "noreply@ktx.edu.vn");
 
         Notification result = notificationService.notify(sampleUser, "Tiêu đề", "Nội dung", NotificationType.CONTRACT_EXPIRY);
 
@@ -84,7 +89,8 @@ class NotificationServiceTest {
     @DisplayName("When mail is enabled, sends email and marks emailSent true")
     void notify_whenMailEnabled_sendsEmailSuccessfully() {
         when(mailConfig.isMailEnabled()).thenReturn(true);
-        notificationService = new NotificationServiceImpl(notificationRepository, mailConfig, javaMailSender, "noreply@ktx.edu.vn");
+        when(mailSenderProvider.getIfAvailable()).thenReturn(javaMailSender);
+        notificationService = new NotificationServiceImpl(notificationRepository, mailConfig, mailSenderProvider, "noreply@ktx.edu.vn");
 
         Notification result = notificationService.notify(sampleUser, "Thông báo hợp đồng", "Nội dung chi tiết", NotificationType.CONTRACT_EXPIRY);
 
@@ -104,7 +110,8 @@ class NotificationServiceTest {
     @DisplayName("When mail sending fails with exception, application continues gracefully without failing notification")
     void notify_whenMailThrowsException_gracefullyHandlesWithoutFailing() {
         when(mailConfig.isMailEnabled()).thenReturn(true);
-        notificationService = new NotificationServiceImpl(notificationRepository, mailConfig, javaMailSender, "noreply@ktx.edu.vn");
+        when(mailSenderProvider.getIfAvailable()).thenReturn(javaMailSender);
+        notificationService = new NotificationServiceImpl(notificationRepository, mailConfig, mailSenderProvider, "noreply@ktx.edu.vn");
 
         doThrow(new MailSendException("SMTP connection failed"))
                 .when(javaMailSender).send(any(SimpleMailMessage.class));
@@ -120,7 +127,8 @@ class NotificationServiceTest {
     @DisplayName("When javaMailSender bean is null (no SMTP config), gracefully skips mail")
     void notify_whenMailSenderIsNull_skipsMail() {
         when(mailConfig.isMailEnabled()).thenReturn(true);
-        notificationService = new NotificationServiceImpl(notificationRepository, mailConfig, (JavaMailSender) null, "noreply@ktx.edu.vn");
+        when(mailSenderProvider.getIfAvailable()).thenReturn(null);
+        notificationService = new NotificationServiceImpl(notificationRepository, mailConfig, mailSenderProvider, "noreply@ktx.edu.vn");
 
         Notification result = notificationService.notify(sampleUser, "Thông báo", "Nội dung", NotificationType.GENERIC);
 
@@ -136,7 +144,8 @@ class NotificationServiceTest {
         notification.setReadFlag(false);
 
         when(notificationRepository.findById(100L)).thenReturn(Optional.of(notification));
-        notificationService = new NotificationServiceImpl(notificationRepository, mailConfig, javaMailSender, "noreply@ktx.edu.vn");
+        when(mailSenderProvider.getIfAvailable()).thenReturn(javaMailSender);
+        notificationService = new NotificationServiceImpl(notificationRepository, mailConfig, mailSenderProvider, "noreply@ktx.edu.vn");
 
         notificationService.markAsRead(100L);
 

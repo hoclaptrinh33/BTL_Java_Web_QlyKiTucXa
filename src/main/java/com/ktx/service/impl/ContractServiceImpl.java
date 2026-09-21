@@ -30,12 +30,6 @@ public class ContractServiceImpl implements ContractService {
 
     public ContractServiceImpl(ContractRepository contractRepository,
                                BedRepository bedRepository,
-                               DocumentNumberService documentNumberService) {
-        this(contractRepository, bedRepository, documentNumberService, null);
-    }
-
-    public ContractServiceImpl(ContractRepository contractRepository,
-                               BedRepository bedRepository,
                                DocumentNumberService documentNumberService,
                                SystemConfigService systemConfigService) {
         this.contractRepository = contractRepository;

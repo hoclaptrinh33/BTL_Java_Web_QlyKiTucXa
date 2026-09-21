@@ -40,16 +40,6 @@ public class NotificationServiceImpl implements NotificationService {
         this.fromAddress = fromAddress;
     }
 
-    public NotificationServiceImpl(NotificationRepository notificationRepository,
-                                   MailConfig mailConfig,
-                                   JavaMailSender mailSender,
-                                   String fromAddress) {
-        this.notificationRepository = notificationRepository;
-        this.mailConfig = mailConfig;
-        this.mailSender = mailSender;
-        this.fromAddress = fromAddress != null ? fromAddress : "noreply@ktx.edu.vn";
-    }
-
     @Override
     public Notification notify(User user, String title, String body, NotificationType type) {
         Notification notification = new Notification();
