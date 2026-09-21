@@ -232,6 +232,14 @@
 
     <!-- Script điều khiển toggle hiển thị khi bật cờ thay công tơ -->
     <script>
+        const invoiceLocked = /*[[${hasActiveInvoice}]]*/ false;
+
+        function setSectionEnabled(section, enabled) {
+            section.querySelectorAll('input').forEach(el => {
+                el.disabled = invoiceLocked || !enabled;
+            });
+        }
+
         function toggleElecReplaced() {
             const isReplaced = document.getElementById('elecReplacedSwitch').checked;
             const normalSec = document.getElementById('elecNormalSection');
@@ -240,6 +248,8 @@
             if (isReplaced) {
                 normalSec.style.display = 'none';
                 replacedSec.style.display = 'block';
+                setSectionEnabled(normalSec, false);
+                setSectionEnabled(replacedSec, true);
                 document.getElementById('elecCurrNormal').removeAttribute('required');
                 document.getElementById('elecOldFinal').setAttribute('required', 'required');
                 document.getElementById('elecNewStart').setAttribute('required', 'required');
@@ -247,6 +257,8 @@
             } else {
                 normalSec.style.display = 'block';
                 replacedSec.style.display = 'none';
+                setSectionEnabled(normalSec, true);
+                setSectionEnabled(replacedSec, false);
                 document.getElementById('elecCurrNormal').setAttribute('required', 'required');
                 document.getElementById('elecOldFinal').removeAttribute('required');
                 document.getElementById('elecNewStart').removeAttribute('required');
@@ -263,6 +275,8 @@
             if (isReplaced) {
                 normalSec.style.display = 'none';
                 replacedSec.style.display = 'block';
+                setSectionEnabled(normalSec, false);
+                setSectionEnabled(replacedSec, true);
                 document.getElementById('waterCurrNormal').removeAttribute('required');
                 document.getElementById('waterOldFinal').setAttribute('required', 'required');
                 document.getElementById('waterNewStart').setAttribute('required', 'required');
@@ -270,6 +284,8 @@
             } else {
                 normalSec.style.display = 'block';
                 replacedSec.style.display = 'none';
+                setSectionEnabled(normalSec, true);
+                setSectionEnabled(replacedSec, false);
                 document.getElementById('waterCurrNormal').setAttribute('required', 'required');
                 document.getElementById('waterOldFinal').removeAttribute('required');
                 document.getElementById('waterNewStart').removeAttribute('required');
