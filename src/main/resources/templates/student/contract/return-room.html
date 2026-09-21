@@ -8,8 +8,6 @@
         <p class="text-muted mb-0">Đăng ký trả phòng trước hạn hoặc hoàn tất kỳ lưu trú để nhận lại tiền cọc</p>
     </div>
 
-
-
     <div class="row g-4">
         <!-- Form đăng ký trả phòng -->
         <div class="col-lg-7">
@@ -23,7 +21,13 @@
                     <p class="mb-0">Bạn hiện không có hợp đồng phòng ở nào cần làm thủ tục trả phòng.</p>
                 </div>
 
-                <form th:if="${contract != null}" th:action="@{/student/return-room}" method="post" class="d-flex flex-column gap-3">
+                <div th:if="${contract != null and hasPendingReturn}" class="alert alert-warning border-0 rounded-3 shadow-sm mb-3">
+                    <i class="bi bi-clock-history me-2"></i>
+                    <strong>Bạn đang có một yêu cầu trả phòng đang chờ xử lý.</strong>
+                    <div class="small mt-1 text-muted">Cán bộ KTX sẽ liên hệ để xếp lịch kiểm kê bàn giao tài sản và tiến hành check-out cho bạn.</div>
+                </div>
+
+                <form th:if="${contract != null and !hasPendingReturn}" th:action="@{/student/return-room}" method="post" class="d-flex flex-column gap-3">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label text-muted small fw-semibold">Hợp đồng phòng ở</label>
@@ -48,7 +52,7 @@
 
                     <div class="pt-2 border-top">
                         <h3 class="h6 fw-bold text-primary mb-2"><i class="bi bi-bank me-2"></i>Thông tin tài khoản nhận hoàn tiền cọc</h3>
-                        <p class="text-muted small mb-3">Tiền đặt cọc (50% giá phòng) sẽ được BQL chuyển khoản lại trong vòng 3-5 ngày làm việc sau khi cán bộ nghiệm thu phòng.</p>
+                        <p class="text-muted small mb-3">Tiền đặt cọc (50% giá phòng) sẽ được BQL hoàn trả sau khi cán bộ nghiệm thu phòng và lập biên bản check-out.</p>
 
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -70,6 +74,52 @@
                         <i class="bi bi-check2-circle me-1"></i>Xác nhận nộp đơn trả phòng
                     </button>
                 </form>
+            </div>
+
+            <!-- Lịch sử đơn trả phòng -->
+            <div class="ktx-card mt-4">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Lịch sử yêu cầu trả phòng</h2>
+                </div>
+                <div th:if="${#lists.isEmpty(requests)}" class="text-center py-4 text-muted small">
+                    Chưa có yêu cầu trả phòng nào.
+                </div>
+                <div th:if="${!#lists.isEmpty(requests)}" class="table-responsive">
+                    <table class="table table-hover align-middle ktx-table mb-0 small">
+                        <thead>
+                            <tr>
+                                <th>Mã đơn</th>
+                                <th>Lý do & Thông tin</th>
+                                <th>Trạng thái</th>
+                                <th>Ghi chú BQL</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="req : ${requests}">
+                                <td><span class="badge bg-light text-dark border">#<span th:text="${req.id}"></span></span></td>
+                                <td class="text-muted" th:text="${req.reason}"></td>
+                                <td>
+                                    <span th:if="${req.status.name() == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning-emphasis">Chờ xử lý</span>
+                                    <span th:if="${req.status.name() == 'COMPLETED'}" class="badge bg-success-subtle text-success">Đã hoàn tất</span>
+                                    <span th:if="${req.status.name() == 'REJECTED'}" class="badge bg-danger-subtle text-danger">Từ chối</span>
+                                    <span th:if="${req.status.name() == 'CANCELLED'}" class="badge bg-secondary-subtle text-secondary">Đã hủy</span>
+                                </td>
+                                <td class="text-muted" th:text="${req.adminNote != null ? req.adminNote : '—'}"></td>
+                                <td>
+                                    <form th:if="${req.status.name() == 'SUBMITTED'}"
+                                          th:action="@{/student/return-room/{id}/cancel(id=${req.id})}" method="post"
+                                          onsubmit="return confirm('Bạn có chắc muốn hủy đơn đăng ký trả phòng này?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0">
+                                            Hủy đơn
+                                        </button>
+                                    </form>
+                                    <span th:if="${req.status.name() != 'SUBMITTED'}">—</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 

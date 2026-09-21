@@ -45,5 +45,14 @@ public interface BedRepository extends JpaRepository<Bed, Long> {
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM Bed b WHERE b.id IN :ids ORDER BY b.id ASC")
     List<Bed> findByIdInForUpdate(@org.springframework.data.repository.query.Param("ids") java.util.Collection<Long> ids);
+
+    @Query("""
+            SELECT b FROM Bed b
+            JOIN FETCH b.room r
+            JOIN FETCH r.building bg
+            WHERE b.status = com.ktx.domain.enums.BedStatus.VACANT
+            ORDER BY bg.name ASC, r.roomNumber ASC, b.bedCode ASC
+            """)
+    List<Bed> findVacantBedsWithDetails();
 }
 

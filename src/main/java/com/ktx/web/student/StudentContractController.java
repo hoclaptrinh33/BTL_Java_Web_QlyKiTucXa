@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,7 +18,14 @@ import com.ktx.domain.Contract;
 import com.ktx.domain.Student;
 import com.ktx.repository.ContractRepository;
 import com.ktx.repository.StudentRepository;
+import com.ktx.domain.Building;
+import com.ktx.domain.RoomChangeRequest;
+import com.ktx.domain.enums.RoomChangeKind;
+import com.ktx.domain.enums.RoomChangeStatus;
+import com.ktx.domain.enums.RoomType;
+import com.ktx.repository.BuildingRepository;
 import com.ktx.service.RoomApplicationService;
+import com.ktx.service.RoomChangeService;
 
 @Controller
 @RequestMapping("/student")
@@ -28,17 +36,23 @@ public class StudentContractController {
     private final com.ktx.repository.CheckInOutRepository checkInOutRepository;
     private final com.ktx.repository.InvoiceRepository invoiceRepository;
     private final com.ktx.repository.RoomAssetRepository roomAssetRepository;
+    private final RoomChangeService roomChangeService;
+    private final BuildingRepository buildingRepository;
 
     public StudentContractController(StudentRepository studentRepository,
                                      ContractRepository contractRepository,
                                      com.ktx.repository.CheckInOutRepository checkInOutRepository,
                                      com.ktx.repository.InvoiceRepository invoiceRepository,
-                                     com.ktx.repository.RoomAssetRepository roomAssetRepository) {
+                                     com.ktx.repository.RoomAssetRepository roomAssetRepository,
+                                     RoomChangeService roomChangeService,
+                                     BuildingRepository buildingRepository) {
         this.studentRepository = studentRepository;
         this.contractRepository = contractRepository;
         this.checkInOutRepository = checkInOutRepository;
         this.invoiceRepository = invoiceRepository;
         this.roomAssetRepository = roomAssetRepository;
+        this.roomChangeService = roomChangeService;
+        this.buildingRepository = buildingRepository;
     }
 
     @GetMapping("/contract")
@@ -109,8 +123,17 @@ public class StudentContractController {
                 student.getId(), OccupyingStatuses.OCCUPYING);
         Contract activeContract = contracts.isEmpty() ? null : contracts.get(0);
 
+        List<RoomChangeRequest> requests = roomChangeService.findByStudentIdAndKind(student.getId(), RoomChangeKind.CHANGE);
+        List<Building> buildings = buildingRepository.findAll();
+
+        boolean hasPendingChange = requests.stream()
+                .anyMatch(r -> r.getStatus() == RoomChangeStatus.SUBMITTED);
+
         model.addAttribute("student", student);
         model.addAttribute("contract", activeContract);
+        model.addAttribute("requests", requests);
+        model.addAttribute("buildings", buildings);
+        model.addAttribute("hasPendingChange", hasPendingChange);
         model.addAttribute("pageTitle", "Yêu cầu chuyển phòng");
         model.addAttribute("pageSubtitle", "Đăng ký đổi sang phòng hoặc giường khác");
         model.addAttribute("activeMenu", "room-change");
@@ -120,11 +143,56 @@ public class StudentContractController {
     @PostMapping("/room-change")
     public String submitRoomChange(@RequestParam("targetRoomType") String targetRoomType,
                                    @RequestParam("reason") String reason,
+                                   @RequestParam(value = "preferredBuildingId", required = false) Long preferredBuildingId,
                                    @RequestParam(value = "preferredBuilding", required = false) String preferredBuilding,
                                    Principal principal,
                                    RedirectAttributes redirectAttributes) {
-        redirectAttributes.addFlashAttribute("errorMessage",
-                "Chức năng chuyển phòng chưa triển khai (module hợp đồng). Đơn chưa được lưu.");
+        try {
+            Student student = getStudent(principal);
+            Long resolvedBuildingId = preferredBuildingId;
+            if (resolvedBuildingId == null && preferredBuilding != null && !preferredBuilding.isBlank()) {
+                try {
+                    resolvedBuildingId = Long.parseLong(preferredBuilding.trim());
+                } catch (NumberFormatException ignored) {
+                    resolvedBuildingId = buildingRepository.findAll().stream()
+                            .filter(b -> b.getCode().equalsIgnoreCase(preferredBuilding.trim()) || b.getName().equalsIgnoreCase(preferredBuilding.trim()))
+                            .map(Building::getId)
+                            .findFirst().orElse(null);
+                }
+            }
+
+            RoomType roomType = null;
+            if (targetRoomType != null && !targetRoomType.isBlank()) {
+                try {
+                    roomType = RoomType.valueOf(targetRoomType.trim());
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+
+            roomChangeService.submitRoomChangeRequest(student.getId(), resolvedBuildingId, roomType, reason);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã nộp đơn xin chuyển phòng thành công! Vui lòng đợi BQL ký túc xá xét duyệt.");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi gửi đơn: " + ex.getMessage());
+        }
+        return "redirect:/student/room-change";
+    }
+
+    @PostMapping("/room-change/{id}/cancel")
+    public String cancelRoomChange(@PathVariable("id") Long id,
+                                   Principal principal,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            Student student = getStudent(principal);
+            roomChangeService.cancelRequest(id, student.getId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã hủy đơn xin chuyển phòng thành công.");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi hủy đơn: " + ex.getMessage());
+        }
         return "redirect:/student/room-change";
     }
 
@@ -135,8 +203,14 @@ public class StudentContractController {
                 student.getId(), OccupyingStatuses.OCCUPYING);
         Contract activeContract = contracts.isEmpty() ? null : contracts.get(0);
 
+        List<RoomChangeRequest> requests = roomChangeService.findByStudentIdAndKind(student.getId(), RoomChangeKind.RETURN);
+        boolean hasPendingReturn = requests.stream()
+                .anyMatch(r -> r.getStatus() == RoomChangeStatus.SUBMITTED);
+
         model.addAttribute("student", student);
         model.addAttribute("contract", activeContract);
+        model.addAttribute("requests", requests);
+        model.addAttribute("hasPendingReturn", hasPendingReturn);
         model.addAttribute("pageTitle", "Yêu cầu trả phòng");
         model.addAttribute("pageSubtitle", "Thủ tục thanh lý hợp đồng và bàn giao chỗ ở");
         model.addAttribute("activeMenu", "return-room");
@@ -150,8 +224,32 @@ public class StudentContractController {
                                    @RequestParam("bankName") String bankName,
                                    Principal principal,
                                    RedirectAttributes redirectAttributes) {
-        redirectAttributes.addFlashAttribute("errorMessage",
-                "Chức năng trả phòng chưa triển khai (module hợp đồng). Yêu cầu chưa được lưu.");
+        try {
+            Student student = getStudent(principal);
+            roomChangeService.submitReturnRoomRequest(student.getId(), returnDate, reason, bankName, bankAccount);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã nộp đơn đăng ký trả phòng thành công! Cán bộ quản lý sẽ liên hệ kiểm tra tài sản và hoàn tất thủ tục check-out.");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi gửi đơn trả phòng: " + ex.getMessage());
+        }
+        return "redirect:/student/return-room";
+    }
+
+    @PostMapping("/return-room/{id}/cancel")
+    public String cancelReturnRoom(@PathVariable("id") Long id,
+                                   Principal principal,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            Student student = getStudent(principal);
+            roomChangeService.cancelRequest(id, student.getId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã hủy đơn đăng ký trả phòng thành công.");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi hủy đơn: " + ex.getMessage());
+        }
         return "redirect:/student/return-room";
     }
 
