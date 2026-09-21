@@ -18,12 +18,17 @@ import com.ktx.domain.Contract;
 import com.ktx.domain.Student;
 import com.ktx.repository.ContractRepository;
 import com.ktx.repository.StudentRepository;
+import java.time.LocalDate;
+import org.springframework.format.annotation.DateTimeFormat;
 import com.ktx.domain.Building;
+import com.ktx.domain.RenewalRequest;
 import com.ktx.domain.RoomChangeRequest;
+import com.ktx.domain.enums.RenewalStatus;
 import com.ktx.domain.enums.RoomChangeKind;
 import com.ktx.domain.enums.RoomChangeStatus;
 import com.ktx.domain.enums.RoomType;
 import com.ktx.repository.BuildingRepository;
+import com.ktx.service.RenewalService;
 import com.ktx.service.RoomApplicationService;
 import com.ktx.service.RoomChangeService;
 
@@ -37,6 +42,7 @@ public class StudentContractController {
     private final com.ktx.repository.InvoiceRepository invoiceRepository;
     private final com.ktx.repository.RoomAssetRepository roomAssetRepository;
     private final RoomChangeService roomChangeService;
+    private final RenewalService renewalService;
     private final BuildingRepository buildingRepository;
 
     public StudentContractController(StudentRepository studentRepository,
@@ -45,6 +51,7 @@ public class StudentContractController {
                                      com.ktx.repository.InvoiceRepository invoiceRepository,
                                      com.ktx.repository.RoomAssetRepository roomAssetRepository,
                                      RoomChangeService roomChangeService,
+                                     RenewalService renewalService,
                                      BuildingRepository buildingRepository) {
         this.studentRepository = studentRepository;
         this.contractRepository = contractRepository;
@@ -52,6 +59,7 @@ public class StudentContractController {
         this.invoiceRepository = invoiceRepository;
         this.roomAssetRepository = roomAssetRepository;
         this.roomChangeService = roomChangeService;
+        this.renewalService = renewalService;
         this.buildingRepository = buildingRepository;
     }
 
@@ -91,8 +99,14 @@ public class StudentContractController {
                 student.getId(), OccupyingStatuses.OCCUPYING);
         Contract activeContract = contracts.isEmpty() ? null : contracts.get(0);
 
+        List<RenewalRequest> requests = renewalService.findByStudentId(student.getId());
+        boolean hasPendingRenewal = requests.stream()
+                .anyMatch(r -> r.getStatus() == RenewalStatus.SUBMITTED);
+
         model.addAttribute("student", student);
         model.addAttribute("contract", activeContract);
+        model.addAttribute("requests", requests);
+        model.addAttribute("hasPendingRenewal", hasPendingRenewal);
         model.addAttribute("pageTitle", "Gia hạn hợp đồng");
         model.addAttribute("pageSubtitle", "Nộp đơn xin ở tiếp sang học kỳ mới");
         model.addAttribute("activeMenu", "renewals");
@@ -101,18 +115,36 @@ public class StudentContractController {
 
     @PostMapping("/renewals")
     public String submitRenewal(@RequestParam(value = "termMonths", defaultValue = "5") Integer termMonths,
+                                @RequestParam(value = "requestedEnd", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate requestedEnd,
                                 @RequestParam(value = "note", required = false) String note,
                                 Principal principal,
                                 RedirectAttributes redirectAttributes) {
-        Student student = getStudent(principal);
-        List<Contract> contracts = contractRepository.findByStudentIdAndStatusInWithDetails(
-                student.getId(), OccupyingStatuses.OCCUPYING);
-        if (contracts.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Bạn chưa có hợp đồng phòng ở để gia hạn.");
-            return "redirect:/student/renewals";
+        try {
+            Student student = getStudent(principal);
+            renewalService.submitRenewal(student.getId(), termMonths, requestedEnd, note);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã gửi đơn xin gia hạn hợp đồng thành công! Vui lòng chờ BQL xét duyệt.");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi gửi đơn gia hạn: " + ex.getMessage());
         }
-        redirectAttributes.addFlashAttribute("errorMessage",
-                "Chức năng gia hạn hợp đồng chưa triển khai (module hợp đồng). Đơn chưa được lưu.");
+        return "redirect:/student/renewals";
+    }
+
+    @PostMapping("/renewals/{id}/cancel")
+    public String cancelRenewal(@PathVariable("id") Long id,
+                                Principal principal,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            Student student = getStudent(principal);
+            renewalService.cancelRenewal(id, student.getId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã hủy đơn xin gia hạn hợp đồng thành công.");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi hủy đơn: " + ex.getMessage());
+        }
         return "redirect:/student/renewals";
     }
 

@@ -18,15 +18,8 @@ import com.ktx.domain.enums.NotificationType;
 import com.ktx.repository.ContractRepository;
 import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.SystemConfigRepository;
+import com.ktx.service.RenewalService;
 
-/**
- * Job định kỳ kiểm tra và tạo thông báo (Notification) cho các hợp đồng
- * sắp hết hạn theo cấu hình {@code contract.expiry.remind.days} (mặc định 30 ngày).
- * 
- * Cron: 08:00 hàng ngày (0 0 8 * * *).
- * Ghi notifications, KHÔNG gửi email.
- * Đảm bảo idempotent theo ngày + contract.
- */
 @Component
 public class ContractExpiryReminderJob {
 
@@ -38,30 +31,29 @@ public class ContractExpiryReminderJob {
     private final ContractRepository contractRepository;
     private final NotificationRepository notificationRepository;
     private final SystemConfigRepository systemConfigRepository;
+    private final RenewalService renewalService;
 
     public ContractExpiryReminderJob(ContractRepository contractRepository,
                                      NotificationRepository notificationRepository,
-                                     SystemConfigRepository systemConfigRepository) {
+                                     SystemConfigRepository systemConfigRepository,
+                                     RenewalService renewalService) {
         this.contractRepository = contractRepository;
         this.notificationRepository = notificationRepository;
         this.systemConfigRepository = systemConfigRepository;
+        this.renewalService = renewalService;
     }
 
-    /**
-     * Chạy định kỳ vào 08:00 hàng ngày.
-     */
     @Scheduled(cron = "0 0 8 * * *")
     public int remindExpiringContracts() {
+        try {
+            int expired = renewalService.processExpiredContractsAndRenewals(LocalDate.now());
+            log.info("Đã chuyển {} hợp đồng sang EXPIRED", expired);
+        } catch (Exception ex) {
+            log.error("Lỗi khi xử lý hợp đồng/gia hạn quá hạn: {}", ex.getMessage(), ex);
+        }
         return remindExpiringContracts(LocalDate.now());
     }
 
-    /**
-     * Quét và gửi thông báo nhắc hết hạn cho các hợp đồng tính từ ngày {@code runDate}.
-     * Đảm bảo tính idempotent theo ngày + contract.
-     *
-     * @param runDate ngày chạy kiểm tra (thường là ngày hiện tại)
-     * @return số lượng thông báo mới được tạo
-     */
     @Transactional
     public int remindExpiringContracts(LocalDate runDate) {
         if (runDate == null) {
@@ -91,7 +83,6 @@ public class ContractExpiryReminderJob {
             Long userId = contract.getStudent().getUser().getId();
             String contractNo = contract.getContractNo();
 
-            // Kiểm tra idempotent theo ngày + contract
             boolean alreadyNotified = notificationRepository.existsByUserIdAndTypeAndContractNoAndDate(
                     userId, NotificationType.CONTRACT_EXPIRY, contractNo, startOfDay, endOfDay);
 
@@ -108,7 +99,7 @@ public class ContractExpiryReminderJob {
                     + ". Vui lòng nộp đơn gia hạn hoặc chuẩn bị thủ tục trả phòng theo quy định.");
             notification.setType(NotificationType.CONTRACT_EXPIRY);
             notification.setReadFlag(false);
-            notification.setEmailSent(false); // Task này KHÔNG gửi mail
+            notification.setEmailSent(false);
             notification.setCreatedAt(createdAt);
 
             notificationRepository.save(notification);
@@ -120,9 +111,6 @@ public class ContractExpiryReminderJob {
         return createdCount;
     }
 
-    /**
-     * Đọc số ngày nhắc trước hết hạn từ system_configs, mặc định 30 ngày nếu không có.
-     */
     public int getExpiryRemindDays() {
         try {
             return systemConfigRepository.findById(CONFIG_KEY_EXPIRY_REMIND_DAYS)

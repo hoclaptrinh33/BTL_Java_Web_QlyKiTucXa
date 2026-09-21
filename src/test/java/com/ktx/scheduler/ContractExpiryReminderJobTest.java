@@ -35,6 +35,7 @@ import com.ktx.domain.enums.NotificationType;
 import com.ktx.repository.ContractRepository;
 import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.SystemConfigRepository;
+import com.ktx.service.RenewalService;
 
 @ExtendWith(MockitoExtension.class)
 class ContractExpiryReminderJobTest {
@@ -48,11 +49,14 @@ class ContractExpiryReminderJobTest {
     @Mock
     private SystemConfigRepository systemConfigRepository;
 
+    @Mock
+    private RenewalService renewalService;
+
     private ContractExpiryReminderJob job;
 
     @BeforeEach
     void setUp() {
-        job = new ContractExpiryReminderJob(contractRepository, notificationRepository, systemConfigRepository);
+        job = new ContractExpiryReminderJob(contractRepository, notificationRepository, systemConfigRepository, renewalService);
     }
 
     private Contract createTestContract(Long contractId, String contractNo, Long userId, LocalDate endDate) {
