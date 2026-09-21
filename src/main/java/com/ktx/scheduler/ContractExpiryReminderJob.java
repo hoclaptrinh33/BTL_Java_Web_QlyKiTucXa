@@ -43,7 +43,7 @@ public class ContractExpiryReminderJob {
         this.renewalService = renewalService;
     }
 
-    @Scheduled(cron = "${ktx.jobs.contract-expiry.cron:0 0 8 * * *}")
+    @Scheduled(cron = "0 0 8 * * *")
     public int remindExpiringContracts() {
         try {
             int expired = renewalService.processExpiredContractsAndRenewals(LocalDate.now());
