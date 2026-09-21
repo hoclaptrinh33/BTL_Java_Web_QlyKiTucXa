@@ -22,8 +22,9 @@
                       th:text="${invoice.status.name() == 'PAID' ? 'ĐÃ THANH TOÁN' : (invoice.status.name() == 'OVERDUE' ? 'QUÁ HẠN NỘP' : (invoice.status.name() == 'CANCELLED' ? 'ĐÃ HỦY' : 'CHỜ THANH TOÁN'))}">
                     Trạng thái
                 </span>
-
-                <!-- Nút Hủy hóa đơn (Chỉ khi UNPAID/OVERDUE và chưa có thanh toán) -->
+                <a th:href="@{'/admin/reports/invoices/' + ${invoice.id} + '/pdf'}" target="_blank" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-printer me-1"></i>In biên lai (PDF)
+                </a>
                 <form th:if="${(invoice.status.name() == 'UNPAID' || invoice.status.name() == 'OVERDUE') && totalPaid.compareTo(T(java.math.BigDecimal).ZERO) == 0}"
                       th:action="@{'/admin/invoices/' + ${invoice.id} + '/cancel'}"
                       method="post"

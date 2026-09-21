@@ -19,6 +19,19 @@ public class DashboardSnapshot {
     private long fullRooms;
     private long maintenanceRooms;
     private int unreadNotifications;
+    private Long buildingId;
+    private String buildingName;
+    private String buildingCode;
+    private boolean staffView;
+    private long openTicketCount;
+    private long expiringContractCount;
+    private long overdueInvoiceCount;
+    private long openPeriodSubmittedCount;
+    private long openPeriodAllocatedCount;
+    private long openPeriodWaitlistedCount;
+    private String openPeriodName;
+    private boolean hasOpenPeriod;
+    private DebtByMonthDto debtByMonth;
     private final List<BuildingOccupancy> buildings = new ArrayList<>();
     private final List<RecentApplicationRow> recentApplications = new ArrayList<>();
     private final List<DashboardNotice> notices = new ArrayList<>();
@@ -57,6 +70,33 @@ public class DashboardSnapshot {
     public List<RecentApplicationRow> getRecentApplications() { return recentApplications; }
     public List<DashboardNotice> getNotices() { return notices; }
     public boolean hasBeds() { return getTotalBeds() > 0; }
+
+    public Long getBuildingId() { return buildingId; }
+    public void setBuildingId(Long buildingId) { this.buildingId = buildingId; }
+    public String getBuildingName() { return buildingName; }
+    public void setBuildingName(String buildingName) { this.buildingName = buildingName; }
+    public String getBuildingCode() { return buildingCode; }
+    public void setBuildingCode(String buildingCode) { this.buildingCode = buildingCode; }
+    public boolean isStaffView() { return staffView; }
+    public void setStaffView(boolean staffView) { this.staffView = staffView; }
+    public long getOpenTicketCount() { return openTicketCount; }
+    public void setOpenTicketCount(long openTicketCount) { this.openTicketCount = openTicketCount; }
+    public long getExpiringContractCount() { return expiringContractCount; }
+    public void setExpiringContractCount(long expiringContractCount) { this.expiringContractCount = expiringContractCount; }
+    public long getOverdueInvoiceCount() { return overdueInvoiceCount; }
+    public void setOverdueInvoiceCount(long overdueInvoiceCount) { this.overdueInvoiceCount = overdueInvoiceCount; }
+    public long getOpenPeriodSubmittedCount() { return openPeriodSubmittedCount; }
+    public void setOpenPeriodSubmittedCount(long openPeriodSubmittedCount) { this.openPeriodSubmittedCount = openPeriodSubmittedCount; }
+    public long getOpenPeriodAllocatedCount() { return openPeriodAllocatedCount; }
+    public void setOpenPeriodAllocatedCount(long openPeriodAllocatedCount) { this.openPeriodAllocatedCount = openPeriodAllocatedCount; }
+    public long getOpenPeriodWaitlistedCount() { return openPeriodWaitlistedCount; }
+    public void setOpenPeriodWaitlistedCount(long openPeriodWaitlistedCount) { this.openPeriodWaitlistedCount = openPeriodWaitlistedCount; }
+    public String getOpenPeriodName() { return openPeriodName; }
+    public void setOpenPeriodName(String openPeriodName) { this.openPeriodName = openPeriodName; }
+    public boolean isHasOpenPeriod() { return hasOpenPeriod; }
+    public void setHasOpenPeriod(boolean hasOpenPeriod) { this.hasOpenPeriod = hasOpenPeriod; }
+    public DebtByMonthDto getDebtByMonth() { return debtByMonth; }
+    public void setDebtByMonth(DebtByMonthDto debtByMonth) { this.debtByMonth = debtByMonth; }
 
     public static class BuildingOccupancy {
         private String code;

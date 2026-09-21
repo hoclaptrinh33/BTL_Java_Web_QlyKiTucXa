@@ -51,4 +51,6 @@ public interface RoomApplicationRepository extends JpaRepository<RoomApplication
             """)
     List<RoomApplication> findByPeriodIdAndStatus(@Param("periodId") Long periodId,
             @Param("status") com.ktx.domain.enums.ApplicationStatus status);
+
+    long countByPeriodIdAndStatus(Long periodId, com.ktx.domain.enums.ApplicationStatus status);
 }

@@ -1,13 +1,20 @@
 package com.ktx.service;
 
+import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -16,24 +23,34 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ktx.common.util.OccupyingStatuses;
 import com.ktx.domain.Bed;
 import com.ktx.domain.Building;
+import com.ktx.domain.Invoice;
 import com.ktx.domain.Notification;
+import com.ktx.domain.RegistrationPeriod;
 import com.ktx.domain.Room;
 import com.ktx.domain.RoomApplication;
 import com.ktx.domain.Student;
 import com.ktx.domain.enums.ApplicationStatus;
 import com.ktx.domain.enums.BedStatus;
 import com.ktx.domain.enums.BuildingGenderPolicy;
+import com.ktx.domain.enums.ContractStatus;
+import com.ktx.domain.enums.InvoiceStatus;
+import com.ktx.domain.enums.PeriodStatus;
 import com.ktx.domain.enums.PriorityCategory;
 import com.ktx.domain.enums.RoomStatus;
 import com.ktx.domain.enums.RoomType;
+import com.ktx.domain.enums.TicketStatus;
 import com.ktx.dto.DashboardSnapshot;
 import com.ktx.dto.DashboardSnapshot.BuildingOccupancy;
 import com.ktx.dto.DashboardSnapshot.DashboardNotice;
 import com.ktx.dto.DashboardSnapshot.RecentApplicationRow;
+import com.ktx.dto.DebtByMonthDto;
 import com.ktx.repository.BedRepository;
 import com.ktx.repository.BuildingRepository;
 import com.ktx.repository.ContractRepository;
+import com.ktx.repository.InvoiceRepository;
+import com.ktx.repository.MaintenanceTicketRepository;
 import com.ktx.repository.NotificationRepository;
+import com.ktx.repository.RegistrationPeriodRepository;
 import com.ktx.repository.RoomApplicationRepository;
 import com.ktx.repository.RoomRepository;
 import com.ktx.repository.StudentRepository;
@@ -51,10 +68,20 @@ public class DashboardService {
     private final ContractRepository contractRepository;
     private final RoomApplicationRepository roomApplicationRepository;
     private final NotificationRepository notificationRepository;
+    private final MaintenanceTicketRepository maintenanceTicketRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final RegistrationPeriodRepository registrationPeriodRepository;
 
-    public DashboardService(StudentRepository studentRepository, BuildingRepository buildingRepository,
-            RoomRepository roomRepository, BedRepository bedRepository, ContractRepository contractRepository,
-            RoomApplicationRepository roomApplicationRepository, NotificationRepository notificationRepository) {
+    public DashboardService(StudentRepository studentRepository,
+                            BuildingRepository buildingRepository,
+                            RoomRepository roomRepository,
+                            BedRepository bedRepository,
+                            ContractRepository contractRepository,
+                            RoomApplicationRepository roomApplicationRepository,
+                            NotificationRepository notificationRepository,
+                            MaintenanceTicketRepository maintenanceTicketRepository,
+                            InvoiceRepository invoiceRepository,
+                            RegistrationPeriodRepository registrationPeriodRepository) {
         this.studentRepository = studentRepository;
         this.buildingRepository = buildingRepository;
         this.roomRepository = roomRepository;
@@ -62,6 +89,9 @@ public class DashboardService {
         this.contractRepository = contractRepository;
         this.roomApplicationRepository = roomApplicationRepository;
         this.notificationRepository = notificationRepository;
+        this.maintenanceTicketRepository = maintenanceTicketRepository;
+        this.invoiceRepository = invoiceRepository;
+        this.registrationPeriodRepository = registrationPeriodRepository;
     }
 
     @Transactional(readOnly = true)
@@ -97,30 +127,39 @@ public class DashboardService {
         long occupied = 0;
         long vacant = 0;
         long maintenance = 0;
+
         for (Bed bed : beds) {
             Room room = bed.getRoom();
             if (room.getStatus() == RoomStatus.INACTIVE) {
                 continue;
             }
-            int[] counts = bedsByRoom.computeIfAbsent(room.getId(), id -> new int[3]);
             BedStatus status = bed.getStatus();
-            if (status == BedStatus.OCCUPIED) {
-                occupied++;
-                counts[0]++;
-            } else if (status == BedStatus.VACANT) {
-                vacant++;
-                counts[1]++;
-            } else {
-                maintenance++;
-                counts[2]++;
-            }
             BuildingOccupancy row = byBuilding.get(room.getBuilding().getId());
-            if (row != null) {
+
+            if (room.getStatus() == RoomStatus.ACTIVE) {
+                int[] counts = bedsByRoom.computeIfAbsent(room.getId(), id -> new int[3]);
                 if (status == BedStatus.OCCUPIED) {
-                    row.setOccupied(row.getOccupied() + 1);
+                    occupied++;
+                    counts[0]++;
+                    if (row != null) {
+                        row.setOccupied(row.getOccupied() + 1);
+                    }
                 } else if (status == BedStatus.VACANT) {
-                    row.setVacant(row.getVacant() + 1);
+                    vacant++;
+                    counts[1]++;
+                    if (row != null) {
+                        row.setVacant(row.getVacant() + 1);
+                    }
                 } else {
+                    maintenance++;
+                    counts[2]++;
+                    if (row != null) {
+                        row.setMaintenance(row.getMaintenance() + 1);
+                    }
+                }
+            } else if (room.getStatus() == RoomStatus.MAINTENANCE) {
+                maintenance++;
+                if (row != null) {
                     row.setMaintenance(row.getMaintenance() + 1);
                 }
             }
@@ -163,9 +202,218 @@ public class DashboardService {
                     snap.getBuildings().add(row);
                 });
 
+        // Open registration periods stats
+        List<RegistrationPeriod> openPeriods = registrationPeriodRepository.findByStatus(PeriodStatus.OPEN);
+        if (!openPeriods.isEmpty()) {
+            snap.setHasOpenPeriod(true);
+            snap.setOpenPeriodName(openPeriods.get(0).getName());
+            long sub = 0;
+            long alloc = 0;
+            long wait = 0;
+            for (RegistrationPeriod p : openPeriods) {
+                sub += roomApplicationRepository.countByPeriodIdAndStatus(p.getId(), ApplicationStatus.SUBMITTED);
+                alloc += roomApplicationRepository.countByPeriodIdAndStatus(p.getId(), ApplicationStatus.ALLOCATED);
+                wait += roomApplicationRepository.countByPeriodIdAndStatus(p.getId(), ApplicationStatus.WAITLISTED);
+            }
+            snap.setOpenPeriodSubmittedCount(sub);
+            snap.setOpenPeriodAllocatedCount(alloc);
+            snap.setOpenPeriodWaitlistedCount(wait);
+        }
+
+        // Open tickets
+        snap.setOpenTicketCount(maintenanceTicketRepository.countByStatus(TicketStatus.OPEN));
+
+        // Expiring contracts within 30 days
+        LocalDate today = LocalDate.now();
+        LocalDate maxDate = today.plusDays(30);
+        snap.setExpiringContractCount(contractRepository.countExpiringContracts(
+                List.of(ContractStatus.ACTIVE, ContractStatus.PENDING_RENEWAL), today, maxDate));
+
+        // Overdue invoices
+        snap.setOverdueInvoiceCount(invoiceRepository.countByStatus(InvoiceStatus.OVERDUE));
+
+        // Debt by month
+        snap.setDebtByMonth(calculateDebtByMonth());
+
         mapApplications(snap);
         mapNotices(snap);
         return snap;
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardSnapshot loadForBuilding(Long buildingId) {
+        Building building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tòa ID: " + buildingId));
+
+        DashboardSnapshot snap = new DashboardSnapshot();
+        snap.setStaffView(true);
+        snap.setBuildingId(buildingId);
+        snap.setBuildingName(building.getName());
+        snap.setBuildingCode(building.getCode());
+        snap.setBuildingCount(1);
+
+        List<Room> rooms = roomRepository.findAllWithBuilding().stream()
+                .filter(r -> r.getBuilding().getId().equals(buildingId))
+                .toList();
+        List<Bed> beds = bedRepository.findAllWithRoomAndBuilding().stream()
+                .filter(b -> b.getRoom().getBuilding().getId().equals(buildingId))
+                .toList();
+
+        snap.setStudentCount(studentRepository.count());
+        long occupyingInB = contractRepository.findOccupyingContractsByBuildingId(buildingId, OccupyingStatuses.OCCUPYING).size();
+        snap.setOccupyingStudentCount(occupyingInB);
+        snap.setRoomCount(rooms.size());
+        snap.setActiveRoomCount(rooms.stream().filter(r -> r.getStatus() == RoomStatus.ACTIVE).count());
+        snap.setMaintenanceRooms(rooms.stream().filter(r -> r.getStatus() == RoomStatus.MAINTENANCE).count());
+
+        BuildingOccupancy bRow = new BuildingOccupancy();
+        bRow.setCode(building.getCode());
+        bRow.setName(building.getName());
+        bRow.setGenderLabel(building.getGenderPolicy() == BuildingGenderPolicy.MALE ? "Nam" : "Nữ");
+        bRow.setRooms(rooms.size());
+
+        Map<Long, int[]> bedsByRoom = new HashMap<>();
+        long occupied = 0;
+        long vacant = 0;
+        long maintenance = 0;
+
+        for (Bed bed : beds) {
+            Room room = bed.getRoom();
+            if (room.getStatus() == RoomStatus.INACTIVE) {
+                continue;
+            }
+            BedStatus status = bed.getStatus();
+            if (room.getStatus() == RoomStatus.ACTIVE) {
+                int[] counts = bedsByRoom.computeIfAbsent(room.getId(), id -> new int[3]);
+                if (status == BedStatus.OCCUPIED) {
+                    occupied++;
+                    counts[0]++;
+                    bRow.setOccupied(bRow.getOccupied() + 1);
+                } else if (status == BedStatus.VACANT) {
+                    vacant++;
+                    counts[1]++;
+                    bRow.setVacant(bRow.getVacant() + 1);
+                } else {
+                    maintenance++;
+                    counts[2]++;
+                    bRow.setMaintenance(bRow.getMaintenance() + 1);
+                }
+            } else if (room.getStatus() == RoomStatus.MAINTENANCE) {
+                maintenance++;
+                bRow.setMaintenance(bRow.getMaintenance() + 1);
+            }
+        }
+
+        long emptyRooms = 0;
+        long fullRooms = 0;
+        for (Room room : rooms) {
+            if (room.getStatus() != RoomStatus.ACTIVE) {
+                continue;
+            }
+            int[] counts = bedsByRoom.get(room.getId());
+            if (counts == null) {
+                continue;
+            }
+            int total = counts[0] + counts[1] + counts[2];
+            if (total > 0 && counts[1] == total) {
+                emptyRooms++;
+            }
+            if (total > 0 && counts[0] == total) {
+                fullRooms++;
+            }
+        }
+
+        snap.setOccupiedBeds(occupied);
+        snap.setVacantBeds(vacant);
+        snap.setMaintenanceBeds(maintenance);
+        snap.setEmptyRooms(emptyRooms);
+        snap.setFullRooms(fullRooms);
+        snap.setOccupancyPercent(percent(occupied, occupied + vacant));
+        bRow.setOccupancyPercent(percent(occupied, occupied + vacant));
+        snap.getBuildings().add(bRow);
+
+        // Tickets for this building
+        snap.setOpenTicketCount(maintenanceTicketRepository.countByStatusAndRoomBuildingId(TicketStatus.OPEN, buildingId));
+
+        // Expiring contracts for this building
+        LocalDate today = LocalDate.now();
+        LocalDate maxDate = today.plusDays(30);
+        snap.setExpiringContractCount(contractRepository.countExpiringContractsByBuilding(
+                buildingId, List.of(ContractStatus.ACTIVE, ContractStatus.PENDING_RENEWAL), today, maxDate));
+
+        mapNotices(snap);
+        return snap;
+    }
+
+    @Transactional(readOnly = true)
+    public DebtByMonthDto calculateDebtByMonth() {
+        List<Invoice> unpaidInvoices = invoiceRepository.findByStatusInOrderByDueDateAsc(
+                List.of(InvoiceStatus.UNPAID, InvoiceStatus.OVERDUE));
+
+        Map<YearMonth, BigDecimal> sumByMonth = new TreeMap<>();
+        Map<YearMonth, Long> countByMonth = new HashMap<>();
+        BigDecimal totalDebt = BigDecimal.ZERO;
+
+        for (Invoice inv : unpaidInvoices) {
+            LocalDate d = inv.getBillingMonth() != null ? inv.getBillingMonth() : inv.getDueDate();
+            YearMonth ym = YearMonth.from(d);
+            BigDecimal amount = inv.getTotal() != null ? inv.getTotal() : BigDecimal.ZERO;
+            sumByMonth.merge(ym, amount, BigDecimal::add);
+            countByMonth.merge(ym, 1L, Long::sum);
+            totalDebt = totalDebt.add(amount);
+        }
+
+        DebtByMonthDto dto = new DebtByMonthDto();
+        dto.setTotalDebt(totalDebt);
+        dto.setTotalInvoices(unpaidInvoices.size());
+
+        DateTimeFormatter labelFormatter = DateTimeFormatter.ofPattern("MM/yyyy");
+        DateTimeFormatter keyFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
+
+        for (Map.Entry<YearMonth, BigDecimal> entry : sumByMonth.entrySet()) {
+            YearMonth ym = entry.getKey();
+            String key = ym.format(keyFormatter);
+            String label = ym.format(labelFormatter);
+            BigDecimal amount = entry.getValue();
+            long count = countByMonth.getOrDefault(ym, 0L);
+
+            dto.getLabels().add(label);
+            dto.getData().add(amount);
+            dto.getItems().add(new DebtByMonthDto.DebtItem(key, label, amount, count));
+        }
+
+        return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getOccupancyChartData() {
+        DashboardSnapshot snap = load();
+        Map<String, Object> res = new LinkedHashMap<>();
+
+        Map<String, Object> system = new LinkedHashMap<>();
+        system.put("occupied", snap.getOccupiedBeds());
+        system.put("vacant", snap.getVacantBeds());
+        system.put("maintenance", snap.getMaintenanceBeds());
+        system.put("total", snap.getOccupiedBeds() + snap.getVacantBeds());
+        system.put("occupancyPercent", snap.getOccupancyPercent());
+        res.put("system", system);
+
+        List<Map<String, Object>> buildingsList = new ArrayList<>();
+        for (BuildingOccupancy b : snap.getBuildings()) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("code", b.getCode());
+            item.put("name", b.getName());
+            item.put("genderLabel", b.getGenderLabel());
+            item.put("occupied", b.getOccupied());
+            item.put("vacant", b.getVacant());
+            item.put("maintenance", b.getMaintenance());
+            item.put("total", b.getOccupied() + b.getVacant());
+            item.put("occupancyPercent", b.getOccupancyPercent());
+            buildingsList.add(item);
+        }
+        res.put("buildings", buildingsList);
+
+        return res;
     }
 
     private void mapApplications(DashboardSnapshot snap) {
@@ -197,6 +445,21 @@ public class DashboardService {
             }
             return;
         }
+
+        // Operational notices
+        if (snap.getExpiringContractCount() > 0) {
+            snap.getNotices().add(new DashboardNotice("peach", "Hợp đồng sắp hết hạn",
+                    "Có " + snap.getExpiringContractCount() + " hợp đồng sẽ hết hạn trong 30 ngày tới.", "Vận hành"));
+        }
+        if (snap.getOverdueInvoiceCount() > 0) {
+            snap.getNotices().add(new DashboardNotice("rose", "Hóa đơn quá hạn",
+                    "Có " + snap.getOverdueInvoiceCount() + " hóa đơn quá hạn cần đôn đốc thanh toán.", "Thanh toán"));
+        }
+        if (snap.getOpenTicketCount() > 0) {
+            snap.getNotices().add(new DashboardNotice("sky", "Yêu cầu sửa chữa",
+                    "Có " + snap.getOpenTicketCount() + " ticket sự cố đang mở chờ xử lý.", "Vận hành"));
+        }
+
         if (snap.getBuildingCount() == 0) {
             snap.getNotices().add(new DashboardNotice("rose", "Chưa có tòa nhà",
                     "Thêm tòa Nam/Nữ trước khi mở đợt đăng ký.", "Hệ thống"));

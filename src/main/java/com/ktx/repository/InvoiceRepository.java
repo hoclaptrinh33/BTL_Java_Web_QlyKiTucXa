@@ -26,6 +26,12 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     List<Invoice> findByStatusInAndDueDateBefore(List<InvoiceStatus> statuses, LocalDate today);
 
+    List<Invoice> findByStatusIn(java.util.Collection<InvoiceStatus> statuses);
+
+    List<Invoice> findByStatusInOrderByDueDateAsc(java.util.Collection<InvoiceStatus> statuses);
+
+    long countByStatus(InvoiceStatus status);
+
     List<Invoice> findAllByOrderByDueDateDesc();
 
     @Query("SELECT i FROM Invoice i WHERE " +

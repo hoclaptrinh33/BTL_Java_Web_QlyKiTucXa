@@ -13,6 +13,28 @@
         </a>
     </div>
 
+    <!-- Open Registration Period Banner -->
+    <div class="alert alert-primary d-flex flex-wrap align-items-center justify-content-between p-3 mb-3 border-0 shadow-sm" style="border-radius: 12px; background: #F3F0FF; color: #4338CA;" th:if="${dash.hasOpenPeriod}">
+        <div class="d-flex align-items-center gap-3 mb-2 mb-md-0">
+            <span class="d-flex align-items-center justify-content-center" style="width:36px;height:36px;border-radius:10px;background:#6D5EF5;color:#fff;">
+                <i class="bi bi-calendar-check"></i>
+            </span>
+            <div>
+                <strong class="d-block" style="color: #312E81;">Đợt đăng ký đang mở: <span th:text="${dash.openPeriodName}">Tân sinh viên</span></strong>
+                <div class="d-flex gap-2 mt-1">
+                    <span class="badge" style="background:#E0E7FF; color:#4338CA;">Đã nộp: <b th:text="${dash.openPeriodSubmittedCount}">0</b></span>
+                    <span class="badge" style="background:#DCFCE7; color:#15803D;">Đã xếp: <b th:text="${dash.openPeriodAllocatedCount}">0</b></span>
+                    <span class="badge" style="background:#FEF3C7; color:#B45309;">Chờ chỗ: <b th:text="${dash.openPeriodWaitlistedCount}">0</b></span>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a th:href="@{/admin/periods}" class="btn btn-sm fw-semibold" style="background:#fff; color:#4338CA; border: 1px solid #C7D2FE;">Chi tiết đợt</a>
+            <a th:href="@{/admin/allocations}" class="btn btn-sm fw-semibold text-white" style="background:#6D5EF5;">Phân bổ chỗ ở</a>
+        </div>
+    </div>
+
+    <!-- 4 KPI Cards -->
     <section class="ktx-kpi-grid">
         <article class="ktx-kpi">
             <span class="ktx-kpi__icon is-lilac"><i class="bi bi-people-fill"></i></span>
@@ -41,12 +63,14 @@
         </article>
     </section>
 
+    <!-- Middle section: Donut + Debt bar chart + Quick actions -->
     <section class="ktx-dash-mid">
+        <!-- Chart 1: Donut Occupancy + Data Table -->
         <article class="ktx-card ktx-donut-card">
             <h2>Tỷ lệ sử dụng giường</h2>
             <div class="ktx-donut-wrap" th:if="${dash.hasBeds}">
                 <div class="ktx-donut">
-                    <canvas id="ktxOccupancyDonut" width="220" height="220"></canvas>
+                    <canvas id="ktxOccupancyDonut" width="200" height="200"></canvas>
                     <div class="ktx-donut__center">
                         <strong th:text="${dash.occupancyPercentLabel} + '%'">0%</strong>
                         <span>Đang sử dụng</span>
@@ -58,42 +82,93 @@
                     <li><i class="is-peach"></i> Bảo trì <b th:text="${#numbers.formatInteger(dash.maintenanceBeds, 1, 'POINT')}">0</b></li>
                 </ul>
             </div>
+
+            <!-- Occupancy numbers table underneath -->
+            <div class="mt-3 table-responsive" th:if="${!dash.buildings.empty}">
+                <table class="table table-sm table-hover align-middle mb-0 text-center" style="font-size:0.85rem;">
+                    <thead class="table-light">
+                    <tr>
+                        <th class="text-start">Tòa</th>
+                        <th>Đang dùng</th>
+                        <th>Còn trống</th>
+                        <th>Bảo trì</th>
+                        <th>Tỷ lệ</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="b : ${dash.buildings}">
+                        <td class="text-start fw-bold" th:text="${b.name}">Tòa A</td>
+                        <td class="fw-semibold text-primary" th:text="${b.occupied}">0</td>
+                        <td class="fw-semibold text-success" th:text="${b.vacant}">0</td>
+                        <td class="fw-semibold text-warning" th:text="${b.maintenance}">0</td>
+                        <td><span class="badge bg-primary-subtle text-primary" th:text="${b.occupancyPercentLabel} + '%'">0%</span></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
             <p class="ktx-empty" th:unless="${dash.hasBeds}">Chưa có giường. Thêm tòa và phòng để xem occupancy.</p>
         </article>
 
+        <!-- Chart 2: Debt by Month Bar Chart + Data Table -->
         <article class="ktx-card">
-            <h2>Phân bổ theo tòa</h2>
-            <div class="ktx-barchart" th:if="${!dash.buildings.empty}">
-                <div class="ktx-barchart__row" th:each="row : ${dash.buildings}">
-                    <span class="ktx-barchart__label" th:text="${row.name}">Tòa A</span>
-                    <div class="ktx-barchart__track" th:if="${row.totalBeds > 0}">
-                        <span class="is-used" th:style="|width:${row.occupiedShare}%|"></span>
-                        <span class="is-vacant" th:style="|width:${row.vacantShare}%|"></span>
-                        <span class="is-maint" th:style="|width:${row.maintenanceShare}%|"></span>
-                    </div>
-                    <div class="ktx-barchart__track is-empty" th:if="${row.totalBeds == 0}"></div>
-                    <span class="ktx-barchart__pct" th:text="${row.occupancyPercentLabel} + '%'">0%</span>
-                </div>
-                <ul class="ktx-legend ktx-legend--inline">
-                    <li><i class="is-mint"></i> Đang sử dụng</li>
-                    <li><i class="is-sky"></i> Còn trống</li>
-                    <li><i class="is-peach"></i> Bảo trì</li>
-                </ul>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h2 class="mb-0">Công nợ theo tháng</h2>
+                <span class="badge bg-danger-subtle text-danger fw-bold" th:if="${dash.debtByMonth != null}" th:text="'Tổng: ' + ${dash.debtByMonth.formattedTotalDebt}">0 đ</span>
             </div>
-            <p class="ktx-empty" th:if="${dash.buildings.empty}">Chưa có tòa. Thêm tòa Nam hoặc Nữ.</p>
+            <div style="position: relative; height: 180px; width: 100%;">
+                <canvas id="ktxDebtBarChart"></canvas>
+            </div>
+
+            <!-- Debt numbers table underneath -->
+            <div class="mt-3 table-responsive" th:if="${dash.debtByMonth != null && !dash.debtByMonth.items.empty}">
+                <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.85rem;">
+                    <thead class="table-light text-center">
+                    <tr>
+                        <th>Tháng</th>
+                        <th>Số HĐ nợ</th>
+                        <th class="text-end">Tiền nợ (VNĐ)</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="it : ${dash.debtByMonth.items}">
+                        <td class="text-center fw-semibold" th:text="${it.label}">09/2026</td>
+                        <td class="text-center" th:text="${it.count}">0</td>
+                        <td class="text-end fw-bold text-danger" th:text="${it.formattedAmount}">0 đ</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="ktx-empty" th:if="${dash.debtByMonth == null || dash.debtByMonth.items.empty}">Không có công nợ quá hạn hoặc chưa thanh toán.</p>
         </article>
 
+        <!-- Quick actions -->
         <article class="ktx-card">
             <h2>Thao tác nhanh</h2>
             <div class="ktx-quick">
-                <a class="ktx-quick__tile is-lilac" th:href="@{/admin/students}"><i class="bi bi-person-plus"></i> Sinh viên</a>
+                <a class="ktx-quick__tile is-lilac" th:href="@{/admin/reports}"><i class="bi bi-file-earmark-bar-graph"></i> Báo cáo</a>
                 <a class="ktx-quick__tile is-sky" th:href="@{/admin/periods}"><i class="bi bi-calendar-plus"></i> Đợt đăng ký</a>
                 <a class="ktx-quick__tile is-mint" th:href="@{/admin/allocations}"><i class="bi bi-grid-3x3-gap"></i> Phân bổ chỗ ở</a>
-                <a class="ktx-quick__tile is-peach" th:href="@{/admin/rooms/new}"><i class="bi bi-door-closed"></i> Thêm phòng</a>
+                <a class="ktx-quick__tile is-peach" th:href="@{/admin/invoices}"><i class="bi bi-receipt"></i> Hóa đơn</a>
+            </div>
+
+            <div class="d-flex flex-column gap-2 mt-3 pt-3 border-top">
+                <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background:#F8FAFC;">
+                    <small class="text-muted"><i class="bi bi-tools text-warning me-1"></i> Ticket OPEN:</small>
+                    <strong class="text-dark" th:text="${dash.openTicketCount}">0</strong>
+                </div>
+                <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background:#F8FAFC;">
+                    <small class="text-muted"><i class="bi bi-clock-history text-info me-1"></i> HĐ hết hạn 30 ngày:</small>
+                    <strong class="text-dark" th:text="${dash.expiringContractCount}">0</strong>
+                </div>
+                <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background:#F8FAFC;">
+                    <small class="text-muted"><i class="bi bi-exclamation-octagon text-danger me-1"></i> Hóa đơn quá hạn:</small>
+                    <strong class="text-danger" th:text="${dash.overdueInvoiceCount}">0</strong>
+                </div>
             </div>
         </article>
     </section>
 
+    <!-- Bottom section: Recent applications + Notices + Room stats -->
     <section class="ktx-dash-bottom">
         <article class="ktx-card ktx-table-card">
             <div class="ktx-card__head">
@@ -169,6 +244,10 @@
             occupied: [[${dash.occupiedBeds}]],
             vacant: [[${dash.vacantBeds}]],
             maintenance: [[${dash.maintenanceBeds}]]
+        };
+        window.ktxDebtData = {
+            labels: [[${dash.debtByMonth != null ? dash.debtByMonth.labels : {}}]],
+            data: [[${dash.debtByMonth != null ? dash.debtByMonth.data : {}}]]
         };
     </script>
     <script th:src="@{/js/ktx-charts.js}"></script>

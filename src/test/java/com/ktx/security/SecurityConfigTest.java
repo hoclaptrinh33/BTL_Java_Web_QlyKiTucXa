@@ -81,6 +81,12 @@ class SecurityConfigTest {
     @MockitoBean
     private NotificationRepository notificationRepository;
 
+    @MockitoBean
+    private com.ktx.security.StaffScope staffScope;
+
+    @MockitoBean
+    private com.ktx.repository.BuildingRepository buildingRepository;
+
     @Test
     void staffCannotAccessAdmin() throws Exception {
         mockMvc.perform(get("/admin/dashboard").with(user("staff").roles("STAFF")))

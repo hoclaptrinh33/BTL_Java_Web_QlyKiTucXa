@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="ktx-dash">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h4 fw-bold mb-1">Trung tâm báo cáo & Xuất dữ liệu</h1>
+            <p class="text-muted mb-0">Xuất báo cáo định dạng chuẩn Excel (.xlsx) và PDF cho ban quản lý ký túc xá.</p>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Report 1: Residents -->
+        <div class="col-md-6 col-xl-4">
+            <div class="ktx-card h-100 d-flex flex-column justify-content-between p-4" style="background:#fff; border-radius:16px; border:1px solid #E8EBF3;">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="ktx-kpi__icon is-lilac" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#F3F0FF;color:#6D5EF5;font-size:1.4rem;">
+                            <i class="bi bi-people-fill"></i>
+                        </span>
+                        <span class="badge bg-success-subtle text-success px-2 py-1 fw-bold" style="border-radius:20px;">.XLSX</span>
+                    </div>
+                    <h2 class="h5 fw-bold mb-2">Danh sách sinh viên nội trú</h2>
+                    <p class="text-muted small mb-3">
+                        Danh sách toàn bộ sinh viên đang giữ giường (hợp đồng OCCUPYING) kèm thông tin MSSV, họ tên, giới tính, tòa, phòng, giường, số hợp đồng và thời hạn lưu trú.
+                    </p>
+                    <div class="p-3 mb-3" style="background:#F8FAFC; border-radius:12px;">
+                        <small class="text-muted d-block">Hiện đang nội trú:</small>
+                        <strong class="h4 fw-bold text-dark" th:text="${occupyingCount != null ? occupyingCount : 0}">0</strong>
+                        <span class="text-muted small">sinh viên</span>
+                    </div>
+                </div>
+                <div class="d-grid gap-2">
+                    <a th:href="@{/admin/reports/residents}" class="btn fw-semibold py-2" style="background:#6D5EF5; color:#fff; border-radius:10px;">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Tải Excel danh sách (.xlsx)
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report 2: Debts -->
+        <div class="col-md-6 col-xl-4">
+            <div class="ktx-card h-100 d-flex flex-column justify-content-between p-4" style="background:#fff; border-radius:16px; border:1px solid #E8EBF3;">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="ktx-kpi__icon is-peach" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#FFF7ED;color:#EA580C;font-size:1.4rem;">
+                            <i class="bi bi-cash-stack"></i>
+                        </span>
+                        <div>
+                            <span class="badge bg-success-subtle text-success px-2 py-1 fw-bold me-1" style="border-radius:20px;">.XLSX</span>
+                            <span class="badge bg-danger-subtle text-danger px-2 py-1 fw-bold" style="border-radius:20px;">.PDF</span>
+                        </div>
+                    </div>
+                    <h2 class="h5 fw-bold mb-2">Báo cáo công nợ & Quá hạn</h2>
+                    <p class="text-muted small mb-3">
+                        Bảng tổng hợp các hóa đơn chưa thanh toán hoặc đã quá hạn, bao gồm số tiền phòng, điện nước, phụ phí trễ hạn (5%) và ngày hết hạn thanh toán.
+                    </p>
+                    <div class="p-3 mb-3" style="background:#F8FAFC; border-radius:12px;">
+                        <small class="text-muted d-block">Hóa đơn quá hạn:</small>
+                        <strong class="h4 fw-bold text-danger" th:text="${overdueCount != null ? overdueCount : 0}">0</strong>
+                        <span class="text-muted small">hóa đơn quá hạn</span>
+                    </div>
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a th:href="@{/admin/reports/debts(format='xlsx')}" class="btn btn-outline-secondary w-100 fw-semibold py-2" style="border-radius:10px;">
+                            <i class="bi bi-file-earmark-excel text-success me-1"></i> Excel (.xlsx)
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a th:href="@{/admin/reports/debts(format='pdf')}" class="btn btn-outline-danger w-100 fw-semibold py-2" style="border-radius:10px;">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> PDF (.pdf)
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report 3: Invoice Receipt PDF -->
+        <div class="col-md-6 col-xl-4">
+            <div class="ktx-card h-100 d-flex flex-column justify-content-between p-4" style="background:#fff; border-radius:16px; border:1px solid #E8EBF3;">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="ktx-kpi__icon is-mint" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#F0FDF4;color:#16A34A;font-size:1.4rem;">
+                            <i class="bi bi-receipt"></i>
+                        </span>
+                        <span class="badge bg-danger-subtle text-danger px-2 py-1 fw-bold" style="border-radius:20px;">.PDF</span>
+                    </div>
+                    <h2 class="h5 fw-bold mb-2">Biên lai thu tiền / Hóa đơn</h2>
+                    <p class="text-muted small mb-3">
+                        In phiếu thu tiền chi tiết từng mục điện, nước, phòng, phụ phí kèm thông tin người nộp và chữ ký ban quản lý ký túc xá.
+                    </p>
+                    <div class="mb-3">
+                        <label for="invoiceIdInput" class="form-label small text-muted">Nhập ID hóa đơn cần in:</label>
+                        <div class="input-group">
+                            <input type="number" id="invoiceIdInput" class="form-control" placeholder="Ví dụ: 1" min="1"/>
+                            <button class="btn btn-outline-primary fw-semibold" type="button" onclick="printInvoice()">
+                                <i class="bi bi-printer"></i> In
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-grid gap-2">
+                    <a th:href="@{/admin/invoices}" class="btn btn-light border fw-semibold py-2 text-dark" style="border-radius:10px;">
+                        <i class="bi bi-list-ul me-1"></i> Xem danh sách hóa đơn
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function printInvoice() {
+            const id = document.getElementById('invoiceIdInput').value.trim();
+            if (!id) {
+                alert('Vui lòng nhập ID hóa đơn!');
+                return;
+            }
+            window.open('/admin/reports/invoices/' + id + '/pdf', '_blank');
+        }
+    </script>
+</main>
+</body>
+</html>

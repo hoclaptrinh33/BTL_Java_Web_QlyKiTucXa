@@ -68,4 +68,33 @@ class AdminDashboardControllerTest {
                 .andExpect(content().string(containsString("Thống kê")))
                 .andExpect(content().string(containsString("Cài đặt hệ thống")));
     }
+
+    @Test
+    void adminGetsOccupancyChartApi() throws Exception {
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        map.put("system", java.util.Map.of("occupied", 10, "vacant", 5, "occupancyPercent", 66.7));
+        map.put("buildings", java.util.List.of());
+        when(dashboardService.getOccupancyChartData()).thenReturn(map);
+
+        mockMvc.perform(get("/admin/dashboard/api/occupancy").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.system.occupied").value(10))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.system.occupancyPercent").value(66.7));
+    }
+
+    @Test
+    void adminGetsDebtByMonthChartApi() throws Exception {
+        com.ktx.dto.DebtByMonthDto dto = new com.ktx.dto.DebtByMonthDto();
+        dto.setLabels(java.util.List.of("09/2026"));
+        dto.setData(java.util.List.of(new java.math.BigDecimal("15000000")));
+        dto.setTotalDebt(new java.math.BigDecimal("15000000"));
+        dto.setTotalInvoices(2);
+        when(dashboardService.calculateDebtByMonth()).thenReturn(dto);
+
+        mockMvc.perform(get("/admin/dashboard/api/debt-by-month").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.labels[0]").value("09/2026"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.data[0]").value(15000000))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.totalInvoices").value(2));
+    }
 }

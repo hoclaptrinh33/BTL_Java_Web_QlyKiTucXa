@@ -12,6 +12,8 @@ public interface RegistrationPeriodRepository extends JpaRepository<Registration
     boolean existsByStatusAndPeriodType(PeriodStatus status, PeriodType periodType);
     boolean existsByStatusAndPeriodTypeAndIdNot(PeriodStatus status, PeriodType periodType, Long id);
 
+    List<RegistrationPeriod> findByStatus(PeriodStatus status);
+
     @Query("SELECT p FROM RegistrationPeriod p JOIN FETCH p.createdBy")
     List<RegistrationPeriod> findAllWithCreator();
 

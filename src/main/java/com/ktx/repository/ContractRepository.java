@@ -25,6 +25,28 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     long countByStatusIn(Collection<ContractStatus> statuses);
 
     @Query("""
+            SELECT COUNT(c) FROM Contract c
+            WHERE c.status IN :statuses
+              AND c.endDate >= :today
+              AND c.endDate <= :maxDate
+            """)
+    long countExpiringContracts(@Param("statuses") Collection<ContractStatus> statuses,
+                                @Param("today") java.time.LocalDate today,
+                                @Param("maxDate") java.time.LocalDate maxDate);
+
+    @Query("""
+            SELECT COUNT(c) FROM Contract c
+            WHERE c.bed.room.building.id = :buildingId
+              AND c.status IN :statuses
+              AND c.endDate >= :today
+              AND c.endDate <= :maxDate
+            """)
+    long countExpiringContractsByBuilding(@Param("buildingId") Long buildingId,
+                                          @Param("statuses") Collection<ContractStatus> statuses,
+                                          @Param("today") java.time.LocalDate today,
+                                          @Param("maxDate") java.time.LocalDate maxDate);
+
+    @Query("""
             SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END
             FROM Contract c
             WHERE c.student.id = :studentId
