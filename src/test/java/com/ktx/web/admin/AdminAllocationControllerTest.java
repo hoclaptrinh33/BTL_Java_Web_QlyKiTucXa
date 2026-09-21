@@ -194,6 +194,21 @@ class AdminAllocationControllerTest {
     }
 
     @Test
+    @DisplayName("commit() bắt PessimisticLockingFailureException và thông báo 'Hệ thống đang phân bổ, thử lại'")
+    void commit_lockTimeout() {
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+        when(userDetails.getUser()).thenReturn(adminUser);
+        when(allocationService.commit(eq(10L), eq(1L)))
+                .thenThrow(new org.springframework.dao.CannotAcquireLockException("Lock timeout"));
+
+        RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+        String view = controller.commit(10L, authentication, redirectAttributes);
+
+        assertEquals("redirect:/admin/allocations?periodId=10", view);
+        assertEquals("Hệ thống đang phân bổ, thử lại", redirectAttributes.getFlashAttributes().get("errorMessage"));
+    }
+
+    @Test
     @DisplayName("cancelDraft() gọi contractService.cancelDraft và redirect về runDetail nếu có runId")
     void cancelDraft_success() {
         RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();

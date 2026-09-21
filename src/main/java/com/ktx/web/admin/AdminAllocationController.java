@@ -97,6 +97,9 @@ public class AdminAllocationController {
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
             return "redirect:/admin/allocations?periodId=" + id;
+        } catch (org.springframework.dao.PessimisticLockingFailureException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Hệ thống đang phân bổ, thử lại");
+            return "redirect:/admin/allocations?periodId=" + id;
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi chạy phân bổ: " + ex.getMessage());
             return "redirect:/admin/allocations?periodId=" + id;
@@ -119,6 +122,9 @@ public class AdminAllocationController {
             return "redirect:/admin/allocations/runs/" + run.getId();
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/admin/allocations?periodId=" + id;
+        } catch (org.springframework.dao.PessimisticLockingFailureException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Hệ thống đang phân bổ, thử lại");
             return "redirect:/admin/allocations?periodId=" + id;
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi chốt phân bổ: " + ex.getMessage());

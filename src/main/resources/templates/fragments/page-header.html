@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Page Header Fragment (§24.5 & §24.12) -->
+<div th:fragment="header (title, subtitle)" class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1" th:text="${title}">Tiêu đề trang</h1>
+        <p class="text-muted mb-0" th:if="${subtitle}" th:text="${subtitle}">Mô tả phụ của trang</p>
+    </div>
+</div>
+</body>
+</html>

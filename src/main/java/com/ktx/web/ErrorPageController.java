@@ -10,4 +10,9 @@ public class ErrorPageController {
     public String forbidden() {
         return "error/403";
     }
+
+    @GetMapping("/error/404")
+    public String notFound() {
+        return "error/404";
+    }
 }

@@ -131,6 +131,13 @@ class SecurityConfigTest {
     }
 
     @Test
+    void notFoundPageIsNotBlank() throws Exception {
+        mockMvc.perform(get("/error/404"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("404")));
+    }
+
+    @Test
     void rootRedirectsAdminToDashboard() throws Exception {
         mockMvc.perform(get("/").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isFound())
