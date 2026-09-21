@@ -132,5 +132,11 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     List<Contract> findByBuildingIdAndStatusInWithDetails(
             @Param("buildingId") Long buildingId,
             @Param("statuses") Collection<ContractStatus> statuses);
+
+    List<Contract> findByStatusAndEndDateBefore(ContractStatus status, java.time.LocalDate date);
+
+    List<Contract> findByStatusInAndEndDateBefore(Collection<ContractStatus> statuses, java.time.LocalDate date);
+
+    List<Contract> findByStatusInAndEndDateLessThanEqual(Collection<ContractStatus> statuses, java.time.LocalDate date);
 }
 

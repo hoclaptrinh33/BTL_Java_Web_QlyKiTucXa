@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-3">
+    <!-- Tiêu đề & Điều hướng -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800">Quản lý Gia hạn hợp đồng</h1>
+            <p class="text-muted mb-0">Xét duyệt đơn xin ở tiếp và gia hạn thời hạn lưu trú của sinh viên</p>
+        </div>
+        <div>
+            <a th:href="@{/admin/contracts}" class="btn btn-outline-primary rounded-pill px-3 me-2">
+                <i class="bi bi-file-earmark-check me-1"></i>Danh sách Hợp đồng
+            </a>
+            <a th:href="@{/admin/room-changes}" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-arrow-left-right me-1"></i>Đổi / Trả phòng
+            </a>
+        </div>
+    </div>
+
+    <!-- Bộ lọc tìm kiếm -->
+    <div class="ktx-card mb-4">
+        <form method="get" th:action="@{/admin/renewals}" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label text-muted small fw-semibold">Trạng thái yêu cầu</label>
+                <select name="status" class="form-select">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option th:each="s : ${statuses}" th:value="${s}"
+                            th:text="${s.name() == 'SUBMITTED' ? 'Chờ duyệt' : (s.name() == 'APPROVED' ? 'Đã duyệt' : (s.name() == 'REJECTED' ? 'Từ chối' : (s.name() == 'CANCELLED' ? 'Đã hủy' : s.name())))}"
+                            th:selected="${selectedStatus == s}"></option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label text-muted small fw-semibold">Tòa nhà</label>
+                <select name="buildingId" class="form-select">
+                    <option value="">-- Tất cả tòa nhà --</option>
+                    <option th:each="b : ${buildings}" th:value="${b.id}"
+                            th:text="${b.name + ' (' + (b.genderPolicy != null ? b.genderPolicy : 'Tất cả') + ')'}"
+                            th:selected="${selectedBuildingId == b.id}"></option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary rounded-pill w-100 fw-semibold">
+                    <i class="bi bi-funnel me-1"></i>Lọc
+                </button>
+                <a th:href="@{/admin/renewals}" class="btn btn-outline-secondary rounded-pill" title="Đặt lại bộ lọc">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Danh sách yêu cầu -->
+    <div class="ktx-card">
+        <div class="ktx-card__head mb-3">
+            <h2 class="h5 fw-bold text-dark mb-0">
+                <i class="bi bi-list-task me-2 text-primary"></i>Danh sách yêu cầu gia hạn
+                <span class="badge bg-primary-subtle text-primary ms-2 fs-6 rounded-pill" th:text="${#lists.size(requests)}">0</span>
+            </h2>
+        </div>
+
+        <div th:if="${#lists.isEmpty(requests)}" class="text-center py-5 text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+            <p class="mb-0">Không có yêu cầu gia hạn hợp đồng nào phù hợp.</p>
+        </div>
+
+        <div th:if="${!#lists.isEmpty(requests)}" class="table-responsive">
+            <table class="table table-hover align-middle ktx-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Mã đơn</th>
+                        <th>Sinh viên</th>
+                        <th>Hợp đồng & Giường</th>
+                        <th>Hạn hiện tại</th>
+                        <th>Đề xuất gia hạn</th>
+                        <th>Lý do</th>
+                        <th>Trạng thái</th>
+                        <th>Xử lý / Ghi chú</th>
+                        <th class="text-end">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="req : ${requests}">
+                        <td>
+                            <span class="badge bg-light text-dark border fw-bold">#<span th:text="${req.id}"></span></span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark" th:text="${req.student.fullName}"></div>
+                            <div class="small text-muted">
+                                <span th:text="${req.student.studentCode}"></span>
+                                <span class="badge bg-secondary-subtle text-secondary ms-1"
+                                      th:text="${req.student.gender != null ? (req.student.gender.name() == 'MALE' ? 'Nam' : 'Nữ') : ''}"></span>
+                            </div>
+                        </td>
+                        <td>
+                            <a th:href="@{/admin/contracts/{id}(id=${req.contract.id})}" class="fw-semibold text-decoration-none">
+                                <span th:text="${req.contract.contractNo}"></span>
+                            </a>
+                            <div class="small text-muted" th:if="${req.contract.bed != null and req.contract.bed.room != null}">
+                                <span th:text="${req.contract.bed.room.building.name + ' - P' + req.contract.bed.room.roomNumber + ' (G' + req.contract.bed.bedCode + ')'}"></span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-secondary border" th:text="${#temporals.format(req.contract.endDate, 'dd/MM/yyyy')}"></span>
+                        </td>
+                        <td>
+                            <div>
+                                <span class="badge bg-primary-subtle text-primary fw-bold" th:text="${#temporals.format(req.requestedEnd, 'dd/MM/yyyy')}"></span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="small text-muted">—</span>
+                        </td>
+                        <td>
+                            <span th:if="${req.status.name() == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning-emphasis">Chờ duyệt</span>
+                            <span th:if="${req.status.name() == 'APPROVED'}" class="badge bg-success-subtle text-success">Đã duyệt</span>
+                            <span th:if="${req.status.name() == 'REJECTED'}" class="badge bg-danger-subtle text-danger">Từ chối</span>
+                            <span th:if="${req.status.name() == 'CANCELLED'}" class="badge bg-secondary-subtle text-secondary">Đã hủy</span>
+                        </td>
+                        <td>
+                            <div th:if="${req.decidedAt != null}" class="small text-muted">
+                                <span th:text="${#temporals.format(req.decidedAt, 'dd/MM/yyyy HH:mm')}"></span>
+                            </div>
+                            <div th:if="${req.adminNote != null}" class="small text-secondary fst-italic" th:text="${req.adminNote}"></div>
+                            <span th:if="${req.decidedAt == null and req.adminNote == null}" class="text-muted small">—</span>
+                        </td>
+                        <td class="text-end">
+                            <div th:if="${req.status.name() == 'SUBMITTED'}" class="btn-group">
+                                <!-- Nút Duyệt gia hạn -->
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill me-1"
+                                        data-bs-toggle="modal"
+                                        th:data-bs-target="'#approveRenewalModal-' + ${req.id}">
+                                    <i class="bi bi-check2 me-1"></i>Duyệt
+                                </button>
+
+                                <!-- Nút Từ chối -->
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill"
+                                        data-bs-toggle="modal"
+                                        th:data-bs-target="'#rejectRenewalModal-' + ${req.id}">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                            <span th:if="${req.status.name() != 'SUBMITTED'}" class="text-muted small">—</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODALS XỬ LÝ -->
+    <th:block th:each="req : ${requests}" th:if="${req.status.name() == 'SUBMITTED'}">
+        <!-- Modal Duyệt Gia Hạn -->
+        <div class="modal fade" th:id="'approveRenewalModal-' + ${req.id}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form th:action="@{/admin/renewals/{id}/approve(id=${req.id})}" method="post">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold text-dark">Duyệt gia hạn hợp đồng — Đơn #<span th:text="${req.id}"></span></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body d-flex flex-column gap-3">
+                            <div class="alert alert-info py-2 small mb-0">
+                                <i class="bi bi-info-circle me-1"></i>Khi duyệt, ngày kết thúc của hợp đồng sẽ được cập nhật thành ngày gia hạn đề xuất và trạng thái hợp đồng trở lại <strong>ACTIVE</strong> tại chỗ (không tạo hợp đồng mới).
+                            </div>
+                            <div>
+                                <label class="form-label text-muted small fw-semibold">Sinh viên</label>
+                                <input type="text" class="form-control bg-light" readonly
+                                       th:value="${req.student.fullName + ' (' + req.student.studentCode + ')'}"/>
+                            </div>
+                            <div>
+                                <label class="form-label text-muted small fw-semibold">Hợp đồng & Giường</label>
+                                <input type="text" class="form-control bg-light" readonly
+                                       th:value="${req.contract.contractNo + ' — ' + (req.contract.bed != null ? req.contract.bed.room.building.name + ' (P' + req.contract.bed.room.roomNumber + ' - G' + req.contract.bed.bedCode + ')' : '')}"/>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label text-muted small fw-semibold">Ngày hết hạn hiện tại</label>
+                                    <input type="text" class="form-control bg-light" readonly
+                                           th:value="${#temporals.format(req.contract.endDate, 'dd/MM/yyyy')}"/>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label text-success small fw-bold">Ngày hết hạn mới sau gia hạn</label>
+                                    <input type="text" class="form-control border-success bg-success-subtle text-success fw-bold" readonly
+                                           th:value="${#temporals.format(req.requestedEnd, 'dd/MM/yyyy')}"/>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label fw-semibold text-dark">Ghi chú phê duyệt (tùy chọn)</label>
+                                <textarea name="adminNote" class="form-control" rows="2" placeholder="Ghi chú thêm cho sinh viên..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Đóng</button>
+                            <button type="submit" class="btn btn-success rounded-pill fw-semibold">
+                                <i class="bi bi-check2-circle me-1"></i>Xác nhận duyệt gia hạn
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Từ Chối Gia Hạn -->
+        <div class="modal fade" th:id="'rejectRenewalModal-' + ${req.id}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <form th:action="@{/admin/renewals/{id}/reject(id=${req.id})}" method="post">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold text-dark">Từ chối gia hạn</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="small text-muted mb-2">Hợp đồng sẽ trở lại trạng thái <strong>ACTIVE</strong> và giữ nguyên ngày hết hạn hiện tại.</p>
+                            <label class="form-label text-muted small fw-semibold">Lý do từ chối</label>
+                            <textarea name="adminNote" class="form-control" rows="3" required placeholder="Nêu rõ lý do từ chối gia hạn..."></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Đóng</button>
+                            <button type="submit" class="btn btn-danger rounded-pill fw-semibold">Từ chối đơn</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </th:block>
+</main>
+</body>
+</html>

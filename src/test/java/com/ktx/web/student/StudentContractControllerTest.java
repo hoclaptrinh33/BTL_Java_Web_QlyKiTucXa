@@ -42,6 +42,7 @@ import com.ktx.repository.CheckInOutRepository;
 import com.ktx.repository.ContractRepository;
 import com.ktx.repository.InvoiceRepository;
 import com.ktx.repository.NotificationRepository;
+import com.ktx.repository.RenewalRequestRepository;
 import com.ktx.repository.RoomAssetRepository;
 import com.ktx.repository.StudentRepository;
 import com.ktx.repository.UserRepository;
@@ -51,6 +52,7 @@ import com.ktx.security.LoginAttemptService;
 import com.ktx.security.LoginFailureHandler;
 import com.ktx.security.LoginSuccessHandler;
 import com.ktx.security.SecurityConfig;
+import com.ktx.service.RenewalService;
 import com.ktx.service.RoomChangeService;
 
 @WebMvcTest(controllers = StudentContractController.class)
@@ -77,6 +79,12 @@ class StudentContractControllerTest {
 
     @MockitoBean
     private RoomChangeService roomChangeService;
+
+    @MockitoBean
+    private RenewalService renewalService;
+
+    @MockitoBean
+    private RenewalRequestRepository renewalRequestRepository;
 
     @MockitoBean
     private BuildingRepository buildingRepository;
@@ -225,5 +233,49 @@ class StudentContractControllerTest {
                 .andExpect(redirectedUrl("/student/return-room"));
 
         verify(roomChangeService).cancelRequest(25L, 5L);
+    }
+
+    @Test
+    void renewalsPage_rendersSuccessfully() throws Exception {
+        Student s = mockStudent();
+        Contract c = mockContract(s);
+
+        when(studentRepository.findByUserUsername("sv001")).thenReturn(Optional.of(s));
+        when(contractRepository.findByStudentIdAndStatusInWithDetails(eq(5L), any())).thenReturn(List.of(c));
+        when(renewalRequestRepository.findByStudentIdWithDetails(5L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/student/renewals").with(user(studentUser())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Gia hạn hợp đồng phòng ở")));
+    }
+
+    @Test
+    void submitRenewal_submitsAndRedirects() throws Exception {
+        Student s = mockStudent();
+        when(studentRepository.findByUserUsername("sv001")).thenReturn(Optional.of(s));
+
+        mockMvc.perform(post("/student/renewals")
+                        .with(user(studentUser()))
+                        .with(csrf())
+                        .param("termMonths", "5")
+                        .param("note", "Xin ở kỳ 1"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/student/renewals"));
+
+        verify(renewalService).submitRenewal(eq(5L), eq(5), any(), eq("Xin ở kỳ 1"));
+    }
+
+    @Test
+    void cancelRenewal_cancelsAndRedirects() throws Exception {
+        Student s = mockStudent();
+        when(studentRepository.findByUserUsername("sv001")).thenReturn(Optional.of(s));
+
+        mockMvc.perform(post("/student/renewals/10/cancel")
+                        .with(user(studentUser()))
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/student/renewals"));
+
+        verify(renewalService).cancelRenewal(eq(10L), eq(5L));
     }
 }
