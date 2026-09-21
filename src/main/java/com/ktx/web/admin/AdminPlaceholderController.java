@@ -7,10 +7,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class AdminPlaceholderController {
 
-    @GetMapping("/admin/reports")
-    public String reports(Model model) {
-        return page(model, "reports", "Báo cáo", "Xuất Excel / PDF danh sách nội trú và công nợ",
-                "Sinh viên đang ở, hóa đơn quá hạn, lấp đầy theo tòa.");
+    @GetMapping("/admin/stats")
+    public String stats(Model model) {
+        return page(model, "stats", "Thống kê", "Biểu đồ lấp đầy và công nợ",
+                "Dùng dashboard cho KPI chính.");
     }
 
     private static String page(Model model, String menu, String title, String subtitle, String hint) {

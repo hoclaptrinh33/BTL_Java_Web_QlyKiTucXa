@@ -36,4 +36,16 @@ public class AdminDashboardController {
         model.addAttribute("dash", dashboardService.load());
         return "admin/stats";
     }
+
+    @GetMapping("/admin/dashboard/api/occupancy")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public java.util.Map<String, Object> apiOccupancy() {
+        return dashboardService.getOccupancyChartData();
+    }
+
+    @GetMapping("/admin/dashboard/api/debt-by-month")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public com.ktx.dto.DebtByMonthDto apiDebtByMonth() {
+        return dashboardService.calculateDebtByMonth();
+    }
 }

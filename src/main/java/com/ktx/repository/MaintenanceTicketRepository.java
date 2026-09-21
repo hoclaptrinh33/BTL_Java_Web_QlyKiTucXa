@@ -47,4 +47,8 @@ public interface MaintenanceTicketRepository extends JpaRepository<MaintenanceTi
     List<MaintenanceTicket> findByStatusAndResolvedAtBefore(TicketStatus status, LocalDateTime cutoff);
 
     long countByStudentIdAndStatus(Long studentId, TicketStatus status);
+
+    long countByStatus(TicketStatus status);
+
+    long countByStatusAndRoomBuildingId(TicketStatus status, Long buildingId);
 }
