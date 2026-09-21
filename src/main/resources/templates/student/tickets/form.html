@@ -20,6 +20,7 @@
                 </div>
 
                 <form th:action="@{/student/tickets}" method="post" class="d-flex flex-column gap-3">
+                    <input type="hidden" name="roomId" th:value="${contract != null ? contract.bed.room.id : ''}"/>
                     <!-- Vị trí phòng (Tự động) -->
                     <div>
                         <label class="form-label text-muted small fw-semibold">Vị trí phòng xảy ra sự cố</label>

@@ -32,8 +32,8 @@
                     <div class="p-3 rounded-circle bg-warning-subtle text-warning fs-3"><i class="bi bi-exclamation-triangle"></i></div>
                     <div>
                         <div class="text-muted small">Số lần vi phạm ghi nhận</div>
-                        <div class="h3 fw-bold text-dark mb-0">0</div>
-                        <div class="small text-muted">Hồ sơ kỷ luật sạch</div>
+                        <div class="h3 fw-bold text-dark mb-0" th:text="${#lists.size(violations)}">0</div>
+                        <div class="small text-muted" th:text="${#lists.isEmpty(violations) ? 'Hồ sơ kỷ luật sạch' : 'Có biên bản ghi nhận'}">Hồ sơ kỷ luật sạch</div>
                     </div>
                 </div>
             </div>
@@ -44,7 +44,9 @@
                     <div class="p-3 rounded-circle bg-info-subtle text-info fs-3"><i class="bi bi-award"></i></div>
                     <div>
                         <div class="text-muted small">Quyền ưu tiên xét ở kỳ sau</div>
-                        <div class="fw-bold text-success mb-0">Đủ điều kiện xét duyệt</div>
+                        <div class="fw-bold mb-0"
+                             th:classappend="${(student.conductScore == null || student.conductScore >= 50) && !student.blockedFromHousing ? 'text-success' : 'text-danger'}"
+                             th:text="${(student.conductScore == null || student.conductScore >= 50) && !student.blockedFromHousing ? 'Đủ điều kiện xét duyệt' : 'Không đủ điều kiện (Điểm < 50 hoặc bị cấm)'}">Đủ điều kiện xét duyệt</div>
                         <div class="small text-muted">Yêu cầu điểm rèn luyện ≥ 50</div>
                     </div>
                 </div>
@@ -75,12 +77,27 @@
                         </thead>
                         <tbody>
                             <!-- Không có vi phạm -->
-                            <tr>
+                            <tr th:if="${#lists.isEmpty(violations)}">
                                 <td colspan="5" class="text-center py-4 text-muted">
                                     <i class="bi bi-emoji-smile fs-2 text-success d-block mb-2"></i>
                                     <strong class="text-dark">Rất tốt! Bạn chưa từng vi phạm nội quy KTX.</strong>
                                     <p class="mb-0 small">Hãy tiếp tục giữ gìn môi trường sống văn minh và an toàn tại ký túc xá.</p>
                                 </td>
+                            </tr>
+                            <!-- Danh sách vi phạm -->
+                            <tr th:each="v : ${violations}">
+                                <td th:text="${#temporals.format(v.occurredAt, 'dd/MM/yyyy HH:mm')}">24/08/2026</td>
+                                <td>
+                                    <strong class="text-dark" th:text="${v.violationType}">LATE_RETURN</strong>
+                                    <div class="small text-muted" th:text="${v.description}">Mô tả</div>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${v.severity != null && v.severity.name() == 'SEVERE' ? 'bg-danger-subtle text-danger' : (v.severity != null && v.severity.name() == 'MAJOR' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary')}"
+                                          th:text="${v.severity}">Nhẹ</span>
+                                </td>
+                                <td class="text-danger fw-bold" th:text="${'-' + v.pointsDeducted + ' điểm'}">-5 điểm</td>
+                                <td th:text="${v.recordedBy != null ? (v.recordedBy.fullName != null ? v.recordedBy.fullName : v.recordedBy.username) : 'Hệ thống'}">Cán bộ</td>
                             </tr>
                         </tbody>
                     </table>

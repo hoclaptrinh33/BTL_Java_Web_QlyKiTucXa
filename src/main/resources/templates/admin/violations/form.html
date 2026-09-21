@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+    <div class="mb-4">
+        <a th:href="@{/admin/violations}" class="text-decoration-none text-muted small d-inline-flex align-items-center mb-2">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách vi phạm
+        </a>
+        <h1 class="h3 mb-1 text-gray-800">Lập biên bản vi phạm nội quy</h1>
+        <p class="text-muted mb-0">Ghi nhận vi phạm và trừ điểm rèn luyện của sinh viên</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form th:action="@{/admin/violations}" method="post" class="d-flex flex-column gap-3">
+                        <div>
+                            <label for="studentId" class="form-label fw-semibold text-dark">Chọn sinh viên vi phạm <span class="text-danger">*</span></label>
+                            <select id="studentId" name="studentId" class="form-select" required>
+                                <option value="">-- Chọn sinh viên --</option>
+                                <option th:each="s : ${students}"
+                                        th:value="${s.id}"
+                                        th:text="${s.fullName + ' — MSSV: ' + s.studentCode + ' (Điểm hiện tại: ' + s.conductScore + ')'}">
+                                    Nguyễn Văn A — MSSV: B22DCCN001
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="violationType" class="form-label fw-semibold text-dark">Hành vi vi phạm <span class="text-danger">*</span></label>
+                                <select id="violationType" name="violationType" class="form-select" onchange="onTypeChanged()" required>
+                                    <option value="LATE_RETURN">Về muộn sau 23:00 (LATE_RETURN)</option>
+                                    <option value="ILLEGAL_COOKING">Nấu ăn trái phép trong phòng (ILLEGAL_COOKING)</option>
+                                    <option value="DISTURBANCE">Gây mất trật tự sau 22:00 (DISTURBANCE)</option>
+                                    <option value="DAMAGE">Làm hư hỏng tài sản KTX (DAMAGE)</option>
+                                    <option value="OTHER">Hành vi khác (OTHER)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="severity" class="form-label fw-semibold text-dark">Mức độ nghiêm trọng <span class="text-danger">*</span></label>
+                                <select id="severity" name="severity" class="form-select" onchange="onSeverityChanged()" required>
+                                    <option value="MINOR">Nhẹ (MINOR)</option>
+                                    <option value="MAJOR">Nặng (MAJOR)</option>
+                                    <option value="SEVERE">Nghiêm trọng (SEVERE)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="pointsDeducted" class="form-label fw-semibold text-dark">Số điểm trừ <span class="text-danger">*</span></label>
+                                <input type="number" id="pointsDeducted" name="pointsDeducted" class="form-control" value="5" min="0" required/>
+                                <div class="form-text">Điểm trừ sẽ được khấu trừ vào điểm rèn luyện (không âm).</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="action" class="form-label fw-semibold text-dark">Biện pháp xử lý <span class="text-danger">*</span></label>
+                                <select id="action" name="action" class="form-select" required>
+                                    <option value="WARNING">Nhắc nhở / Cảnh cáo (WARNING)</option>
+                                    <option value="POINT_DEDUCT">Trừ điểm rèn luyện (POINT_DEDUCT)</option>
+                                    <option value="TERMINATE">Đề nghị chấm dứt HĐ (TERMINATE)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="occurredAt" class="form-label fw-semibold text-dark">Thời điểm xảy ra vi phạm <span class="text-danger">*</span></label>
+                            <input type="datetime-local" id="occurredAt" name="occurredAt" class="form-control" required/>
+                        </div>
+
+                        <div>
+                            <label for="description" class="form-label fw-semibold text-dark">Mô tả chi tiết sự việc</label>
+                            <textarea id="description" name="description" class="form-control" rows="3"
+                                      placeholder="Ghi nhận cụ thể thời gian, địa điểm, biểu hiện vi phạm..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-3">
+                            <a th:href="@{/admin/violations}" class="btn btn-outline-secondary px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-danger px-4">
+                                <i class="bi bi-shield-slash me-1"></i>Lưu biên bản vi phạm
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="card-title mb-0 fw-bold text-dark"><i class="bi bi-info-circle me-2 text-primary"></i>Quy định khung xử phạt</h6>
+                </div>
+                <div class="card-body p-3">
+                    <ul class="list-group list-group-flush small">
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Về muộn (LATE_RETURN)</strong>
+                                <div class="text-muted">Mức Nhẹ (MINOR)</div>
+                            </div>
+                            <span class="badge bg-danger-subtle text-danger">-5 điểm</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Nấu ăn trái phép (ILLEGAL_COOKING)</strong>
+                                <div class="text-muted">Mức Nặng (MAJOR)</div>
+                            </div>
+                            <span class="badge bg-danger-subtle text-danger">-20 điểm</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Gây mất trật tự (DISTURBANCE)</strong>
+                                <div class="text-muted">Mức Nặng (MAJOR)</div>
+                            </div>
+                            <span class="badge bg-danger-subtle text-danger">-25 điểm</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Làm hỏng tài sản (DAMAGE)</strong>
+                                <div class="text-muted">Nghiêm trọng (SEVERE)</div>
+                            </div>
+                            <span class="badge bg-danger-subtle text-danger">-50 điểm</span>
+                        </li>
+                    </ul>
+                    <div class="mt-3 small text-muted">
+                        <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+                        Điểm rèn luyện về 0 hoặc mức SEVERE + TERMINATE sẽ dẫn đến cấm đăng ký chỗ ở.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('occurredAt').value = now.toISOString().slice(0,16);
+            onTypeChanged();
+        });
+
+        function onTypeChanged() {
+            var type = document.getElementById('violationType').value;
+            var sev = document.getElementById('severity');
+            var pts = document.getElementById('pointsDeducted');
+            var act = document.getElementById('action');
+
+            if (type === 'LATE_RETURN') {
+                sev.value = 'MINOR';
+                pts.value = 5;
+                act.value = 'WARNING';
+            } else if (type === 'ILLEGAL_COOKING') {
+                sev.value = 'MAJOR';
+                pts.value = 20;
+                act.value = 'POINT_DEDUCT';
+            } else if (type === 'DISTURBANCE') {
+                sev.value = 'MAJOR';
+                pts.value = 25;
+                act.value = 'POINT_DEDUCT';
+            } else if (type === 'DAMAGE') {
+                sev.value = 'SEVERE';
+                pts.value = 50;
+                act.value = 'POINT_DEDUCT';
+            }
+        }
+
+        function onSeverityChanged() {
+            var type = document.getElementById('violationType').value;
+            if (type === 'OTHER') {
+                var sev = document.getElementById('severity').value;
+                var pts = document.getElementById('pointsDeducted');
+                if (sev === 'MINOR') pts.value = 5;
+                else if (sev === 'MAJOR') pts.value = 20;
+                else if (sev === 'SEVERE') pts.value = 50;
+            }
+        }
+    </script>
+</main>
+</body>
+</html>

@@ -25,6 +25,16 @@
            th:classappend="${activeMenu == 'rooms'} ? 'is-active'">
             <i class="bi bi-door-closed"></i> <span>Phòng tòa</span>
         </a>
+        <a th:href="@{/staff/tickets}"
+           sec:authorize="hasRole('STAFF')"
+           th:classappend="${activeMenu == 'tickets'} ? 'is-active'">
+            <i class="bi bi-tools"></i> <span>Yêu cầu sửa chữa</span>
+        </a>
+        <a th:href="@{/staff/violations}"
+           sec:authorize="hasRole('STAFF')"
+           th:classappend="${activeMenu == 'violations'} ? 'is-active'">
+            <i class="bi bi-exclamation-triangle"></i> <span>Báo cáo vi phạm</span>
+        </a>
 
         <th:block sec:authorize="hasRole('ADMIN')">
             <p class="ktx-nav__label">Quản lý</p>

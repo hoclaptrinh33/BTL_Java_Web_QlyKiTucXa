@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+    <!-- Tiêu đề -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-800">Yêu cầu sửa chữa & Sự cố</h1>
+            <p class="text-muted mb-0">Quản lý toàn diện các yêu cầu bảo trì, báo hỏng thiết bị từ sinh viên tất cả các tòa</p>
+        </div>
+    </div>
+
+    <!-- Bộ lọc theo Tòa và Trạng thái -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" th:action="@{/admin/tickets}" class="row align-items-center g-3">
+                <div class="col-md-4">
+                    <label for="buildingSelect" class="form-label fw-semibold text-secondary">Tòa nhà</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-building text-muted"></i></span>
+                        <select id="buildingSelect" name="buildingId" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- Tất cả các tòa --</option>
+                            <option th:each="b : ${buildings}"
+                                    th:value="${b.id}"
+                                    th:selected="${b.id == selectedBuildingId}"
+                                    th:text="${b.code + ' — ' + b.name}">
+                                Tòa A
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label for="statusSelect" class="form-label fw-semibold text-secondary">Trạng thái</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-funnel text-muted"></i></span>
+                        <select id="statusSelect" name="status" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option th:each="st : ${statuses}"
+                                    th:value="${st}"
+                                    th:selected="${st == selectedStatus}"
+                                    th:text="${st}">
+                                OPEN
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách ticket -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="bi bi-tools me-2 text-primary"></i>Danh sách yêu cầu sửa chữa toàn hệ thống
+            </h5>
+            <span class="badge bg-secondary-subtle text-secondary" th:text="${#lists.size(tickets)} + ' ticket'">
+                0 ticket
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div th:if="${#lists.isEmpty(tickets)}" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                <p class="mb-0">Không có yêu cầu sự cố nào phù hợp.</p>
+            </div>
+
+            <div th:if="${!#lists.isEmpty(tickets)}" class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Mã</th>
+                            <th>Tòa / Phòng</th>
+                            <th>Sinh viên</th>
+                            <th>Nội dung sự cố</th>
+                            <th>Ưu tiên</th>
+                            <th>Ngày gửi</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="t : ${tickets}">
+                            <td class="ps-4"><span class="ktx-chip" th:text="${'#TK-' + t.id}">#TK-1</span></td>
+                            <td>
+                                <strong class="text-dark" th:text="${t.room.building.code + ' - P.' + t.room.roomNumber}">A - P.101</strong>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark" th:text="${t.student.fullName}">Nguyễn Văn A</div>
+                                <div class="small text-muted" th:text="${t.student.studentCode}">B22DCCN001</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark" th:text="${t.title}">Hỏng đèn</div>
+                                <div class="small text-muted text-truncate" style="max-width: 250px;" th:text="${t.description}">Mô tả sự cố</div>
+                            </td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${t.priority != null && t.priority.name() == 'HIGH' ? 'bg-danger-subtle text-danger' : (t.priority != null && t.priority.name() == 'MEDIUM' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary')}"
+                                      th:text="${t.priority}">MEDIUM</span>
+                            </td>
+                            <td class="small" th:text="${#temporals.format(t.createdAt, 'dd/MM/yyyy HH:mm')}">24/08/2026</td>
+                            <td>
+                                <span class="ktx-pill"
+                                      th:classappend="${t.status != null && t.status.name() == 'OPEN' ? 'bg-warning-subtle text-warning' : (t.status != null && t.status.name() == 'IN_PROGRESS' ? 'bg-info-subtle text-info' : (t.status != null && t.status.name() == 'RESOLVED' ? 'bg-primary-subtle text-primary' : (t.status != null && t.status.name() == 'REJECTED' ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success')))}"
+                                      th:text="${t.status}">OPEN</span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        Cập nhật
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <form th:action="@{'/admin/tickets/' + ${t.id} + '/status'}" method="post">
+                                                <input type="hidden" name="status" value="IN_PROGRESS"/>
+                                                <button type="submit" class="dropdown-item">Chuyển sang: IN_PROGRESS</button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form th:action="@{'/admin/tickets/' + ${t.id} + '/status'}" method="post">
+                                                <input type="hidden" name="status" value="RESOLVED"/>
+                                                <button type="submit" class="dropdown-item">Chuyển sang: RESOLVED</button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form th:action="@{'/admin/tickets/' + ${t.id} + '/status'}" method="post">
+                                                <input type="hidden" name="status" value="CLOSED"/>
+                                                <button type="submit" class="dropdown-item">Chuyển sang: CLOSED</button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form th:action="@{'/admin/tickets/' + ${t.id} + '/status'}" method="post">
+                                                <input type="hidden" name="status" value="REJECTED"/>
+                                                <button type="submit" class="dropdown-item text-danger">Từ chối: REJECTED</button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
