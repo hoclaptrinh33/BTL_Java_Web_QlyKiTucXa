@@ -178,6 +178,7 @@ public class ConductServiceImpl implements ConductService {
         List<Student> students = studentRepository.findAll();
         for (Student s : students) {
             s.setConductScore(initialScore);
+            s.setBlockedFromHousing(false);
         }
         studentRepository.saveAll(students);
     }
@@ -193,6 +194,7 @@ public class ConductServiceImpl implements ConductService {
         } catch (Exception ignored) {
         }
         student.setConductScore(initialScore);
+        student.setBlockedFromHousing(false);
         studentRepository.save(student);
     }
 }

@@ -234,9 +234,11 @@ class ConductServiceTest {
     @Test
     void resetAllConductScores_resetsAllTo100() {
         student.setConductScore(30);
+        student.setBlockedFromHousing(true);
         Student s2 = new Student();
         s2.setId(11L);
         s2.setConductScore(60);
+        s2.setBlockedFromHousing(true);
 
         when(studentRepository.findAll()).thenReturn(List.of(student, s2));
 
@@ -248,6 +250,8 @@ class ConductServiceTest {
 
         assertEquals(100, student.getConductScore());
         assertEquals(100, s2.getConductScore());
+        assertEquals(false, student.getBlockedFromHousing());
+        assertEquals(false, s2.getBlockedFromHousing());
         verify(studentRepository, times(1)).saveAll(List.of(student, s2));
     }
 

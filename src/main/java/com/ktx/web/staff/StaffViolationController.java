@@ -81,7 +81,7 @@ public class StaffViolationController {
                                   @RequestParam(value = "action", required = false) ViolationAction action,
                                   @RequestParam(value = "description", required = false) String description,
                                   @RequestParam(value = "occurredAt", required = false)
-                                  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime occurredAt,
+                                  @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") LocalDateTime occurredAt,
                                   Authentication auth,
                                   RedirectAttributes redirectAttributes) {
         conductService.recordViolation(studentId, auth.getName(), type, severity, pointsDeducted, action,

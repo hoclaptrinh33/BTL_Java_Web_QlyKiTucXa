@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -90,12 +91,14 @@ class AdminViolationControllerTest {
                         .param("severity", "SEVERE")
                         .param("pointsDeducted", "50")
                         .param("action", "TERMINATE")
-                        .param("description", "Lam hong tai san"))
+                        .param("description", "Lam hong tai san")
+                        .param("occurredAt", "2026-09-21T08:30"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/violations"));
 
         verify(conductService).recordViolation(
                 eq(10L), eq("admin"), eq(ViolationType.DAMAGE), eq(ViolationSeverity.SEVERE),
-                eq(50), eq(ViolationAction.TERMINATE), eq("Lam hong tai san"), any(), any(Authentication.class));
+                eq(50), eq(ViolationAction.TERMINATE), eq("Lam hong tai san"),
+                eq(LocalDateTime.of(2026, 9, 21, 8, 30)), any(Authentication.class));
     }
 }
