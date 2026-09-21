@@ -1,5 +1,6 @@
 package com.ktx.repository;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
@@ -77,5 +78,16 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     List<Contract> findOccupyingByRoomId(
             @Param("roomId") Long roomId,
             @Param("statuses") Collection<ContractStatus> statuses);
+
+    @Query("""
+            SELECT c FROM Contract c
+            JOIN FETCH c.student s
+            JOIN FETCH s.user u
+            WHERE c.status IN :statuses
+              AND c.endDate = :targetDate
+            """)
+    List<Contract> findExpiringContracts(
+            @Param("statuses") Collection<ContractStatus> statuses,
+            @Param("targetDate") LocalDate targetDate);
 }
 
