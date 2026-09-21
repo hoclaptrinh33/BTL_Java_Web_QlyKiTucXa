@@ -8,10 +8,12 @@ import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -38,6 +40,9 @@ class AdminAllocationSecurityTest {
 
     @MockitoBean
     private RoomApplicationRepository roomApplicationRepository;
+
+    @MockitoBean
+    private com.ktx.service.ContractService contractService;
 
     @MockitoBean
     private UserRepository userRepository;
@@ -79,5 +84,45 @@ class AdminAllocationSecurityTest {
 
         mockMvc.perform(get("/admin/allocations").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("STAFF không được phép POST /admin/allocations/periods/1/commit (403)")
+    void staffCannotCommit() throws Exception {
+        mockMvc.perform(post("/admin/allocations/periods/1/commit")
+                        .with(user("staff1").roles("STAFF"))
+                        .with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/error/403"));
+    }
+
+    @Test
+    @DisplayName("STUDENT không được phép POST /admin/allocations/periods/1/commit (403)")
+    void studentCannotCommit() throws Exception {
+        mockMvc.perform(post("/admin/allocations/periods/1/commit")
+                        .with(user("sv1").roles("STUDENT"))
+                        .with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/error/403"));
+    }
+
+    @Test
+    @DisplayName("STAFF không được phép POST /admin/allocations/contracts/1/cancel-draft (403)")
+    void staffCannotCancelDraft() throws Exception {
+        mockMvc.perform(post("/admin/allocations/contracts/1/cancel-draft")
+                        .with(user("staff1").roles("STAFF"))
+                        .with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/error/403"));
+    }
+
+    @Test
+    @DisplayName("STUDENT không được phép POST /admin/allocations/contracts/1/cancel-draft (403)")
+    void studentCannotCancelDraft() throws Exception {
+        mockMvc.perform(post("/admin/allocations/contracts/1/cancel-draft")
+                        .with(user("sv1").roles("STUDENT"))
+                        .with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/error/403"));
     }
 }
