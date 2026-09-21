@@ -53,7 +53,10 @@ public class ContractServiceImpl implements ContractService {
         // Cọc: tính theo tỷ lệ cấu hình contract.deposit.ratio (mặc định 0.5 = 50%) làm tròn HALF_UP (§04-04)
         BigDecimal depositRatio = new BigDecimal("0.5");
         if (systemConfigService != null) {
-            depositRatio = systemConfigService.getBigDecimal("contract.deposit.ratio", depositRatio);
+            BigDecimal configured = systemConfigService.getBigDecimal("contract.deposit.ratio", depositRatio);
+            if (configured != null) {
+                depositRatio = configured;
+            }
         }
         BigDecimal depositAmount = pricePerTerm.multiply(depositRatio).setScale(0, RoundingMode.HALF_UP);
 
