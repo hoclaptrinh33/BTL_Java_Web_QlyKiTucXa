@@ -330,7 +330,10 @@ public class BillingEngineImpl implements BillingEngine {
         String idempotencyKey = "INV:ROOM_TERM:" + contractId;
         Optional<Invoice> existing = invoiceRepository.findByIdempotencyKey(idempotencyKey);
         if (existing.isPresent()) {
-            return existing.get();
+            Invoice inv = existing.get();
+            if (inv.getStatus() != InvoiceStatus.CANCELLED) {
+                return inv;
+            }
         }
 
         BigDecimal roomFee = contract.getRoomFee() != null ? contract.getRoomFee() : BigDecimal.ZERO;
@@ -376,7 +379,10 @@ public class BillingEngineImpl implements BillingEngine {
         String idempotencyKey = "INV:DEPOSIT:" + contractId;
         Optional<Invoice> existing = invoiceRepository.findByIdempotencyKey(idempotencyKey);
         if (existing.isPresent()) {
-            return existing.get();
+            Invoice inv = existing.get();
+            if (inv.getStatus() != InvoiceStatus.CANCELLED) {
+                return inv;
+            }
         }
 
         // Cọc: 50% giá phòng/kỳ làm tròn HALF_UP (§04-04)
@@ -420,7 +426,45 @@ public class BillingEngineImpl implements BillingEngine {
     }
 
     @Override
+    @Transactional
     public void applyLateFees(LocalDate today) {
-        // Stub - sẽ được hoàn thiện trong PR-13
+        BigDecimal lateRate = getConfigBigDecimal("billing.late.rate", new BigDecimal("0.05"));
+
+        List<Invoice> candidates = invoiceRepository.findByStatusInAndDueDateBefore(
+                List.of(InvoiceStatus.UNPAID, InvoiceStatus.OVERDUE), today);
+
+        for (Invoice invoice : candidates) {
+            if (invoice.getStatus() == InvoiceStatus.UNPAID) {
+                invoice.setStatus(InvoiceStatus.OVERDUE);
+            }
+
+            // Phí trễ áp tối đa 1 lần: nếu late_fee > 0 rồi thì no-op
+            if (invoice.getLateFee() == null || invoice.getLateFee().compareTo(BigDecimal.ZERO) == 0) {
+                BigDecimal subtotal = invoice.getSubtotal();
+                if (subtotal != null && subtotal.compareTo(BigDecimal.ZERO) > 0) {
+                    BigDecimal lateFee = subtotal.multiply(lateRate).setScale(0, RoundingMode.CEILING);
+                    invoice.setLateFee(lateFee);
+                    invoice.setTotal(subtotal.add(lateFee));
+                    createInvoiceItem(invoice, "Phí phạt chậm nộp", "LATE_FEE", lateFee);
+                }
+            }
+            invoiceRepository.save(invoice);
+        }
+    }
+
+    private BigDecimal getConfigBigDecimal(String key, BigDecimal defaultValue) {
+        if (systemConfigRepository == null) {
+            return defaultValue;
+        }
+        try {
+            return systemConfigRepository.findById(key)
+                    .map(SystemConfig::getConfigValue)
+                    .filter(val -> val != null && !val.isBlank())
+                    .map(String::trim)
+                    .map(BigDecimal::new)
+                    .orElse(defaultValue);
+        } catch (Exception e) {
+            return defaultValue;
+        }
     }
 }

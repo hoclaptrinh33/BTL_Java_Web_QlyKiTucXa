@@ -483,4 +483,113 @@ class BillingEngineTest {
         verify(invoiceRepository).save(any(Invoice.class));
         verify(invoiceItemRepository).save(any(InvoiceItem.class));
     }
+
+    // ==========================================
+    // LATE FEES & OVERDUE TESTS (PR-13 / #32)
+    // ==========================================
+
+    @Test
+    @DisplayName("applyLateFees: hóa đơn UNPAID quá hạn chuyển thành OVERDUE và cộng phí 5% ceil một lần")
+    void testApplyLateFees_unpaidBecomesOverdueAndAppliesCeilFee() {
+        LocalDate today = LocalDate.of(2026, 10, 1);
+
+        Invoice inv = new Invoice();
+        inv.setId(10L);
+        inv.setInvoiceNo("INV-2026-000010");
+        inv.setStatus(InvoiceStatus.UNPAID);
+        inv.setDueDate(LocalDate.of(2026, 9, 30));
+        inv.setSubtotal(new BigDecimal("105418")); // Ví dụ Case B mục 6.5.2
+        inv.setLateFee(BigDecimal.ZERO);
+        inv.setTotal(new BigDecimal("105418"));
+
+        when(invoiceRepository.findByStatusInAndDueDateBefore(
+                List.of(InvoiceStatus.UNPAID, InvoiceStatus.OVERDUE), today))
+                .thenReturn(List.of(inv));
+
+        billingEngine.applyLateFees(today);
+
+        // Status chuyển thành OVERDUE
+        assertEquals(InvoiceStatus.OVERDUE, inv.getStatus());
+        // 105418 * 0.05 = 5270.9 -> ceil = 5271
+        assertEquals(new BigDecimal("5271"), inv.getLateFee());
+        // total = subtotal + lateFee = 105418 + 5271 = 110689
+        assertEquals(new BigDecimal("110689"), inv.getTotal());
+
+        verify(invoiceRepository).save(inv);
+        ArgumentCaptor<InvoiceItem> itemCaptor = ArgumentCaptor.forClass(InvoiceItem.class);
+        verify(invoiceItemRepository).save(itemCaptor.capture());
+        assertEquals("LATE_FEE", itemCaptor.getValue().getItemCode());
+        assertEquals(new BigDecimal("5271"), itemCaptor.getValue().getAmount());
+    }
+
+    @Test
+    @DisplayName("applyLateFees: áp tối đa một lần, no-op nếu late_fee > 0 rồi")
+    void testApplyLateFees_idempotent_noOpIfLateFeeAlreadyPositive() {
+        LocalDate today = LocalDate.of(2026, 10, 1);
+
+        Invoice inv = new Invoice();
+        inv.setId(11L);
+        inv.setInvoiceNo("INV-2026-000011");
+        inv.setStatus(InvoiceStatus.OVERDUE);
+        inv.setDueDate(LocalDate.of(2026, 9, 20));
+        inv.setSubtotal(new BigDecimal("105418"));
+        inv.setLateFee(new BigDecimal("5271")); // Đã tính phí trước đó
+        inv.setTotal(new BigDecimal("110689"));
+
+        when(invoiceRepository.findByStatusInAndDueDateBefore(
+                List.of(InvoiceStatus.UNPAID, InvoiceStatus.OVERDUE), today))
+                .thenReturn(List.of(inv));
+
+        billingEngine.applyLateFees(today);
+
+        // Giữ nguyên, không cộng thêm lần 2
+        assertEquals(InvoiceStatus.OVERDUE, inv.getStatus());
+        assertEquals(new BigDecimal("5271"), inv.getLateFee());
+        assertEquals(new BigDecimal("110689"), inv.getTotal());
+
+        verify(invoiceRepository).save(inv);
+        verify(invoiceItemRepository, never()).save(any(InvoiceItem.class));
+    }
+
+    @Test
+    @DisplayName("issueRoomFee phát hành lại hóa đơn mới nếu hóa đơn cũ đã bị CANCELLED")
+    void issueRoomFee_reissueWhenCancelled() {
+        Contract contract = createSampleContract();
+        Invoice cancelledInv = new Invoice();
+        cancelledInv.setId(50L);
+        cancelledInv.setStatus(InvoiceStatus.CANCELLED);
+
+        when(contractRepository.findById(1L)).thenReturn(Optional.of(contract));
+        when(invoiceRepository.findByIdempotencyKey("INV:ROOM_TERM:1")).thenReturn(Optional.of(cancelledInv));
+        when(documentNumberService.nextInvoiceNo(2026)).thenReturn("INV-2026-000003");
+        when(invoiceRepository.save(any(Invoice.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Invoice result = billingEngine.issueRoomFee(1L);
+
+        assertNotNull(result);
+        assertEquals("INV-2026-000003", result.getInvoiceNo());
+        assertEquals(InvoiceStatus.UNPAID, result.getStatus());
+        verify(invoiceRepository).save(any(Invoice.class));
+    }
+
+    @Test
+    @DisplayName("issueDeposit phát hành lại hóa đơn mới nếu hóa đơn cũ đã bị CANCELLED")
+    void issueDeposit_reissueWhenCancelled() {
+        Contract contract = createSampleContract();
+        Invoice cancelledInv = new Invoice();
+        cancelledInv.setId(60L);
+        cancelledInv.setStatus(InvoiceStatus.CANCELLED);
+
+        when(contractRepository.findById(1L)).thenReturn(Optional.of(contract));
+        when(invoiceRepository.findByIdempotencyKey("INV:DEPOSIT:1")).thenReturn(Optional.of(cancelledInv));
+        when(documentNumberService.nextInvoiceNo(2026)).thenReturn("INV-2026-000004");
+        when(invoiceRepository.save(any(Invoice.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Invoice result = billingEngine.issueDeposit(1L);
+
+        assertNotNull(result);
+        assertEquals("INV-2026-000004", result.getInvoiceNo());
+        assertEquals(InvoiceStatus.UNPAID, result.getStatus());
+        verify(invoiceRepository).save(any(Invoice.class));
+    }
 }

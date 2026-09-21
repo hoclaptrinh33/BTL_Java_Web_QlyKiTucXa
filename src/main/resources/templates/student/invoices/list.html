@@ -77,7 +77,7 @@
                             </a>
                         </td>
                         <td>
-                            <strong class="text-dark" th:text="${i.invoiceType.name() == 'ROOM_FEE' ? 'Tiền thuê phòng' : (i.invoiceType.name() == 'DEPOSIT' ? 'Tiền đặt cọc' : 'Điện nước & Tiện ích')}">Loại phí</strong>
+                            <strong class="text-dark" th:text="${i.invoiceType.name() == 'ROOM_TERM' || i.invoiceType.name() == 'ROOM_FEE' ? 'Tiền thuê phòng' : (i.invoiceType.name() == 'DEPOSIT' ? 'Tiền đặt cọc' : 'Điện nước & Tiện ích')}">Loại phí</strong>
                         </td>
                         <td th:text="${i.billingMonth != null ? #temporals.format(i.billingMonth, 'MM/yyyy') : 'Theo học kỳ'}">—</td>
                         <td>
@@ -85,7 +85,9 @@
                             <small class="text-danger fw-semibold" th:if="${i.status.name() == 'OVERDUE'}">Đã quá hạn</small>
                         </td>
                         <td>
-                            <strong class="text-dark fs-6" th:text="${#numbers.formatInteger(i.total, 1, 'POINT')} + ' đ'">0 đ</strong>
+                            <div class="fw-bold text-dark fs-6" th:text="${#numbers.formatInteger(i.total, 1, 'POINT')} + ' đ'">0 đ</div>
+                            <small class="text-danger" th:if="${remainingMap != null && remainingMap.containsKey(i.id) && remainingMap.get(i.id).compareTo(i.total) < 0 && remainingMap.get(i.id).compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                                   th:text="'Còn nợ: ' + ${#numbers.formatInteger(remainingMap.get(i.id), 1, 'POINT')} + ' đ'">Còn nợ: 0 đ</small>
                         </td>
                         <td>
                             <span class="ktx-pill"

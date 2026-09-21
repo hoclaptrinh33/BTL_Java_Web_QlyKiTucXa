@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <!-- Header & Action bar -->
+    <div class="card shadow-sm border-0 mb-4 bg-primary text-white">
+        <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h4 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-receipt"></i>
+                    <span>Quản lý Hóa đơn & Nghĩa vụ tài chính</span>
+                </h4>
+                <p class="mb-0 opacity-75 small">Theo dõi hóa đơn tiền phòng kỳ, tiền đặt cọc và hóa đơn điện nước toàn ký túc xá</p>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <a th:href="@{/staff/readings}" class="btn btn-light btn-sm fw-semibold text-primary">
+                    <i class="bi bi-lightning-charge me-1"></i>Chỉ số & Phát hành
+                </a>
+                <a th:href="@{/admin/payments}" class="btn btn-outline-light btn-sm fw-semibold">
+                    <i class="bi bi-cash-stack me-1"></i>Sổ quỹ thanh toán
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thống kê tổng quan -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 border-start border-primary border-4">
+                <div class="card-body p-3">
+                    <div class="text-muted small fw-medium">Tổng hóa đơn</div>
+                    <div class="h4 fw-bold mb-0 mt-1 text-dark" th:text="${totalCount}">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 border-start border-success border-4">
+                <div class="card-body p-3">
+                    <div class="text-muted small fw-medium">Đã thanh toán</div>
+                    <div class="h4 fw-bold mb-0 mt-1 text-success" th:text="${paidCount + ' HĐ'}">0 HĐ</div>
+                    <div class="small text-muted" th:text="${#numbers.formatInteger(totalRevenue, 1, 'POINT')} + ' đ'">0 đ</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 border-start border-warning border-4">
+                <div class="card-body p-3">
+                    <div class="text-muted small fw-medium">Chờ thanh toán</div>
+                    <div class="h4 fw-bold mb-0 mt-1 text-warning" th:text="${unpaidCount + ' HĐ'}">0 HĐ</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 border-start border-danger border-4">
+                <div class="card-body p-3">
+                    <div class="text-muted small fw-medium">Quá hạn nộp</div>
+                    <div class="h4 fw-bold mb-0 mt-1 text-danger" th:text="${overdueCount + ' HĐ'}">0 HĐ</div>
+                    <div class="small text-danger fw-semibold" th:text="'Nợ: ' + ${#numbers.formatInteger(totalDebt, 1, 'POINT')} + ' đ'">Nợ: 0 đ</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bộ lọc tìm kiếm -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-3">
+            <form method="get" th:action="@{/admin/invoices}" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="statusSelect" class="form-label fw-semibold text-secondary small">Trạng thái</label>
+                    <select id="statusSelect" name="status" class="form-select form-select-sm">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option th:each="st : ${statuses}"
+                                th:value="${st}"
+                                th:selected="${st == selectedStatus}"
+                                th:text="${st.name() == 'PAID' ? 'Đã thanh toán' : (st.name() == 'OVERDUE' ? 'Quá hạn' : (st.name() == 'CANCELLED' ? 'Đã hủy' : 'Chưa đóng'))}">UNPAID</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="typeSelect" class="form-label fw-semibold text-secondary small">Loại hóa đơn</label>
+                    <select id="typeSelect" name="type" class="form-select form-select-sm">
+                        <option value="">-- Tất cả loại phí --</option>
+                        <option th:each="tp : ${types}"
+                                th:value="${tp}"
+                                th:selected="${tp == selectedType}"
+                                th:text="${tp.name() == 'ROOM_TERM' ? 'Tiền phòng kỳ' : (tp.name() == 'DEPOSIT' ? 'Tiền đặt cọc' : (tp.name() == 'UTILITY' ? 'Điện nước' : 'Khác'))}">ROOM_TERM</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="keywordInput" class="form-label fw-semibold text-secondary small">Tìm kiếm</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="keywordInput" name="keyword" class="form-control"
+                               placeholder="Số hóa đơn, MSSV, tên SV, số phòng..." th:value="${keyword}"/>
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100 shadow-sm">
+                        <i class="bi bi-funnel me-1"></i>Lọc
+                    </button>
+                    <a th:href="@{/admin/invoices}" class="btn btn-outline-secondary btn-sm" title="Đặt lại bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách hóa đơn -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-table text-primary"></i>
+                <span>Danh sách hóa đơn</span>
+            </h5>
+            <span class="badge bg-light text-secondary border" th:text="${'Hiển thị ' + #lists.size(invoices) + ' hóa đơn'}"></span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Số HĐ</th>
+                        <th>Loại phí</th>
+                        <th>Sinh viên</th>
+                        <th>Phòng</th>
+                        <th>Kỳ / Tháng</th>
+                        <th class="text-end">Tổng tiền</th>
+                        <th class="text-end">Đã thu</th>
+                        <th class="text-end">Còn nợ</th>
+                        <th>Hạn nộp</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th class="text-end pe-3">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(invoices)}">
+                        <td colspan="11" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+                            Không tìm thấy hóa đơn nào phù hợp với điều kiện tìm kiếm.
+                        </td>
+                    </tr>
+                    <tr th:each="inv : ${invoices}">
+                        <td class="ps-3">
+                            <a th:href="@{'/admin/invoices/' + ${inv.id}}" class="fw-bold font-monospace text-primary text-decoration-none" th:text="${inv.invoiceNo}">
+                                INV-2026-000001
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${inv.invoiceType.name() == 'ROOM_TERM' ? 'bg-primary-subtle text-primary' : (inv.invoiceType.name() == 'DEPOSIT' ? 'bg-info-subtle text-info' : 'bg-warning-subtle text-dark')}"
+                                  th:text="${inv.invoiceType.name() == 'ROOM_TERM' ? 'Tiền phòng' : (inv.invoiceType.name() == 'DEPOSIT' ? 'Đặt cọc' : 'Điện nước')}">
+                                Điện nước
+                            </span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark" th:text="${inv.student.fullName}">Nguyễn Văn A</div>
+                            <small class="text-muted font-monospace" th:text="${inv.student.studentCode}">SV001</small>
+                        </td>
+                        <td>
+                            <span th:if="${inv.room != null}" class="badge bg-light text-dark border font-monospace" th:text="${inv.room.roomNumber}">101</span>
+                            <span th:unless="${inv.room != null}" class="text-muted small">—</span>
+                        </td>
+                        <td>
+                            <span th:if="${inv.billingMonth != null}" th:text="${#temporals.format(inv.billingMonth, 'MM/yyyy')}">09/2026</span>
+                            <span th:unless="${inv.billingMonth != null}" class="text-muted small">Học kỳ</span>
+                        </td>
+                        <td class="text-end fw-bold text-dark font-monospace" th:text="${#numbers.formatInteger(inv.total, 1, 'POINT')} + ' đ'">
+                            0 đ
+                        </td>
+                        <td class="text-end text-success font-monospace" th:text="${#numbers.formatInteger(paidMap.get(inv.id), 1, 'POINT')} + ' đ'">
+                            0 đ
+                        </td>
+                        <td class="text-end font-monospace"
+                            th:classappend="${remainingMap.get(inv.id).compareTo(T(java.math.BigDecimal).ZERO) > 0 ? 'text-danger fw-bold' : 'text-muted'}"
+                            th:text="${#numbers.formatInteger(remainingMap.get(inv.id), 1, 'POINT')} + ' đ'">
+                            0 đ
+                        </td>
+                        <td>
+                            <div th:text="${#temporals.format(inv.dueDate, 'dd/MM/yyyy')}">30/09/2026</div>
+                            <small class="text-danger fw-semibold" th:if="${inv.status.name() == 'OVERDUE'}">Quá hạn</small>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge"
+                                  th:classappend="${inv.status.name() == 'PAID' ? 'bg-success-subtle text-success' : (inv.status.name() == 'OVERDUE' ? 'bg-danger-subtle text-danger' : (inv.status.name() == 'CANCELLED' ? 'bg-secondary-subtle text-secondary' : 'bg-warning-subtle text-dark'))}"
+                                  th:text="${inv.status.name() == 'PAID' ? 'Đã đóng' : (inv.status.name() == 'OVERDUE' ? 'Quá hạn' : (inv.status.name() == 'CANCELLED' ? 'Đã hủy' : 'Chưa đóng'))}">
+                                Chưa đóng
+                            </span>
+                        </td>
+                        <td class="text-end pe-3">
+                            <div class="d-inline-flex gap-1">
+                                <a th:href="@{'/admin/invoices/' + ${inv.id}}" class="btn btn-sm btn-outline-primary" title="Xem chi tiết hóa đơn">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>
