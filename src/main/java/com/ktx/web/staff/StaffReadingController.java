@@ -39,7 +39,7 @@ import com.ktx.service.BillingEngine;
 import com.ktx.service.UtilityReadingService;
 
 @Controller
-@PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'QUAN_LY', 'CAN_BO') or hasAnyAuthority('meter.read', 'invoice.issue')")
 public class StaffReadingController {
 
     private final UtilityReadingService utilityReadingService;
@@ -82,7 +82,7 @@ public class StaffReadingController {
         return sb.toString();
     }
 
-    @GetMapping("/staff/readings")
+    @GetMapping({"/manage/readings", "/staff/readings"})
     public String listReadings(@RequestParam(value = "buildingId", required = false) Long buildingId,
                                @RequestParam(value = "month", required = false) String monthParam,
                                Authentication auth,
@@ -185,7 +185,7 @@ public class StaffReadingController {
         return "staff/readings/list";
     }
 
-    @GetMapping("/staff/readings/record")
+    @GetMapping({"/manage/readings/record", "/staff/readings/record"})
     public String recordReadingForm(@RequestParam("roomId") Long roomId,
                                     @RequestParam(value = "month", required = false) String monthParam,
                                     Authentication auth,
@@ -222,7 +222,7 @@ public class StaffReadingController {
         return "staff/readings/form";
     }
 
-    @PostMapping("/staff/readings/record")
+    @PostMapping({"/manage/readings/record", "/staff/readings/record"})
     public String saveReading(@ModelAttribute("readingForm") UtilityReadingForm form,
                               Authentication auth,
                               RedirectAttributes redirectAttributes) {
@@ -235,14 +235,14 @@ public class StaffReadingController {
             utilityReadingService.recordReading(form, auth);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã lưu chỉ số điện nước phòng " + room.getRoomNumber() + " tháng " + form.getBillingMonth() + " thành công!");
-            return "redirect:/staff/readings?buildingId=" + room.getBuilding().getId() + "&month=" + form.getBillingMonth();
+            return "redirect:" + readingsBase() + "?buildingId=" + room.getBuilding().getId() + "&month=" + form.getBillingMonth();
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/staff/readings/record?roomId=" + form.getRoomId() + "&month=" + form.getBillingMonth();
+            return "redirect:" + readingsBase() + "/record?roomId=" + form.getRoomId() + "&month=" + form.getBillingMonth();
         }
     }
 
-    @PostMapping("/staff/readings/{roomId}/issue")
+    @PostMapping({"/manage/readings/{roomId}/issue", "/staff/readings/{roomId}/issue"})
     public String issueUtilityInvoice(@PathVariable("roomId") Long roomId,
                                       @RequestParam("month") String monthStr,
                                       Authentication auth,
@@ -257,7 +257,7 @@ public class StaffReadingController {
             ym = YearMonth.parse(monthStr.trim());
         } catch (DateTimeParseException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Định dạng tháng không hợp lệ: " + monthStr);
-            return "redirect:/staff/readings?buildingId=" + room.getBuilding().getId();
+            return "redirect:" + readingsBase() + "?buildingId=" + room.getBuilding().getId();
         }
 
         try {
@@ -273,11 +273,11 @@ public class StaffReadingController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
 
-        return "redirect:/staff/readings?buildingId=" + room.getBuilding().getId() + "&month=" + monthStr;
+        return "redirect:" + readingsBase() + "?buildingId=" + room.getBuilding().getId() + "&month=" + monthStr;
     }
 
-    @PostMapping("/admin/invoices/generate")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping({"/manage/invoices/generate", "/admin/invoices/generate"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAuthority('invoice.issue')")
     public String generateInvoicesAdmin(@RequestParam(value = "buildingId", required = false) Long buildingId,
                                         @RequestParam(value = "roomId", required = false) Long roomId,
                                         @RequestParam("month") String monthStr,
@@ -287,7 +287,7 @@ public class StaffReadingController {
             ym = YearMonth.parse(monthStr.trim());
         } catch (DateTimeParseException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Định dạng tháng không hợp lệ: " + monthStr);
-            return "redirect:/staff/readings";
+            return "redirect:" + readingsBase();
         }
 
         if (roomId != null) {
@@ -305,7 +305,7 @@ public class StaffReadingController {
             } catch (BusinessException ex) {
                 redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
             }
-            return "redirect:/staff/readings?buildingId=" + room.getBuilding().getId() + "&month=" + monthStr;
+            return "redirect:" + readingsBase() + "?buildingId=" + room.getBuilding().getId() + "&month=" + monthStr;
         }
 
         if (buildingId != null) {
@@ -335,11 +335,11 @@ public class StaffReadingController {
 
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã phát hành " + totalInvoices + " hóa đơn điện nước cho " + roomsProcessed + " phòng tại tòa " + building.getCode() + " tháng " + monthStr);
-            return "redirect:/staff/readings?buildingId=" + buildingId + "&month=" + monthStr;
+            return "redirect:" + readingsBase() + "?buildingId=" + buildingId + "&month=" + monthStr;
         }
 
         redirectAttributes.addFlashAttribute("errorMessage", "Cần chọn tòa nhà hoặc phòng để phát hành hóa đơn.");
-        return "redirect:/staff/readings?month=" + monthStr;
+        return "redirect:" + readingsBase() + "?month=" + monthStr;
     }
 
     private boolean isAdmin(Authentication auth) {
@@ -347,6 +347,21 @@ public class StaffReadingController {
             return false;
         }
         return auth.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())
+                            || "ROLE_QUAN_LY".equals(a.getAuthority())
+                            || "invoice.issue".equals(a.getAuthority()));
+    }
+
+    private String readingsBase() {
+        try {
+            var attrs = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra) {
+                String uri = sra.getRequest().getRequestURI();
+                if (uri != null && uri.startsWith("/manage")) {
+                    return "/manage/readings";
+                }
+            }
+        } catch (Exception ignored) {}
+        return "/staff/readings";
     }
 }

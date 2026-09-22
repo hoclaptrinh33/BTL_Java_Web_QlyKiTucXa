@@ -8,7 +8,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.ktx.dto.StudentRow;
 import com.ktx.service.StudentService;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 @Controller
+@PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAuthority('student.read')")
 public class AdminStudentController {
 
     private final StudentService studentService;
@@ -17,7 +20,7 @@ public class AdminStudentController {
         this.studentService = studentService;
     }
 
-    @GetMapping("/admin/students")
+    @GetMapping({"/manage/students", "/admin/students"})
     public String list(@RequestParam(name = "stay", defaultValue = StudentService.STAY_ALL) String stay, Model model) {
         var students = studentService.list(stay);
         var all = StudentService.STAY_ALL.equals(stay) ? students : studentService.list(StudentService.STAY_ALL);

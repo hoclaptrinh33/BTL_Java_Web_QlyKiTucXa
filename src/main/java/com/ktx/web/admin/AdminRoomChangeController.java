@@ -24,8 +24,11 @@ import com.ktx.repository.BuildingRepository;
 import com.ktx.security.KtxUserDetails;
 import com.ktx.service.RoomChangeService;
 
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
 @Controller
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAnyAuthority('contract.read', 'contract.write')")
 public class AdminRoomChangeController {
 
     private final RoomChangeService roomChangeService;
@@ -40,7 +43,18 @@ public class AdminRoomChangeController {
         this.buildingRepository = buildingRepository;
     }
 
-    @GetMapping("/admin/room-changes")
+    private String base() {
+        try {
+            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attrs != null && attrs.getRequest() != null && attrs.getRequest().getRequestURI() != null) {
+                return attrs.getRequest().getRequestURI().startsWith("/manage") ? "/manage/room-changes" : "/admin/room-changes";
+            }
+        } catch (Exception ignored) {
+        }
+        return "/admin/room-changes";
+    }
+
+    @GetMapping({"/manage/room-changes", "/admin/room-changes"})
     public String list(@RequestParam(value = "kind", required = false) RoomChangeKind kind,
                        @RequestParam(value = "status", required = false) RoomChangeStatus status,
                        @RequestParam(value = "buildingId", required = false) Long buildingId,
@@ -64,7 +78,7 @@ public class AdminRoomChangeController {
         return "admin/room_changes/list";
     }
 
-    @PostMapping("/admin/room-changes/{id}/approve")
+    @PostMapping({"/manage/room-changes/{id}/approve", "/admin/room-changes/{id}/approve"})
     public String approveRoomChange(@PathVariable("id") Long id,
                                     @RequestParam("targetBedId") Long targetBedId,
                                     @RequestParam(value = "adminNote", required = false) String adminNote,
@@ -80,10 +94,10 @@ public class AdminRoomChangeController {
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi duyệt chuyển phòng: " + ex.getMessage());
         }
-        return "redirect:/admin/room-changes";
+        return "redirect:" + base();
     }
 
-    @PostMapping("/admin/room-changes/{id}/checkout")
+    @PostMapping({"/manage/room-changes/{id}/checkout", "/admin/room-changes/{id}/checkout"})
     public String approveReturnRoom(@PathVariable("id") Long id,
                                     @RequestParam(value = "assetNote", required = false) String assetNote,
                                     @RequestParam(value = "ok", defaultValue = "true") Boolean ok,
@@ -92,19 +106,30 @@ public class AdminRoomChangeController {
                                     Authentication auth,
                                     RedirectAttributes redirectAttributes) {
         try {
+            boolean canForce = auth != null && auth.getAuthorities().stream().anyMatch(a ->
+                    "checkout.force".equals(a.getAuthority())
+                    || "ROLE_ADMIN".equals(a.getAuthority())
+                    || "ROLE_QUAN_LY".equals(a.getAuthority()));
+
+            if (force && !canForce) {
+                throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền thực hiện trả phòng cưỡng chế (checkout.force)");
+            }
+
             Long adminUserId = getUserId(auth);
             roomChangeService.approveReturnRoom(id, adminUserId, assetNote, ok, depositDecision, force, null);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Duyệt trả phòng và thực hiện Check-out thành công! Giường đã được giải phóng về VACANT và hợp đồng chuyển sang COMPLETED.");
+        } catch (org.springframework.security.access.AccessDeniedException ex) {
+            throw ex;
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi xử lý trả phòng: " + ex.getMessage());
         }
-        return "redirect:/admin/room-changes";
+        return "redirect:" + base();
     }
 
-    @PostMapping("/admin/room-changes/{id}/reject")
+    @PostMapping({"/manage/room-changes/{id}/reject", "/admin/room-changes/{id}/reject"})
     public String rejectRequest(@PathVariable("id") Long id,
                                 @RequestParam(value = "adminNote", required = false) String adminNote,
                                 Authentication auth,
@@ -118,7 +143,7 @@ public class AdminRoomChangeController {
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi từ chối yêu cầu: " + ex.getMessage());
         }
-        return "redirect:/admin/room-changes";
+        return "redirect:" + base();
     }
 
     private Long getUserId(Authentication auth) {

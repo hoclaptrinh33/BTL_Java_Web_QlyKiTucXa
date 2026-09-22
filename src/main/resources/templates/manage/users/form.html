@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4" style="max-width: 840px;">
+
+    <div class="mb-4">
+        <a th:href="@{/manage/users}" class="btn btn-sm btn-outline-secondary rounded-circle mb-2" title="Quay lại">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="h4 fw-bold text-dark mb-1" th:text="${pageTitle}">Thêm người dùng nội bộ</h2>
+        <p class="text-secondary small mb-0" th:text="${pageSubtitle}">Gán vai trò vận hành và thiết lập phạm vi quản lý</p>
+    </div>
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <div class="card border-0 shadow-sm p-4">
+        <form th:action="${userForm.id != null} ? @{/manage/users/{id}(id=${userForm.id})} : @{/manage/users}"
+              th:object="${userForm}" method="post">
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label for="username" class="form-label fw-semibold text-secondary small">Tên đăng nhập <span class="text-danger">*</span></label>
+                    <input type="text" id="username" th:field="*{username}" class="form-control font-monospace"
+                           th:classappend="${#fields.hasErrors('username')} ? 'is-invalid'"
+                           placeholder="Ví dụ: canbo_a" required/>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('username')}" th:errors="*{username}">Lỗi</div>
+                    <small class="form-text text-muted">Không trùng với mã sinh viên (tài khoản sinh viên không nhận vai nội bộ)</small>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="email" class="form-label fw-semibold text-secondary small">Email liên hệ <span class="text-danger">*</span></label>
+                    <input type="email" id="email" th:field="*{email}" class="form-control"
+                           th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"
+                           placeholder="Ví dụ: canbo_a@ktx.edu.vn" required/>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Lỗi</div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label for="fullName" class="form-label fw-semibold text-secondary small">Họ và tên</label>
+                    <input type="text" id="fullName" th:field="*{fullName}" class="form-control"
+                           th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'"
+                           placeholder="Ví dụ: Trần Văn B"/>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}">Lỗi</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="phone" class="form-label fw-semibold text-secondary small">Số điện thoại</label>
+                    <input type="text" id="phone" th:field="*{phone}" class="form-control"
+                           th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid'"
+                           placeholder="Ví dụ: 0987654321"/>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}">Lỗi</div>
+                </div>
+            </div>
+
+            <div class="mb-3" th:if="${userForm.id == null}">
+                <label for="password" class="form-label fw-semibold text-secondary small">Mật khẩu ban đầu <span class="text-danger">*</span></label>
+                <input type="password" id="password" th:field="*{password}" class="form-control"
+                       th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'"
+                       placeholder="Tối thiểu 8 ký tự" required minlength="8"/>
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}">Lỗi</div>
+            </div>
+
+            <!-- Multi-role assignment -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold text-secondary small d-block">
+                    Gán vai trò nội bộ <span class="text-danger">*</span>
+                </label>
+                <div class="p-3 bg-light rounded-3 border" th:classappend="${#fields.hasErrors('roles')} ? 'border-danger'">
+                    <div class="row g-2">
+                        <div class="col-md-6" th:each="role : ${availableRoles}">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       name="roles"
+                                       th:value="${role.code}"
+                                       th:id="'role_' + ${role.code}"
+                                       th:checked="${userForm.roles != null and userForm.roles.contains(role.code)}"/>
+                                <label class="form-check-label small" th:for="'role_' + ${role.code}">
+                                    <strong class="font-monospace text-dark" th:text="${role.code}">QUAN_LY</strong> —
+                                    <span th:text="${role.name}">Quản lý KTX</span>
+                                    <small class="d-block text-secondary" th:text="${role.description}">Mô tả vai trò</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('roles')}" th:errors="*{roles}">Lỗi vai trò</div>
+                <small class="form-text text-muted mt-1 d-block">
+                    <i class="bi bi-info-circle me-1"></i> Có thể chọn một hoặc nhiều vai trò. Vai trò SYSTEM_ADMIN chỉ được cấp tại Cổng Admin.
+                </small>
+            </div>
+
+            <!-- Scope assignment -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold text-secondary small d-block">Phạm vi quản lý (Scope)</label>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" id="scopeAll" value="ALL" th:field="*{scope}"/>
+                    <label class="form-check-label small" for="scopeAll">Toàn KTX (ALL) — Thấy dữ liệu tất cả tòa nhà</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" id="scopeBuildings" value="BUILDINGS" th:field="*{scope}"/>
+                    <label class="form-check-label small" for="scopeBuildings">Theo tòa nhà được gán (BUILDINGS)</label>
+                </div>
+            </div>
+
+            <!-- Assigned buildings selection -->
+            <div class="mb-4" id="buildingSelectSection">
+                <label class="form-label fw-semibold text-secondary small d-block">
+                    Tòa nhà được phân công (nếu phạm vi theo tòa)
+                </label>
+                <div class="p-3 bg-light rounded-3 border" th:classappend="${#fields.hasErrors('assignedBuildingIds')} ? 'border-danger'">
+                    <div class="row g-2">
+                        <div class="col-sm-6 col-md-4" th:each="b : ${buildings}">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       name="assignedBuildingIds"
+                                       th:value="${b.id}"
+                                       th:id="'b_' + ${b.id}"
+                                       th:checked="${userForm.assignedBuildingIds != null and userForm.assignedBuildingIds.contains(b.id)}"/>
+                                <label class="form-check-label small" th:for="'b_' + ${b.id}">
+                                    <strong class="font-monospace text-primary" th:text="${b.code}">A</strong> —
+                                    <span th:text="${b.name}">Tòa nhà A</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('assignedBuildingIds')}" th:errors="*{assignedBuildingIds}">Lỗi tòa nhà</div>
+            </div>
+
+            <div class="form-check form-switch mb-4">
+                <input class="form-check-input" type="checkbox" id="enabled" th:field="*{enabled}"/>
+                <label class="form-check-label fw-semibold text-secondary small" for="enabled">Kích hoạt tài khoản</label>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                <a th:href="@{/manage/users}" class="btn btn-outline-secondary">Hủy bỏ</a>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-check-lg me-1"></i> Lưu thông tin
+                </button>
+            </div>
+        </form>
+    </div>
+
+</main>
+</body>
+</html>

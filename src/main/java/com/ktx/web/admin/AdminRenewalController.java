@@ -20,8 +20,11 @@ import com.ktx.repository.BuildingRepository;
 import com.ktx.security.KtxUserDetails;
 import com.ktx.service.RenewalService;
 
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
 @Controller
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAnyAuthority('contract.read', 'contract.write')")
 public class AdminRenewalController {
 
     private final RenewalService renewalService;
@@ -33,7 +36,18 @@ public class AdminRenewalController {
         this.buildingRepository = buildingRepository;
     }
 
-    @GetMapping("/admin/renewals")
+    private String base() {
+        try {
+            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attrs != null && attrs.getRequest() != null && attrs.getRequest().getRequestURI() != null) {
+                return attrs.getRequest().getRequestURI().startsWith("/manage") ? "/manage/renewals" : "/admin/renewals";
+            }
+        } catch (Exception ignored) {
+        }
+        return "/admin/renewals";
+    }
+
+    @GetMapping({"/manage/renewals", "/admin/renewals"})
     public String list(@RequestParam(value = "status", required = false) RenewalStatus status,
                        @RequestParam(value = "buildingId", required = false) Long buildingId,
                        Model model) {
@@ -51,7 +65,7 @@ public class AdminRenewalController {
         return "admin/renewals/list";
     }
 
-    @PostMapping("/admin/renewals/{id}/approve")
+    @PostMapping({"/manage/renewals/{id}/approve", "/admin/renewals/{id}/approve"})
     public String approveRenewal(@PathVariable("id") Long id,
                                  @RequestParam(value = "adminNote", required = false) String adminNote,
                                  Authentication auth,
@@ -66,10 +80,10 @@ public class AdminRenewalController {
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi duyệt gia hạn: " + ex.getMessage());
         }
-        return "redirect:/admin/renewals";
+        return "redirect:" + base();
     }
 
-    @PostMapping("/admin/renewals/{id}/reject")
+    @PostMapping({"/manage/renewals/{id}/reject", "/admin/renewals/{id}/reject"})
     public String rejectRenewal(@PathVariable("id") Long id,
                                 @RequestParam(value = "adminNote", required = false) String adminNote,
                                 Authentication auth,
@@ -84,7 +98,7 @@ public class AdminRenewalController {
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi từ chối gia hạn: " + ex.getMessage());
         }
-        return "redirect:/admin/renewals";
+        return "redirect:" + base();
     }
 
     private Long getUserId(Authentication auth) {

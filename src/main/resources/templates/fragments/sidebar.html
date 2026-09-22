@@ -10,112 +10,124 @@
         </span>
     </a>
     <nav class="ktx-nav">
-        <a th:href="@{/admin/dashboard}"
-           sec:authorize="hasRole('ADMIN')"
-           th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
-            <i class="bi bi-house"></i> <span>Tổng quan</span>
-        </a>
-        <a th:href="@{/staff/dashboard}"
-           sec:authorize="hasRole('STAFF')"
-           th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
-            <i class="bi bi-house"></i> <span>Tổng quan</span>
-        </a>
-        <a th:href="@{/staff/buildings/rooms}"
-           sec:authorize="hasRole('STAFF')"
-           th:classappend="${activeMenu == 'rooms'} ? 'is-active'">
-            <i class="bi bi-door-closed"></i> <span>Phòng tòa</span>
-        </a>
-        <a th:href="@{/staff/checkin}"
-           sec:authorize="hasRole('STAFF')"
-           th:classappend="${activeMenu == 'checkin'} ? 'is-active'">
-            <i class="bi bi-door-open"></i> <span>Check-in / out</span>
-        </a>
-        <a th:href="@{/staff/readings}"
-           sec:authorize="hasRole('STAFF')"
-           th:classappend="${activeMenu == 'readings'} ? 'is-active'">
-            <i class="bi bi-lightning-charge"></i> <span>Điện nước</span>
-        </a>
-        <a th:href="@{/staff/tickets}"
-           sec:authorize="hasRole('STAFF')"
-           th:classappend="${activeMenu == 'tickets'} ? 'is-active'">
-            <i class="bi bi-tools"></i> <span>Yêu cầu sửa chữa</span>
-        </a>
-        <a th:href="@{/staff/violations}"
-           sec:authorize="hasRole('STAFF')"
-           th:classappend="${activeMenu == 'violations'} ? 'is-active'">
-            <i class="bi bi-exclamation-triangle"></i> <span>Báo cáo vi phạm</span>
-        </a>
+        <!-- PHÂN HỆ ADMIN HỆ THỐNG (SYSTEM_ADMIN / ADMIN) -->
+        <th:block sec:authorize="(hasAnyRole('ADMIN', 'SYSTEM_ADMIN') and !hasAnyRole('QUAN_LY', 'CAN_BO', 'STAFF')) or (hasAuthority('config.read') and !hasAuthority('allocation.manage'))">
+            <a th:href="@{/admin/dashboard}"
+               th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
+                <i class="bi bi-house"></i> <span>Tổng quan</span>
+            </a>
 
-        <th:block sec:authorize="hasRole('ADMIN')">
+            <p class="ktx-nav__label">Hệ thống</p>
+            <a th:href="@{/admin/configs}" th:classappend="${activeMenu == 'configs'} ? 'is-active'">
+                <i class="bi bi-gear"></i> <span>Cài đặt hệ thống</span>
+            </a>
+            <a th:href="@{/admin/accounts}" th:classappend="${activeMenu == 'admin-accounts'} ? 'is-active'">
+                <i class="bi bi-shield-check"></i> <span>Tài khoản quản trị</span>
+            </a>
+        </th:block>
+
+        <!-- PHÂN HỆ QUẢN LÝ VẬN HÀNH (QUAN_LY / OPERATION) -->
+        <th:block sec:authorize="hasRole('QUAN_LY') or (hasRole('ADMIN') and hasAuthority('allocation.manage'))">
+            <a th:href="@{/manage/dashboard}"
+               th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
+                <i class="bi bi-speedometer2"></i> <span>Tổng quan</span>
+            </a>
+
             <p class="ktx-nav__label">Quản lý</p>
-            <a th:href="@{/admin/students}" th:classappend="${activeMenu == 'students'} ? 'is-active'">
+            <a th:href="@{/manage/students}" th:classappend="${activeMenu == 'students'} ? 'is-active'">
                 <i class="bi bi-people"></i> <span>Sinh viên</span>
             </a>
-            <a th:href="@{/admin/buildings}" th:classappend="${activeMenu == 'buildings'} ? 'is-active'">
+            <a th:href="@{/manage/buildings}" th:classappend="${activeMenu == 'buildings'} ? 'is-active'">
                 <i class="bi bi-building"></i> <span>Tòa nhà</span>
             </a>
-            <a th:href="@{/admin/rooms}" th:classappend="${activeMenu == 'rooms'} ? 'is-active'">
+            <a th:href="@{/manage/rooms}" th:classappend="${activeMenu == 'rooms'} ? 'is-active'">
                 <i class="bi bi-door-closed"></i> <span>Phòng ở</span>
             </a>
-            <a th:href="@{/admin/periods}" th:classappend="${activeMenu == 'periods'} ? 'is-active'">
+            <a th:href="@{/manage/periods}" th:classappend="${activeMenu == 'periods'} ? 'is-active'">
                 <i class="bi bi-calendar-event"></i> <span>Đợt đăng ký</span>
             </a>
-            <a th:href="@{/admin/applications}" th:classappend="${activeMenu == 'applications'} ? 'is-active'">
+            <a th:href="@{/manage/applications}" th:classappend="${activeMenu == 'applications'} ? 'is-active'">
                 <i class="bi bi-file-earmark-text"></i> <span>Đơn nguyện vọng</span>
             </a>
-            <a th:href="@{/admin/allocations}" th:classappend="${activeMenu == 'allocations'} ? 'is-active'">
+            <a th:href="@{/manage/allocations}" th:classappend="${activeMenu == 'allocations'} ? 'is-active'">
                 <i class="bi bi-grid-3x3-gap"></i> <span>Phân bổ chỗ ở</span>
             </a>
-            <a th:href="@{/admin/contracts}" th:classappend="${activeMenu == 'contracts'} ? 'is-active'">
+            <a th:href="@{/manage/contracts}" th:classappend="${activeMenu == 'contracts'} ? 'is-active'">
                 <i class="bi bi-file-earmark-check"></i> <span>Hợp đồng</span>
             </a>
-            <a th:href="@{/admin/renewals}" th:classappend="${activeMenu == 'renewals'} ? 'is-active'">
+            <a th:href="@{/manage/renewals}" th:classappend="${activeMenu == 'renewals'} ? 'is-active'">
                 <i class="bi bi-calendar-plus"></i> <span>Gia hạn hợp đồng</span>
             </a>
-            <a th:href="@{/admin/room-changes}" th:classappend="${activeMenu == 'room-changes'} ? 'is-active'">
+            <a th:href="@{/manage/room-changes}" th:classappend="${activeMenu == 'room-changes'} ? 'is-active'">
                 <i class="bi bi-arrow-left-right"></i> <span>Đổi / Trả phòng</span>
             </a>
 
             <p class="ktx-nav__label">Thanh toán</p>
-            <a th:href="@{/admin/payments}" th:classappend="${activeMenu == 'payments'} ? 'is-active'">
+            <a th:href="@{/manage/payments}" th:classappend="${activeMenu == 'payments'} ? 'is-active'">
                 <i class="bi bi-credit-card"></i> <span>Thanh toán</span>
             </a>
-            <a th:href="@{/admin/invoices}" th:classappend="${activeMenu == 'invoices'} ? 'is-active'">
+            <a th:href="@{/manage/invoices}" th:classappend="${activeMenu == 'invoices'} ? 'is-active'">
                 <i class="bi bi-receipt"></i> <span>Hóa đơn</span>
             </a>
-            <a th:href="@{/admin/readings}" th:classappend="${activeMenu == 'readings'} ? 'is-active'">
+            <a th:href="@{/manage/readings}" th:classappend="${activeMenu == 'readings'} ? 'is-active'">
                 <i class="bi bi-lightning-charge"></i> <span>Điện nước</span>
             </a>
 
             <p class="ktx-nav__label">Vận hành</p>
-            <a th:href="@{/admin/tickets}" th:classappend="${activeMenu == 'tickets'} ? 'is-active'">
+            <a th:href="@{/manage/tickets}" th:classappend="${activeMenu == 'tickets'} ? 'is-active'">
                 <i class="bi bi-tools"></i> <span>Yêu cầu sửa chữa</span>
             </a>
-            <a th:href="@{/admin/violations}" th:classappend="${activeMenu == 'violations'} ? 'is-active'">
+            <a th:href="@{/manage/violations}" th:classappend="${activeMenu == 'violations'} ? 'is-active'">
                 <i class="bi bi-exclamation-triangle"></i> <span>Báo cáo vi phạm</span>
             </a>
-            <a th:href="@{/admin/check-in-out}" th:classappend="${activeMenu == 'checkin'} ? 'is-active'">
+            <a th:href="@{/manage/check-in-out}" th:classappend="${activeMenu == 'checkin'} ? 'is-active'">
                 <i class="bi bi-door-open"></i> <span>Lịch sử ra vào</span>
             </a>
 
             <p class="ktx-nav__label">Báo cáo</p>
-            <a th:href="@{/admin/reports}" th:classappend="${activeMenu == 'reports'} ? 'is-active'">
+            <a th:href="@{/manage/reports}" th:classappend="${activeMenu == 'reports'} ? 'is-active'">
                 <i class="bi bi-file-earmark-bar-graph"></i> <span>Báo cáo</span>
             </a>
-            <a th:href="@{/admin/stats}" th:classappend="${activeMenu == 'stats'} ? 'is-active'">
+            <a th:href="@{/manage/stats}" th:classappend="${activeMenu == 'stats'} ? 'is-active'">
                 <i class="bi bi-bar-chart"></i> <span>Thống kê</span>
             </a>
 
-            <p class="ktx-nav__label">Cài đặt</p>
-            <a th:href="@{/admin/users}" th:classappend="${activeMenu == 'users'} ? 'is-active'">
+            <p class="ktx-nav__label">Nhân sự &amp; Phân quyền</p>
+            <a th:href="@{/manage/users}" th:classappend="${activeMenu == 'users'} ? 'is-active'">
                 <i class="bi bi-person-gear"></i> <span>Người dùng</span>
+            </a>
+            <a th:href="@{/manage/roles}" th:classappend="${activeMenu == 'roles'} ? 'is-active'">
+                <i class="bi bi-shield-lock"></i> <span>Vai trò &amp; Quyền</span>
             </a>
         </th:block>
 
-        <th:block sec:authorize="hasAnyAuthority('config.read', 'config.write')">
-            <p class="ktx-nav__label" sec:authorize="!hasRole('ADMIN')">Cài đặt</p>
-            <a th:href="@{/admin/configs}" th:classappend="${activeMenu == 'configs'} ? 'is-active'">
-                <i class="bi bi-gear"></i> <span>Cài đặt hệ thống</span>
+        <!-- PHÂN HỆ CÁN BỘ TÒA (CAN_BO / STAFF) -->
+        <th:block sec:authorize="(hasRole('CAN_BO') or hasRole('STAFF')) and !hasRole('QUAN_LY')">
+            <a th:href="@{/manage/dashboard}"
+               th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
+                <i class="bi bi-speedometer2"></i> <span>Tổng quan</span>
+            </a>
+
+            <p class="ktx-nav__label">Vận hành tòa</p>
+            <a th:href="@{/manage/buildings/rooms}"
+               th:classappend="${activeMenu == 'rooms'} ? 'is-active'">
+                <i class="bi bi-door-closed"></i> <span>Phòng tòa</span>
+            </a>
+            <a th:href="@{/manage/checkin}"
+               th:classappend="${activeMenu == 'checkin'} ? 'is-active'">
+                <i class="bi bi-door-open"></i> <span>Check-in / out</span>
+            </a>
+            <a th:href="@{/manage/readings}"
+               th:classappend="${activeMenu == 'readings'} ? 'is-active'">
+                <i class="bi bi-lightning-charge"></i> <span>Điện nước</span>
+            </a>
+            <a th:href="@{/manage/tickets}"
+               th:classappend="${activeMenu == 'tickets'} ? 'is-active'">
+                <i class="bi bi-tools"></i> <span>Yêu cầu sửa chữa</span>
+            </a>
+            <a th:href="@{/manage/violations}"
+               th:classappend="${activeMenu == 'violations'} ? 'is-active'">
+                <i class="bi bi-exclamation-triangle"></i> <span>Báo cáo vi phạm</span>
             </a>
         </th:block>
 

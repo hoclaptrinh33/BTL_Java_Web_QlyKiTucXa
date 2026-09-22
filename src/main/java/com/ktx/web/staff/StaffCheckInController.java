@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import com.ktx.common.exception.BusinessException;
 import com.ktx.domain.Building;
 import com.ktx.domain.CheckInOut;
@@ -34,7 +36,7 @@ import com.ktx.service.CheckInOutService;
 import com.ktx.service.ContractService;
 
 @Controller
-@PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'QUAN_LY', 'CAN_BO') or hasAuthority('checkin.operate')")
 public class StaffCheckInController {
 
     private final ContractService contractService;
@@ -61,8 +63,8 @@ public class StaffCheckInController {
         this.invoiceRepository = invoiceRepository;
     }
 
-    @GetMapping("/staff/checkin")
-    public String index(Authentication auth, Model model) {
+    @GetMapping({"/manage/checkin", "/staff/checkin"})
+    public String index(Authentication auth, HttpServletRequest request, Model model) {
         Long buildingId = staffScope.buildingId(auth).orElse(null);
         Building assignedBuilding = null;
         if (buildingId != null) {
@@ -83,11 +85,12 @@ public class StaffCheckInController {
                 ? "Tòa " + assignedBuilding.getCode() + " — Tiếp nhận sinh viên và bàn giao trả phòng"
                 : "Tiếp nhận sinh viên và bàn giao trả phòng KTX");
         model.addAttribute("activeMenu", "checkin");
+        model.addAttribute("baseUrl", getBaseUrl(request));
         return "staff/checkin/index";
     }
 
-    @GetMapping("/staff/checkin/{id}")
-    public String checkInForm(@PathVariable("id") Long id, Authentication auth, Model model) {
+    @GetMapping({"/manage/checkin/{id}", "/staff/checkin/{id}"})
+    public String checkInForm(@PathVariable("id") Long id, Authentication auth, HttpServletRequest request, Model model) {
         Contract contract = contractService.getByIdWithDetails(id);
         staffScope.assertBuilding(auth, contract.getBed().getRoom().getBuilding().getId());
 
@@ -102,16 +105,19 @@ public class StaffCheckInController {
         model.addAttribute("pageTitle", "Thủ tục Check-in — HĐ " + contract.getContractNo());
         model.addAttribute("pageSubtitle", "Kiểm tra danh mục tài sản và xác nhận bàn giao phòng");
         model.addAttribute("activeMenu", "checkin");
+        model.addAttribute("baseUrl", getBaseUrl(request));
         return "staff/checkin/form";
     }
 
-    @PostMapping("/staff/checkin/{id}")
+    @PostMapping({"/manage/checkin/{id}", "/staff/checkin/{id}"})
     public String doCheckIn(@PathVariable("id") Long id,
                             @RequestParam(value = "assetNote", required = false) String assetNote,
                             @RequestParam(value = "ok", defaultValue = "true") Boolean ok,
                             @RequestParam Map<String, String> allParams,
+                            HttpServletRequest request,
                             Authentication auth,
                             RedirectAttributes redirectAttributes) {
+        String base = getBaseUrl(request);
         try {
             Contract contract = contractService.getByIdWithDetails(id);
             staffScope.assertBuilding(auth, contract.getBed().getRoom().getBuilding().getId());
@@ -125,16 +131,16 @@ public class StaffCheckInController {
                             + "! Hợp đồng đã ACTIVE và hóa đơn cọc đã được tạo.");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/staff/checkin/" + id;
+            return "redirect:" + base + "/checkin/" + id;
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi check-in: " + ex.getMessage());
-            return "redirect:/staff/checkin/" + id;
+            return "redirect:" + base + "/checkin/" + id;
         }
-        return "redirect:/staff/checkin";
+        return "redirect:" + base + "/checkin";
     }
 
-    @GetMapping("/staff/checkout/{id}")
-    public String checkOutForm(@PathVariable("id") Long id, Authentication auth, Model model) {
+    @GetMapping({"/manage/checkout/{id}", "/staff/checkout/{id}"})
+    public String checkOutForm(@PathVariable("id") Long id, Authentication auth, HttpServletRequest request, Model model) {
         Contract contract = contractService.getByIdWithDetails(id);
         staffScope.assertBuilding(auth, contract.getBed().getRoom().getBuilding().getId());
 
@@ -150,21 +156,26 @@ public class StaffCheckInController {
         model.addAttribute("contract", contract);
         model.addAttribute("roomAssets", roomAssets);
         model.addAttribute("hasOverdue", hasOverdue);
+        model.addAttribute("canForceCheckout", canForceCheckout(auth));
         model.addAttribute("depositStatuses", DepositStatus.values());
         model.addAttribute("pageTitle", "Thủ tục Check-out — HĐ " + contract.getContractNo());
         model.addAttribute("pageSubtitle", "Kiểm tra bàn giao phòng, xử lý tiền cọc và giải phóng chỗ ở");
         model.addAttribute("activeMenu", "checkin");
+        model.addAttribute("baseUrl", getBaseUrl(request));
         return "staff/checkin/checkout_form";
     }
 
-    @PostMapping("/staff/checkout/{id}")
+    @PostMapping({"/manage/checkout/{id}", "/staff/checkout/{id}"})
     public String doCheckOut(@PathVariable("id") Long id,
                              @RequestParam(value = "assetNote", required = false) String assetNote,
                              @RequestParam(value = "ok", defaultValue = "true") Boolean ok,
                              @RequestParam(value = "depositDecision", required = false) DepositStatus depositDecision,
+                             @RequestParam(value = "force", defaultValue = "false") boolean requestedForce,
                              @RequestParam Map<String, String> allParams,
+                             HttpServletRequest request,
                              Authentication auth,
                              RedirectAttributes redirectAttributes) {
+        String base = getBaseUrl(request);
         try {
             Contract contract = contractService.getByIdWithDetails(id);
             staffScope.assertBuilding(auth, contract.getBed().getRoom().getBuilding().getId());
@@ -172,19 +183,41 @@ public class StaffCheckInController {
             Map<Long, AssetCondition> assetConditions = extractAssetConditions(allParams);
             Long staffUserId = getUserId(auth);
 
-            // §04-04: chỉ ADMIN được force checkout khi còn hóa đơn OVERDUE
-            checkInOutService.checkOut(id, staffUserId, assetNote, ok, depositDecision, false, assetConditions);
+            // §04-04 & Req 5: checkout.force chỉ hiện và chỉ gọi được với người có quyền đó (quản lý).
+            // Nhân viên không trả phòng khi hóa đơn OVERDUE.
+            boolean canForce = canForceCheckout(auth);
+            boolean effectiveForce = canForce && (requestedForce || Boolean.parseBoolean(allParams.get("force")));
+
+            checkInOutService.checkOut(id, staffUserId, assetNote, ok, depositDecision, effectiveForce, assetConditions);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Check-out thành công cho sinh viên " + contract.getStudent().getFullName()
                             + "! Giường đã được giải phóng (VACANT).");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/staff/checkout/" + id;
+            return "redirect:" + base + "/checkout/" + id;
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi check-out: " + ex.getMessage());
-            return "redirect:/staff/checkout/" + id;
+            return "redirect:" + base + "/checkout/" + id;
         }
-        return "redirect:/staff/checkin";
+        return "redirect:" + base + "/checkin";
+    }
+
+    private String getBaseUrl(HttpServletRequest request) {
+        if (request == null || request.getRequestURI() == null) {
+            return "/manage";
+        }
+        return request.getRequestURI().startsWith("/staff") ? "/staff" : "/manage";
+    }
+
+    private boolean canForceCheckout(Authentication auth) {
+        if (auth == null) {
+            return false;
+        }
+        return auth.getAuthorities().stream().anyMatch(a ->
+                "checkout.force".equals(a.getAuthority()) ||
+                "ROLE_ADMIN".equals(a.getAuthority()) ||
+                "ROLE_QUAN_LY".equals(a.getAuthority())
+        );
     }
 
     private Map<Long, AssetCondition> extractAssetConditions(Map<String, String> params) {

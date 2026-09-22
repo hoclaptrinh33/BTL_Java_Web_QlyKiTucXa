@@ -1,6 +1,8 @@
 package com.ktx.web.admin;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -45,28 +47,28 @@ class AdminDashboardControllerTest {
     @MockitoBean
     private BuildingService buildingService;
     @MockitoBean
-    private RoomService roomService;
-    @MockitoBean
     private AuthService authService;
     @MockitoBean
     private UserRepository userRepository;
     @MockitoBean
     private NotificationRepository notificationRepository;
+    @MockitoBean
+    private com.ktx.service.SystemConfigService systemConfigService;
+    @MockitoBean
+    private com.ktx.config.MailConfig mailConfig;
 
     @Test
     void adminSeesHomeShellAndSidebar() throws Exception {
-        when(dashboardService.load()).thenReturn(new DashboardSnapshot());
+        when(systemConfigService.getConfigsGrouped()).thenReturn(java.util.Map.of(
+                "SYSTEM", java.util.List.of()
+        ));
+        when(userRepository.findByRoleIn(any())).thenReturn(java.util.List.of());
 
         mockMvc.perform(get("/admin/dashboard").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Tổng sinh viên")))
-                .andExpect(content().string(containsString("Sinh viên")))
-                .andExpect(content().string(containsString("Đợt đăng ký")))
-                .andExpect(content().string(containsString("Phân bổ chỗ ở")))
-                .andExpect(content().string(containsString("Hóa đơn")))
-                .andExpect(content().string(containsString("Yêu cầu sửa chữa")))
-                .andExpect(content().string(containsString("Thống kê")))
-                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Cài đặt hệ thống"))));
+                .andExpect(content().string(containsString("admin/configs")))
+                .andExpect(content().string(containsString("admin/accounts")))
+                .andExpect(content().string(not(containsString("Tổng sinh viên"))));
     }
 
     @Test

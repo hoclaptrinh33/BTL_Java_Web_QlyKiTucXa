@@ -250,4 +250,74 @@ class StaffCheckInControllerTest {
 
         verify(checkInOutService).checkOut(eq(1L), eq(8L), any(), eq(true), any(), eq(false), any());
     }
+
+    @Test
+    void managerWithCheckoutForceCanSeeCheckboxAndForceCheckout() throws Exception {
+        Building b = new Building();
+        b.setId(1L);
+        b.setCode("A");
+
+        Room room = new Room();
+        room.setId(10L);
+        room.setRoomNumber("101");
+        room.setBuilding(b);
+
+        Bed bed = new Bed();
+        bed.setId(100L);
+        bed.setBedCode("G1");
+        bed.setRoom(room);
+
+        Student student = new Student();
+        student.setId(5L);
+        student.setStudentCode("SV001");
+        student.setFullName("Nguyen Van A");
+
+        Contract contract = new Contract();
+        contract.setId(1L);
+        contract.setContractNo("HD-2026-000001");
+        contract.setStudent(student);
+        contract.setBed(bed);
+        contract.setStatus(ContractStatus.ACTIVE);
+
+        when(contractService.getByIdWithDetails(1L)).thenReturn(contract);
+        when(roomAssetRepository.findByRoomIdOrderByIdAsc(10L)).thenReturn(List.of());
+        when(invoiceRepository.existsByStudentIdAndStatus(eq(5L), any())).thenReturn(true);
+
+        User managerUser = new User();
+        managerUser.setId(9L);
+        managerUser.setUsername("manager1");
+        managerUser.setEmail("mgr@ktx.com");
+        managerUser.setPasswordHash("hash");
+        managerUser.setRole(Role.ADMIN);
+        managerUser.setEnabled(true);
+        KtxUserDetails managerDetails = new KtxUserDetails(managerUser);
+
+        org.springframework.security.core.Authentication auth =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        managerDetails,
+                        null,
+                        List.of(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("checkout.force"),
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_QUAN_LY"),
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN")
+                        )
+                );
+
+        // Access via /manage/checkout/1 with authority checkout.force
+        mockMvc.perform(get("/manage/checkout/1")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("hóa đơn quá hạn")))
+                .andExpect(content().string(containsString("name=\"force\"")));
+
+        mockMvc.perform(post("/manage/checkout/1")
+                        .with(csrf())
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(auth))
+                        .param("ok", "true")
+                        .param("force", "true"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/manage/checkin"));
+
+        verify(checkInOutService).checkOut(eq(1L), eq(9L), any(), eq(true), any(), eq(true), any());
+    }
 }

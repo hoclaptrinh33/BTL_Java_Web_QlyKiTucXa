@@ -22,6 +22,7 @@ import com.ktx.service.ExportService;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Controller
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAuthority('report.read')")
 public class AdminReportController {
 
     private final ExportService exportService;
@@ -36,7 +37,7 @@ public class AdminReportController {
         this.invoiceRepository = invoiceRepository;
     }
 
-    @GetMapping("/admin/reports")
+    @GetMapping({"/manage/reports", "/admin/reports"})
     public String reports(Model model) {
         model.addAttribute("activeMenu", "reports");
         model.addAttribute("pageTitle", "Báo cáo");
@@ -47,7 +48,7 @@ public class AdminReportController {
         return "admin/reports/index";
     }
 
-    @GetMapping({"/admin/reports/residents", "/admin/reports/residents.xlsx"})
+    @GetMapping({"/manage/reports/residents", "/manage/reports/residents.xlsx", "/admin/reports/residents", "/admin/reports/residents.xlsx"})
     public ResponseEntity<byte[]> downloadResidentsXlsx() {
         byte[] data = exportService.exportResidentsXlsx();
         HttpHeaders headers = new HttpHeaders();
@@ -58,7 +59,7 @@ public class AdminReportController {
         return new ResponseEntity<>(data, headers, HttpStatus.OK);
     }
 
-    @GetMapping({"/admin/reports/debts", "/admin/reports/debts.xlsx", "/admin/reports/debts.pdf", "/admin/reports/debts/pdf"})
+    @GetMapping({"/manage/reports/debts", "/manage/reports/debts.xlsx", "/manage/reports/debts.pdf", "/manage/reports/debts/pdf", "/admin/reports/debts", "/admin/reports/debts.xlsx", "/admin/reports/debts.pdf", "/admin/reports/debts/pdf"})
     public ResponseEntity<byte[]> downloadDebts(@RequestParam(value = "format", required = false) String format,
                                                 HttpServletRequest request) {
         String uri = request.getRequestURI();
@@ -82,7 +83,7 @@ public class AdminReportController {
         }
     }
 
-    @GetMapping({"/admin/reports/invoices/{id}/pdf", "/admin/invoices/{id}/pdf"})
+    @GetMapping({"/manage/reports/invoices/{id}/pdf", "/manage/invoices/{id}/pdf", "/admin/reports/invoices/{id}/pdf", "/admin/invoices/{id}/pdf"})
     public ResponseEntity<byte[]> downloadInvoicePdf(@PathVariable("id") Long id) {
         byte[] data = exportService.exportInvoicePdf(id);
         HttpHeaders headers = new HttpHeaders();

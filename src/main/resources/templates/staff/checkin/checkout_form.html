@@ -4,7 +4,7 @@
 <main th:fragment="content" class="container-fluid py-4">
 
     <div class="mb-4">
-        <a th:href="@{/staff/checkin}" class="btn btn-sm btn-outline-secondary rounded-circle mb-2" title="Quay lại">
+        <a th:href="${baseUrl != null ? baseUrl + '/checkin' : '/manage/checkin'}" class="btn btn-sm btn-outline-secondary rounded-circle mb-2" title="Quay lại">
             <i class="bi bi-arrow-left"></i>
         </a>
         <h2 class="h3 mb-1 fw-bold text-dark">Thủ tục Check-out — Bàn giao trả phòng</h2>
@@ -19,7 +19,7 @@
         </div>
     </div>
 
-    <form th:action="@{/staff/checkout/{id}(id=${contract.id})}" method="post">
+    <form th:action="${baseUrl != null ? baseUrl + '/checkout/' + contract.id : '/manage/checkout/' + contract.id}" method="post">
         <div class="row g-4 mb-4">
             <!-- Cột trái: Thông tin sinh viên & hợp đồng -->
             <div class="col-lg-5">
@@ -181,14 +181,27 @@
                                       placeholder="Ví dụ: Đã nhận lại 01 chìa khóa phòng, phòng dọn sạch sẽ, tài sản không hư hỏng..."></textarea>
                         </div>
 
-                        <div th:if="${hasOverdue}" class="alert alert-danger mb-4">
+                        <!-- Nếu sinh viên còn quá hạn và người dùng KHÔNG có quyền force: nhân viên không trả phòng khi hóa đơn OVERDUE -->
+                        <div th:if="${hasOverdue && !canForceCheckout}" class="alert alert-danger mb-4">
+                            <i class="bi bi-x-circle me-1"></i>
                             Sinh viên còn hóa đơn quá hạn. Cán bộ tòa không được buộc check-out.
                             Liên hệ quản trị viên nếu cần force checkout.
                         </div>
 
+                        <!-- Nếu sinh viên còn quá hạn và người dùng CÓ quyền checkout.force: chỉ hiện và chỉ gọi được với người có quyền đó (quản lý) -->
+                        <div th:if="${hasOverdue && canForceCheckout}" class="card bg-warning-subtle border-warning p-3 mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="force" id="forceCheckout" value="true">
+                                <label class="form-check-label fw-bold text-danger" for="forceCheckout">
+                                    Buộc check-out (Bỏ qua cảnh báo nợ quá hạn - Quyền Quản lý)
+                                </label>
+                            </div>
+                            <small class="text-muted">Bạn có quyền <code>checkout.force</code> để thực hiện thủ tục trả phòng cho sinh viên dù còn hóa đơn quá hạn.</small>
+                        </div>
+
                         <div class="d-flex justify-content-end gap-2">
-                            <a th:href="@{/staff/checkin}" class="btn btn-secondary">Hủy bỏ</a>
-                            <button type="submit" class="btn btn-primary shadow-sm px-4">
+                            <a th:href="${baseUrl != null ? baseUrl + '/checkin' : '/manage/checkin'}" class="btn btn-secondary">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-primary shadow-sm px-4" th:disabled="${hasOverdue && !canForceCheckout}">
                                 <i class="bi bi-box-arrow-left me-1"></i>Xác nhận Check-out &amp; Nhả giường
                             </button>
                         </div>

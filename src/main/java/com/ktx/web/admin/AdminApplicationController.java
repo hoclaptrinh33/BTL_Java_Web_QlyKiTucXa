@@ -2,6 +2,8 @@ package com.ktx.web.admin;
 
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,8 +19,12 @@ import com.ktx.domain.RoomApplication;
 import com.ktx.service.RegistrationPeriodService;
 import com.ktx.service.RoomApplicationService;
 
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
 @Controller
-@RequestMapping("/admin/applications")
+@RequestMapping({"/manage/applications", "/admin/applications"})
+@PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAuthority('application.read')")
 public class AdminApplicationController {
 
     private final RoomApplicationService roomApplicationService;
@@ -28,6 +34,17 @@ public class AdminApplicationController {
                                       RegistrationPeriodService periodService) {
         this.roomApplicationService = roomApplicationService;
         this.periodService = periodService;
+    }
+
+    private String base() {
+        try {
+            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attrs != null && attrs.getRequest() != null && attrs.getRequest().getRequestURI() != null) {
+                return attrs.getRequest().getRequestURI().startsWith("/manage") ? "/manage/applications" : "/admin/applications";
+            }
+        } catch (Exception ignored) {
+        }
+        return "/admin/applications";
     }
 
     @GetMapping
@@ -62,7 +79,7 @@ public class AdminApplicationController {
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/admin/applications" + (periodId != null ? "?periodId=" + periodId : "");
+        return "redirect:" + base() + (periodId != null ? "?periodId=" + periodId : "");
     }
 
     private static void page(Model model, String title, String subtitle) {

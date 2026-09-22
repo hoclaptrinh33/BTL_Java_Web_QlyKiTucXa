@@ -25,6 +25,19 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         redirectStrategy.sendRedirect(request, response, resolveTarget(authentication));
     }
 
+    public static final Set<String> SYSTEM_PERMISSIONS = Set.of(
+            "config.read", "config.write", "admin_account.manage"
+    );
+
+    public static final Set<String> OPERATION_PERMISSIONS = Set.of(
+            "student.read", "student.write", "building.read", "building.write",
+            "room.read", "room.write", "period.manage", "application.read",
+            "allocation.manage", "contract.read", "contract.write", "invoice.read",
+            "invoice.issue", "payment.record", "meter.read", "ticket.handle",
+            "violation.write", "checkin.operate", "checkout.force", "report.read",
+            "user.manage", "role.manage", "building.assign"
+    );
+
     public String resolveTarget(Authentication authentication) {
         if (authentication == null || authentication.getAuthorities() == null) {
             return "/login";
@@ -35,17 +48,20 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
                 authorities.add(a.getAuthority());
             }
         }
-        if (authorities.contains("ROLE_ADMIN")) {
-            return "/admin/dashboard";
-        }
-        if (authorities.contains("ROLE_STAFF")) {
-            return "/staff/dashboard";
-        }
         if (authorities.contains("ROLE_STUDENT") || authorities.contains("student.portal")) {
             return "/student/dashboard";
         }
-        if (authorities.contains("config.read") || authorities.contains("config.write")
-                || authorities.contains("admin_account.manage")) {
+        boolean hasOperation = authorities.stream().anyMatch(OPERATION_PERMISSIONS::contains)
+                || authorities.contains("ROLE_STAFF");
+        if (hasOperation) {
+            return "/manage/dashboard";
+        }
+        if (authorities.contains("ROLE_ADMIN")) {
+            return "/admin/dashboard";
+        }
+        boolean hasSystem = authorities.stream().anyMatch(SYSTEM_PERMISSIONS::contains)
+                || authorities.contains("ROLE_SYSTEM_ADMIN");
+        if (hasSystem) {
             return "/admin/configs";
         }
         return "/login";

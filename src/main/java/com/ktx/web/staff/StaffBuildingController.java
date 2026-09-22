@@ -18,7 +18,11 @@ import com.ktx.security.StaffScope;
 import com.ktx.service.BuildingService;
 import com.ktx.service.RoomService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 @Controller
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'QUAN_LY', 'CAN_BO') or hasAuthority('room.read')")
 public class StaffBuildingController {
 
     private final RoomService roomService;
@@ -34,19 +38,20 @@ public class StaffBuildingController {
         this.staffScope = staffScope;
     }
 
-    @GetMapping("/staff/buildings/rooms")
-    public String redirectRooms(Principal principal) {
+    @GetMapping({"/manage/buildings/rooms", "/staff/buildings/rooms"})
+    public String redirectRooms(Principal principal, HttpServletRequest request) {
+        String base = request != null && request.getRequestURI().startsWith("/manage") ? "/manage" : "/staff";
         Staff staff = staffRepository.findByUserUsername(principal.getName())
                 .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException(StaffScope.DENIED_STAFF));
         if (staff.getAssignedBuilding() == null) {
             throw new org.springframework.security.access.AccessDeniedException(StaffScope.DENIED_STAFF);
         }
         Long assignedBuildingId = staff.getAssignedBuilding().getId();
-        return "redirect:/staff/buildings/" + assignedBuildingId + "/rooms";
+        return "redirect:" + base + "/buildings/" + assignedBuildingId + "/rooms";
     }
 
-    @GetMapping("/staff/buildings/{id}/rooms")
-    public String viewRooms(@PathVariable Long id, Authentication authentication, Model model) {
+    @GetMapping({"/manage/buildings/{id}/rooms", "/staff/buildings/{id}/rooms"})
+    public String viewRooms(@PathVariable Long id, Authentication authentication, HttpServletRequest request, Model model) {
         staffScope.assertBuilding(authentication, id);
 
         Building building = buildingService.getById(id);
@@ -57,6 +62,7 @@ public class StaffBuildingController {
         model.addAttribute("pageTitle", "Sơ đồ phòng");
         model.addAttribute("pageSubtitle", "Tòa " + building.getCode() + " — Danh sách phòng và giường theo tầng");
         model.addAttribute("activeMenu", "rooms");
+        model.addAttribute("baseUrl", request != null && request.getRequestURI().startsWith("/manage") ? "/manage" : "/staff");
 
         return "staff/buildings/rooms";
     }

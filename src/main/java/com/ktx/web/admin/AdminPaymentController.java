@@ -21,8 +21,8 @@ import com.ktx.repository.UserRepository;
 import com.ktx.service.PaymentService;
 
 @Controller
-@RequestMapping("/admin/payments")
-@PreAuthorize("hasRole('ADMIN')")
+@RequestMapping({"/manage/payments", "/admin/payments"})
+@PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAuthority('payment.record')")
 public class AdminPaymentController {
 
     private final PaymentService paymentService;
@@ -72,6 +72,19 @@ public class AdminPaymentController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
 
-        return "redirect:/admin/invoices/" + invoiceId;
+        return "redirect:" + invoiceBase() + "/" + invoiceId;
+    }
+
+    private String invoiceBase() {
+        try {
+            var attrs = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra) {
+                String uri = sra.getRequest().getRequestURI();
+                if (uri != null && uri.startsWith("/manage")) {
+                    return "/manage/invoices";
+                }
+            }
+        } catch (Exception ignored) {}
+        return "/admin/invoices";
     }
 }

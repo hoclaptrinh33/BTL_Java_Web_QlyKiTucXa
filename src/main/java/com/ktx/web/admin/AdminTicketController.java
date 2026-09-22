@@ -2,6 +2,8 @@ package com.ktx.web.admin;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,29 +18,46 @@ import com.ktx.domain.Building;
 import com.ktx.domain.MaintenanceTicket;
 import com.ktx.domain.enums.TicketStatus;
 import com.ktx.repository.BuildingRepository;
+import com.ktx.security.StaffScope;
 import com.ktx.service.TicketService;
 
 @Controller
-@RequestMapping("/admin/tickets")
+@RequestMapping({"/manage/tickets", "/admin/tickets"})
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'QUAN_LY', 'CAN_BO') or hasAuthority('ticket.handle')")
 public class AdminTicketController {
 
     private final TicketService ticketService;
     private final BuildingRepository buildingRepository;
+    private final StaffScope staffScope;
 
-    public AdminTicketController(TicketService ticketService, BuildingRepository buildingRepository) {
+    public AdminTicketController(TicketService ticketService,
+                                 BuildingRepository buildingRepository,
+                                 @Autowired(required = false) StaffScope staffScope) {
         this.ticketService = ticketService;
         this.buildingRepository = buildingRepository;
+        this.staffScope = staffScope;
     }
 
     @GetMapping
     public String listTickets(@RequestParam(value = "buildingId", required = false) Long buildingId,
                               @RequestParam(value = "status", required = false) TicketStatus status,
+                              Authentication auth,
                               Model model) {
-        List<Building> buildings = buildingRepository.findAll();
-        List<MaintenanceTicket> tickets = ticketService.getTicketsForAdmin(buildingId, status);
+        boolean isStaffScoper = isStaffScoped(auth);
+        Long effectiveBuildingId = buildingId;
+        List<Building> buildings;
+
+        if (isStaffScoper && staffScope != null && staffScope.buildingId(auth).isPresent()) {
+            effectiveBuildingId = staffScope.buildingId(auth).get();
+            buildings = buildingRepository.findById(effectiveBuildingId).stream().toList();
+        } else {
+            buildings = buildingRepository.findAll();
+        }
+
+        List<MaintenanceTicket> tickets = ticketService.getTicketsForAdmin(effectiveBuildingId, status);
 
         model.addAttribute("buildings", buildings);
-        model.addAttribute("selectedBuildingId", buildingId);
+        model.addAttribute("selectedBuildingId", effectiveBuildingId);
         model.addAttribute("selectedStatus", status);
         model.addAttribute("tickets", tickets);
         model.addAttribute("statuses", TicketStatus.values());
@@ -56,6 +75,28 @@ public class AdminTicketController {
                                RedirectAttributes redirectAttributes) {
         ticketService.updateStatus(id, status, auth);
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật trạng thái ticket #" + id + " thành " + status + " thành công!");
-        return "redirect:/admin/tickets";
+        return "redirect:" + base();
+    }
+
+    private boolean isStaffScoped(Authentication auth) {
+        if (auth == null || auth.getAuthorities() == null) {
+            return false;
+        }
+        boolean isAll = auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()) || "ROLE_QUAN_LY".equals(a.getAuthority()));
+        return !isAll;
+    }
+
+    private String base() {
+        try {
+            var attrs = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra) {
+                String uri = sra.getRequest().getRequestURI();
+                if (uri != null && uri.startsWith("/manage")) {
+                    return "/manage/tickets";
+                }
+            }
+        } catch (Exception ignored) {}
+        return "/admin/tickets";
     }
 }

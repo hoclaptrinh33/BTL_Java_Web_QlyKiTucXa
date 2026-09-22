@@ -30,8 +30,8 @@ import com.ktx.service.BillingEngine;
 import com.ktx.service.InvoiceService;
 
 @Controller
-@RequestMapping("/admin/invoices")
-@PreAuthorize("hasRole('ADMIN')")
+@RequestMapping({"/manage/invoices", "/admin/invoices"})
+@PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAuthority('invoice.read')")
 public class AdminInvoiceController {
 
     private final InvoiceService invoiceService;
@@ -133,6 +133,7 @@ public class AdminInvoiceController {
     }
 
     @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAuthority('invoice.issue')")
     public String cancel(@PathVariable("id") Long id,
                          Authentication auth,
                          RedirectAttributes redirectAttributes) {
@@ -146,6 +147,19 @@ public class AdminInvoiceController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
 
-        return "redirect:/admin/invoices/" + id;
+        return "redirect:" + base() + "/" + id;
+    }
+
+    private String base() {
+        try {
+            var attrs = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra) {
+                String uri = sra.getRequest().getRequestURI();
+                if (uri != null && uri.startsWith("/manage")) {
+                    return "/manage/invoices";
+                }
+            }
+        } catch (Exception ignored) {}
+        return "/admin/invoices";
     }
 }

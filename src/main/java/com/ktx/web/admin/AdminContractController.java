@@ -2,6 +2,7 @@ package com.ktx.web.admin;
 
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -29,7 +30,7 @@ import com.ktx.service.CheckInOutService;
 import com.ktx.service.ContractService;
 
 @Controller
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAnyAuthority('contract.read', 'contract.write')")
 public class AdminContractController {
 
     private final ContractService contractService;
@@ -50,7 +51,12 @@ public class AdminContractController {
         this.roomAssetRepository = roomAssetRepository;
     }
 
-    @GetMapping("/admin/contracts")
+    private String base(HttpServletRequest request) {
+        return (request != null && request.getRequestURI() != null && request.getRequestURI().startsWith("/admin"))
+                ? "/admin/contracts" : "/manage/contracts";
+    }
+
+    @GetMapping({"/manage/contracts", "/admin/contracts"})
     public String list(@RequestParam(value = "buildingId", required = false) Long buildingId,
                        @RequestParam(value = "status", required = false) ContractStatus status,
                        @RequestParam(value = "keyword", required = false) String keyword,
@@ -70,7 +76,7 @@ public class AdminContractController {
         return "admin/contracts/list";
     }
 
-    @GetMapping("/admin/contracts/{id}")
+    @GetMapping({"/manage/contracts/{id}", "/admin/contracts/{id}"})
     public String detail(@PathVariable("id") Long id, Model model) {
         Contract contract = contractService.getByIdWithDetails(id);
         List<CheckInOut> checkInOutList = checkInOutService.findByContractId(id);
@@ -96,12 +102,13 @@ public class AdminContractController {
         return "admin/contracts/detail";
     }
 
-    @PostMapping("/admin/contracts/{id}/check-in")
+    @PostMapping({"/manage/contracts/{id}/check-in", "/admin/contracts/{id}/check-in"})
     public String checkIn(@PathVariable("id") Long id,
                           @RequestParam(value = "assetNote", required = false) String assetNote,
                           @RequestParam(value = "ok", defaultValue = "true") Boolean ok,
                           Authentication auth,
-                          RedirectAttributes redirectAttributes) {
+                          RedirectAttributes redirectAttributes,
+                          HttpServletRequest request) {
         try {
             Long adminUserId = getUserId(auth);
             checkInOutService.checkIn(id, adminUserId, assetNote, ok, null);
@@ -112,32 +119,57 @@ public class AdminContractController {
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi check-in: " + ex.getMessage());
         }
-        return "redirect:/admin/contracts/" + id;
+        return "redirect:" + base(request) + "/" + id;
     }
 
-    @PostMapping("/admin/contracts/{id}/check-out")
+    @PostMapping({"/manage/contracts/{id}/check-out", "/admin/contracts/{id}/check-out"})
     public String checkOut(@PathVariable("id") Long id,
                            @RequestParam(value = "assetNote", required = false) String assetNote,
                            @RequestParam(value = "ok", defaultValue = "true") Boolean ok,
                            @RequestParam(value = "depositDecision", required = false) DepositStatus depositDecision,
                            @RequestParam(value = "force", defaultValue = "false") boolean force,
                            Authentication auth,
-                           RedirectAttributes redirectAttributes) {
+                           RedirectAttributes redirectAttributes,
+                           HttpServletRequest request) {
         try {
+            Contract contract = null;
+            try {
+                contract = contractService.getByIdWithDetails(id);
+            } catch (Exception ignored) {
+            }
+            boolean hasOverdue = contract != null && contract.getStudent() != null &&
+                    invoiceRepository.existsByStudentIdAndStatus(contract.getStudent().getId(), InvoiceStatus.OVERDUE);
+
+            boolean canForce = auth != null && auth.getAuthorities().stream().anyMatch(a ->
+                    "checkout.force".equals(a.getAuthority())
+                    || "ROLE_ADMIN".equals(a.getAuthority())
+                    || "ROLE_QUAN_LY".equals(a.getAuthority()));
+
+            if (force && !canForce) {
+                throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền thực hiện trả phòng cưỡng chế (checkout.force)");
+            }
+            if (hasOverdue && !canForce) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Sinh viên còn hóa đơn quá hạn chưa thanh toán, không thể trả phòng thông thường");
+                return "redirect:" + base(request) + "/" + id;
+            }
+
             Long adminUserId = getUserId(auth);
             checkInOutService.checkOut(id, adminUserId, assetNote, ok, depositDecision, force, null);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Check-out hợp đồng thành công! Giường đã được trả về trạng thái VACANT.");
+        } catch (org.springframework.security.access.AccessDeniedException ex) {
+            throw ex;
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi check-out: " + ex.getMessage());
         }
-        return "redirect:/admin/contracts/" + id;
+        return "redirect:" + base(request) + "/" + id;
     }
 
-    @PostMapping("/admin/contracts/{id}/cancel-draft")
-    public String cancelDraft(@PathVariable("id") Long id, RedirectAttributes redirectAttributes) {
+    @PostMapping({"/manage/contracts/{id}/cancel-draft", "/admin/contracts/{id}/cancel-draft"})
+    public String cancelDraft(@PathVariable("id") Long id, RedirectAttributes redirectAttributes,
+                              HttpServletRequest request) {
         try {
             contractService.cancelDraft(id);
             redirectAttributes.addFlashAttribute("successMessage",
@@ -147,13 +179,14 @@ public class AdminContractController {
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi hủy hợp đồng: " + ex.getMessage());
         }
-        return "redirect:/admin/contracts/" + id;
+        return "redirect:" + base(request) + "/" + id;
     }
 
-    @PostMapping("/admin/contracts/{id}/terminate")
+    @PostMapping({"/manage/contracts/{id}/terminate", "/admin/contracts/{id}/terminate"})
     public String terminate(@PathVariable("id") Long id,
                             @RequestParam(value = "forfeitDeposit", defaultValue = "false") boolean forfeitDeposit,
-                            RedirectAttributes redirectAttributes) {
+                            RedirectAttributes redirectAttributes,
+                            HttpServletRequest request) {
         try {
             contractService.terminate(id, forfeitDeposit);
             redirectAttributes.addFlashAttribute("successMessage",
@@ -163,10 +196,10 @@ public class AdminContractController {
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi chấm dứt hợp đồng: " + ex.getMessage());
         }
-        return "redirect:/admin/contracts/" + id;
+        return "redirect:" + base(request) + "/" + id;
     }
 
-    @GetMapping("/admin/check-in-out")
+    @GetMapping({"/manage/check-in-out", "/admin/check-in-out"})
     public String checkInOutLog(@RequestParam(value = "buildingId", required = false) Long buildingId,
                                 Model model) {
         List<CheckInOut> checkInOutList = checkInOutService.findRecent(buildingId);

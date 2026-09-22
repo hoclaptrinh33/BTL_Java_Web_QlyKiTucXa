@@ -13,13 +13,16 @@ class LoginSuccessHandlerTest {
     private final LoginSuccessHandler handler = new LoginSuccessHandler();
 
     @Test
-    void adminGoesToAdminDashboard() {
+    void adminGoesToAdminConfigs() {
         assertEquals("/admin/dashboard", handler.resolveTarget(auth("ROLE_ADMIN")));
+        assertEquals("/admin/configs", handler.resolveTarget(auth("config.read")));
+        assertEquals("/admin/configs", handler.resolveTarget(auth("ROLE_SYSTEM_ADMIN")));
     }
 
     @Test
-    void staffGoesToStaffDashboard() {
-        assertEquals("/staff/dashboard", handler.resolveTarget(auth("ROLE_STAFF")));
+    void staffGoesToManageDashboard() {
+        assertEquals("/manage/dashboard", handler.resolveTarget(auth("ROLE_STAFF")));
+        assertEquals("/manage/dashboard", handler.resolveTarget(auth("room.read")));
     }
 
     @Test
