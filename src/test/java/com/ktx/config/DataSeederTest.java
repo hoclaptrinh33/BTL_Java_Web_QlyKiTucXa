@@ -94,6 +94,25 @@ class DataSeederTest {
     }
 
     @Test
+    @DisplayName("Khi admin đã có mà chưa có quanly, seeder chỉ tạo tài khoản quản lý")
+    void testRunWithAdminExistingCreatesQuanLy() throws Exception {
+        when(userRepository.existsByUsername("admin")).thenReturn(true);
+        when(userRepository.existsByUsername("quanly")).thenReturn(false);
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
+        com.ktx.domain.Role quanLy = new com.ktx.domain.Role();
+        quanLy.setCode("QUAN_LY");
+        when(roleRepository.findByCode("QUAN_LY")).thenReturn(Optional.of(quanLy));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        dataSeeder.run();
+
+        verify(userRepository, times(1)).save(any(User.class));
+        verify(buildingRepository, never()).save(any());
+        verify(roomRepository, never()).save(any());
+        verify(contractRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("Khi cơ sở dữ liệu sạch, seeder khởi tạo đầy đủ dữ liệu 15 phút demo")
     void testRunWithCleanDatabase() {
         when(userRepository.existsByUsername("admin")).thenReturn(false);

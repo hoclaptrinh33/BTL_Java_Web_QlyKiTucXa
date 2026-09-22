@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -158,8 +159,10 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        // Chỉ seed khi cơ sở dữ liệu chưa có tài khoản admin
+        // DB đã có admin: không ghi đè demo, nhưng vẫn bổ sung tài khoản quản lý
+        // vì V4 gắn admin cũ vào SYSTEM_ADMIN (không còn quyền vận hành).
         if (userRepository.existsByUsername("admin")) {
+            ensureQuanLyAccount();
             return;
         }
 
@@ -571,6 +574,20 @@ public class DataSeeder implements CommandLineRunner {
     // =========================================================================
     // HELPER METHODS
     // =========================================================================
+
+    private void ensureQuanLyAccount() {
+        if (userRepository.existsByUsername("quanly")) {
+            return;
+        }
+        Optional<com.ktx.domain.Role> found = roleRepository.findByCode("QUAN_LY");
+        if (found == null || found.isEmpty()) {
+            return;
+        }
+        User quanLyUser = createUser("quanly", "quanly@example.com", "Admin@123", Role.ADMIN);
+        quanLyUser.setAccountKind(AccountKind.INTERNAL);
+        quanLyUser.getRoles().add(found.get());
+        userRepository.save(quanLyUser);
+    }
 
     private User createUser(String username, String email, String password, Role role) {
         User user = new User();
