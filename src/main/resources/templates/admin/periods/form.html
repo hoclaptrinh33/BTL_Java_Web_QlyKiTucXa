@@ -2,137 +2,393 @@
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
 <body>
 <main th:fragment="content">
-    <div class="ktx-dialog-overlay">
-        <section class="ktx-dialog" style="max-width: 800px;" role="dialog" aria-labelledby="periodDialogTitle">
-            <header class="ktx-dialog__head">
+    <div class="ktx-dialog-overlay py-3">
+        <section class="ktx-dialog" style="max-width: 960px; width: 100%; margin: 1rem auto 3rem;" role="dialog" aria-labelledby="periodDialogTitle">
+            <header class="ktx-dialog__head border-bottom pb-3">
                 <div>
-                    <h2 id="periodDialogTitle" th:text="${periodId != null} ? 'Sửa đợt đăng ký' : 'Thêm đợt đăng ký mới'">Thêm đợt đăng ký mới</h2>
-                    <p>Mở, đóng đợt nộp đơn và quản lý thời gian kỳ học.</p>
+                    <h2 id="periodDialogTitle" class="fw-bold" th:text="${periodId != null} ? 'Sửa đợt đăng ký' : 'Thêm đợt đăng ký mới'">Thêm đợt đăng ký mới</h2>
+                    <p class="text-muted mb-0">Cấu hình đầy đủ thông tin đợt nộp đơn, thời gian kỳ học, đối tượng áp dụng và chính sách xét duyệt.</p>
                 </div>
                 <a class="ktx-dialog__close" th:href="@{/admin/periods}" aria-label="Đóng">
                     <i class="bi bi-x-lg"></i>
                 </a>
             </header>
 
-            <form class="ktx-dialog__form" id="periodForm"
+            <form class="ktx-dialog__form p-4" id="periodForm"
                   th:action="${periodId != null} ? @{/admin/periods/{id}/edit(id=${periodId})} : @{/admin/periods}"
                   th:object="${form}" method="post" novalidate>
                 
-                <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}">
+                <div class="alert alert-danger mb-4" th:if="${#fields.hasGlobalErrors()}">
                     <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}">Lỗi</p>
                 </div>
 
-                <div class="ktx-dialog__grid">
-                    <div class="ktx-dialog__col">
-                        <div class="ktx-field">
-                            <label class="form-label" for="name">Tên đợt đăng ký <span class="req">*</span></label>
-                            <div class="ktx-field__control">
-                                <i class="bi bi-tag"></i>
-                                <input class="form-control" id="name" th:field="*{name}"
-                                       th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
-                                       maxlength="120" placeholder="VD: Đợt tân sinh viên 2026"/>
-                            </div>
-                            <div class="invalid-feedback" th:errors="*{name}"></div>
-                        </div>
-
-                        <div class="ktx-field">
-                            <label class="form-label" for="periodType">Loại đợt <span class="req">*</span></label>
-                            <div class="ktx-field__control">
-                                <i class="bi bi-layers"></i>
-                                <select class="form-select" id="periodType" th:field="*{periodType}"
-                                        th:classappend="${#fields.hasErrors('periodType')} ? 'is-invalid'">
-                                    <option value="">Chọn loại đợt</option>
-                                    <option th:value="FRESHMAN">Tân sinh viên</option>
-                                    <option th:value="NEW_ACADEMIC_YEAR">Năm học mới</option>
-                                    <option th:value="SUMMER">Hè</option>
-                                </select>
-                            </div>
-                            <div class="invalid-feedback" th:errors="*{periodType}"></div>
-                        </div>
-
-                        <div class="ktx-field">
-                            <label class="form-label" for="academicYear">Năm học <span class="req">*</span></label>
-                            <div class="ktx-field__control">
-                                <i class="bi bi-calendar-event"></i>
-                                <input class="form-control" id="academicYear" th:field="*{academicYear}"
-                                       th:classappend="${#fields.hasErrors('academicYear')} ? 'is-invalid'"
-                                       maxlength="20" placeholder="VD: 2026-2027"/>
-                            </div>
-                            <div class="invalid-feedback" th:errors="*{academicYear}"></div>
-                        </div>
-
-                        <div class="ktx-field" th:if="${periodId != null}">
-                            <label class="form-label" for="status">Trạng thái</label>
-                            <div class="ktx-field__control">
-                                <i class="bi bi-activity"></i>
-                                <select class="form-select" id="status" th:field="*{status}"
-                                        th:classappend="${#fields.hasErrors('status')} ? 'is-invalid'">
-                                    <option th:value="DRAFT">Nháp (DRAFT)</option>
-                                    <option th:value="OPEN">Mở (OPEN)</option>
-                                    <option th:value="CLOSED">Đóng (CLOSED)</option>
-                                    <option th:value="ALLOCATING" th:disabled="${form.status.name() == 'DRAFT'}">Đang phân bổ (ALLOCATING)</option>
-                                    <option th:value="COMPLETED" th:disabled="${form.status.name() == 'DRAFT'}">Hoàn thành (COMPLETED)</option>
-                                </select>
-                            </div>
-                            <div class="invalid-feedback" th:errors="*{status}"></div>
-                        </div>
-                    </div>
-
-                    <div class="ktx-dialog__col">
-                        <div class="card p-3 mb-3 bg-light border-0">
-                            <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-clock"></i> Cửa sổ nộp đơn đăng ký</h6>
-                            
-                            <div class="ktx-field mb-2">
-                                <label class="form-label" for="openAt">Thời gian mở nhận đơn <span class="req">*</span></label>
+                <!-- PHẦN 1: THÔNG TIN CƠ BẢN & THỜI GIAN NHẬN ĐƠN -->
+                <div class="mb-4">
+                    <h5 class="fw-bold text-primary mb-3 d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill me-2"></i> 1. Thông tin cơ bản & Thời gian kỳ học
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="name">Tên đợt đăng ký <span class="req text-danger">*</span></label>
                                 <div class="ktx-field__control">
-                                    <i class="bi bi-calendar-check"></i>
-                                    <input class="form-control" type="datetime-local" id="openAt" th:field="*{openAt}"
-                                           th:classappend="${#fields.hasErrors('openAt')} ? 'is-invalid'"/>
+                                    <i class="bi bi-tag"></i>
+                                    <input class="form-control" id="name" th:field="*{name}"
+                                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                                           maxlength="120" placeholder="VD: Đợt tân sinh viên 2026"/>
                                 </div>
-                                <div class="invalid-feedback" th:errors="*{openAt}"></div>
-                            </div>
-
-                            <div class="ktx-field mb-0">
-                                <label class="form-label" for="closeAt">Thời gian đóng nhận đơn <span class="req">*</span></label>
-                                <div class="ktx-field__control">
-                                    <i class="bi bi-calendar-x"></i>
-                                    <input class="form-control" type="datetime-local" id="closeAt" th:field="*{closeAt}"
-                                           th:classappend="${#fields.hasErrors('closeAt')} ? 'is-invalid'"/>
-                                </div>
-                                <div class="invalid-feedback" th:errors="*{closeAt}"></div>
+                                <div class="invalid-feedback" th:errors="*{name}"></div>
                             </div>
                         </div>
 
-                        <div class="card p-3 bg-light border-0">
-                            <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-calendar3"></i> Khoảng thời gian kỳ học</h6>
-                            
-                            <div class="ktx-field mb-2">
-                                <label class="form-label" for="termStart">Ngày bắt đầu kỳ học <span class="req">*</span></label>
+                        <div class="col-md-3">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="periodType">Loại đợt <span class="req text-danger">*</span></label>
                                 <div class="ktx-field__control">
-                                    <i class="bi bi-calendar-range"></i>
-                                    <input class="form-control" type="date" id="termStart" th:field="*{termStart}"
-                                           th:classappend="${#fields.hasErrors('termStart')} ? 'is-invalid'"/>
+                                    <i class="bi bi-layers"></i>
+                                    <select class="form-select" id="periodType" th:field="*{periodType}"
+                                            th:classappend="${#fields.hasErrors('periodType')} ? 'is-invalid'">
+                                        <option value="">Chọn loại đợt</option>
+                                        <option th:value="FRESHMAN">Tân sinh viên</option>
+                                        <option th:value="NEW_ACADEMIC_YEAR">Năm học mới</option>
+                                        <option th:value="SUMMER">Hè</option>
+                                    </select>
                                 </div>
-                                <div class="invalid-feedback" th:errors="*{termStart}"></div>
+                                <div class="invalid-feedback" th:errors="*{periodType}"></div>
                             </div>
+                        </div>
 
-                            <div class="ktx-field mb-0">
-                                <label class="form-label" for="termEnd">Ngày kết thúc kỳ học <span class="req">*</span></label>
+                        <div class="col-md-3">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="academicYear">Năm học <span class="req text-danger">*</span></label>
                                 <div class="ktx-field__control">
-                                    <i class="bi bi-calendar-range-fill"></i>
-                                    <input class="form-control" type="date" id="termEnd" th:field="*{termEnd}"
-                                           th:classappend="${#fields.hasErrors('termEnd')} ? 'is-invalid'"/>
+                                    <i class="bi bi-calendar-event"></i>
+                                    <input class="form-control" id="academicYear" th:field="*{academicYear}"
+                                           th:classappend="${#fields.hasErrors('academicYear')} ? 'is-invalid'"
+                                           maxlength="20" placeholder="VD: 2026-2027"/>
                                 </div>
-                                <div class="invalid-feedback" th:errors="*{termEnd}"></div>
+                                <div class="invalid-feedback" th:errors="*{academicYear}"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6" th:if="${periodId != null}">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="status">Trạng thái đợt</label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-activity"></i>
+                                    <select class="form-select" id="status" th:field="*{status}"
+                                            th:classappend="${#fields.hasErrors('status')} ? 'is-invalid'">
+                                        <option th:value="DRAFT">Nháp (DRAFT)</option>
+                                        <option th:value="OPEN">Mở nhận đơn (OPEN)</option>
+                                        <option th:value="CLOSED">Đóng nhận đơn (CLOSED)</option>
+                                        <option th:value="ALLOCATING" th:disabled="${form.status.name() == 'DRAFT'}">Đang phân bổ (ALLOCATING)</option>
+                                        <option th:value="COMPLETED" th:disabled="${form.status.name() == 'DRAFT'}">Hoàn thành (COMPLETED)</option>
+                                    </select>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{status}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Cửa sổ nộp đơn đăng ký -->
+                        <div class="col-12">
+                            <div class="card p-3 bg-light border">
+                                <h6 class="fw-bold mb-3 text-primary">
+                                    <i class="bi bi-clock-history me-1"></i> Cửa sổ nộp đơn đăng ký (Thời gian mở & đóng cổng)
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="ktx-field mb-0">
+                                            <label class="form-label fw-semibold" for="openAt">Thời gian mở nhận đơn <span class="req text-danger">*</span></label>
+                                            <div class="ktx-field__control">
+                                                <i class="bi bi-calendar-check"></i>
+                                                <input class="form-control" type="datetime-local" id="openAt" th:field="*{openAt}"
+                                                       th:classappend="${#fields.hasErrors('openAt')} ? 'is-invalid'"/>
+                                            </div>
+                                            <div class="invalid-feedback" th:errors="*{openAt}"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="ktx-field mb-0">
+                                            <label class="form-label fw-semibold" for="closeAt">Thời gian đóng nhận đơn <span class="req text-danger">*</span></label>
+                                            <div class="ktx-field__control">
+                                                <i class="bi bi-calendar-x"></i>
+                                                <input class="form-control" type="datetime-local" id="closeAt" th:field="*{closeAt}"
+                                                       th:classappend="${#fields.hasErrors('closeAt')} ? 'is-invalid'"/>
+                                            </div>
+                                            <div class="invalid-feedback" th:errors="*{closeAt}"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khoảng thời gian kỳ học -->
+                        <div class="col-12">
+                            <div class="card p-3 bg-light border">
+                                <h6 class="fw-bold mb-3 text-primary">
+                                    <i class="bi bi-calendar3 me-1"></i> Khoảng thời gian kỳ học
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="ktx-field mb-0">
+                                            <label class="form-label fw-semibold" for="termStart">Ngày bắt đầu kỳ học <span class="req text-danger">*</span></label>
+                                            <div class="ktx-field__control">
+                                                <i class="bi bi-calendar-range"></i>
+                                                <input class="form-control" type="date" id="termStart" th:field="*{termStart}"
+                                                       th:classappend="${#fields.hasErrors('termStart')} ? 'is-invalid'"/>
+                                            </div>
+                                            <div class="invalid-feedback" th:errors="*{termStart}"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="ktx-field mb-0">
+                                            <label class="form-label fw-semibold" for="termEnd">Ngày kết thúc kỳ học <span class="req text-danger">*</span></label>
+                                            <div class="ktx-field__control">
+                                                <i class="bi bi-calendar-range-fill"></i>
+                                                <input class="form-control" type="date" id="termEnd" th:field="*{termEnd}"
+                                                       th:classappend="${#fields.hasErrors('termEnd')} ? 'is-invalid'"/>
+                                            </div>
+                                            <div class="invalid-feedback" th:errors="*{termEnd}"></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="ktx-dialog__actions mt-3">
-                    <a class="btn btn-outline-secondary" th:href="@{/admin/periods}">Hủy</a>
-                    <button type="submit" class="btn btn-primary btn-ktx-submit">
-                        <i class="bi bi-check-lg"></i> Lưu lại
+                <hr class="my-4"/>
+
+                <!-- PHẦN 2: ĐỐI TƯỢNG & QUỸ PHÒNG -->
+                <div class="mb-4">
+                    <h5 class="fw-bold text-primary mb-3 d-flex align-items-center">
+                        <i class="bi bi-people-fill me-2"></i> 2. Đối tượng & Phạm vi quỹ phòng
+                    </h5>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="genderScope">Giới tính áp dụng <span class="req text-danger">*</span></label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-gender-ambiguous"></i>
+                                    <select class="form-select" id="genderScope" th:field="*{genderScope}"
+                                            th:classappend="${#fields.hasErrors('genderScope')} ? 'is-invalid'">
+                                        <option th:value="ALL">Tất cả (Nam & Nữ)</option>
+                                        <option th:value="MALE_ONLY">Chỉ dành cho Nam</option>
+                                        <option th:value="FEMALE_ONLY">Chỉ dành cho Nữ</option>
+                                    </select>
+                                </div>
+                                <div class="form-text">Hệ thống chặn sinh viên khác giới tính nộp đơn.</div>
+                                <div class="invalid-feedback" th:errors="*{genderScope}"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="minConductScore">Điểm rèn luyện tối thiểu</label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-award"></i>
+                                    <input class="form-control" type="number" id="minConductScore" th:field="*{minConductScore}" min="0" max="100"
+                                           th:classappend="${#fields.hasErrors('minConductScore')} ? 'is-invalid'" placeholder="0 (không yêu cầu)"/>
+                                </div>
+                                <div class="form-text">Chặn nộp nếu ĐRL kỳ trước thấp hơn mức này.</div>
+                                <div class="invalid-feedback" th:errors="*{minConductScore}"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="targetQuota">Chỉ tiêu tiếp nhận</label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-pie-chart"></i>
+                                    <input class="form-control" type="number" id="targetQuota" th:field="*{targetQuota}" min="1"
+                                           placeholder="VD: 300 (chỗ)"/>
+                                </div>
+                                <div class="form-text">Số lượng chỗ ở tối đa dự kiến tiếp nhận.</div>
+                                <div class="invalid-feedback" th:errors="*{targetQuota}"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="targetCohort">Khóa / Đối tượng tuyển sinh</label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-mortarboard"></i>
+                                    <input class="form-control" id="targetCohort" th:field="*{targetCohort}" maxlength="100"
+                                           placeholder="VD: Tân sinh viên K68, Sinh viên khóa K65-K67..."/>
+                                </div>
+                                <div class="form-text">Mô tả nhóm đối tượng để sinh viên nhận biết khi nộp đơn.</div>
+                                <div class="invalid-feedback" th:errors="*{targetCohort}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Phạm vi Tòa nhà tham gia đợt -->
+                        <div class="col-12">
+                            <div class="card p-3 bg-light border">
+                                <label class="form-label fw-bold text-primary mb-1">
+                                    <i class="bi bi-buildings me-1"></i> Phạm vi Tòa nhà tham gia đợt
+                                </label>
+                                <p class="small text-muted mb-2">
+                                    Tích chọn các tòa nhà được phép đăng ký trong đợt này. Nếu <strong>không tích chọn tòa nào</strong>, hệ thống sẽ mặc định mở cho <strong>toàn bộ các tòa nhà đang hoạt động</strong>.
+                                </p>
+                                <div class="row g-2">
+                                    <div class="col-md-4 col-sm-6" th:each="b : ${allBuildings}">
+                                        <div class="form-check p-2 bg-white rounded border">
+                                            <input class="form-check-input ms-0 me-2" type="checkbox" th:id="'b_' + ${b.id}"
+                                                   th:field="*{buildingIds}" th:value="${b.id}">
+                                            <label class="form-check-label fw-semibold" th:for="'b_' + ${b.id}">
+                                                <span th:text="${b.name}">Tòa A</span>
+                                                <span class="badge ms-1" th:classappend="${b.genderPolicy.name() == 'MALE' ? 'text-bg-primary' : 'text-bg-danger'}"
+                                                      th:text="${b.genderPolicy.name() == 'MALE' ? 'Nam' : 'Nữ'}">Nam</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4"/>
+
+                <!-- PHẦN 3: LỘ TRÌNH & CHÍNH SÁCH TÀI CHÍNH -->
+                <div class="mb-4">
+                    <h5 class="fw-bold text-primary mb-3 d-flex align-items-center">
+                        <i class="bi bi-cash-coin me-2"></i> 3. Lộ trình xác nhận & Chính sách tài chính
+                    </h5>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="paymentDeadline">Hạn nộp tiền đặt cọc giữ chỗ</label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-alarm"></i>
+                                    <input class="form-control" type="datetime-local" id="paymentDeadline" th:field="*{paymentDeadline}"
+                                           th:classappend="${#fields.hasErrors('paymentDeadline')} ? 'is-invalid'"/>
+                                </div>
+                                <div class="form-text">Thời hạn sinh viên trúng tuyển phải nộp tiền cọc (sau khi công bố kết quả).</div>
+                                <div class="invalid-feedback" th:errors="*{paymentDeadline}"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="depositRatio">Tỷ lệ đặt cọc phòng / kỳ <span class="req text-danger">*</span></label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-percent"></i>
+                                    <input class="form-control" type="number" step="0.05" min="0" max="1" id="depositRatio" th:field="*{depositRatio}"
+                                           th:classappend="${#fields.hasErrors('depositRatio')} ? 'is-invalid'" placeholder="0.50 (tương đương 50%)"/>
+                                </div>
+                                <div class="form-text">Mặc định 0.50 = 50% tiền phòng 1 kỳ theo quy chế KTX.</div>
+                                <div class="invalid-feedback" th:errors="*{depositRatio}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Khung ngày tiếp nhận phòng (Check-in) -->
+                        <div class="col-md-6">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="checkinStart">Ngày bắt đầu nhận phòng (Check-in)</label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-calendar-check"></i>
+                                    <input class="form-control" type="date" id="checkinStart" th:field="*{checkinStart}"
+                                           th:classappend="${#fields.hasErrors('checkinStart')} ? 'is-invalid'"/>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{checkinStart}"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="checkinEnd">Ngày kết thúc nhận phòng</label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-calendar-event"></i>
+                                    <input class="form-control" type="date" id="checkinEnd" th:field="*{checkinEnd}"
+                                           th:classappend="${#fields.hasErrors('checkinEnd')} ? 'is-invalid'"/>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{checkinEnd}"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="paymentGuide">Hướng dẫn thanh toán & Thông tin tài khoản</label>
+                                <textarea class="form-control" id="paymentGuide" th:field="*{paymentGuide}" rows="2"
+                                          placeholder="Nhập thông tin tài khoản ngân hàng, cú pháp chuyển khoản hoặc địa chỉ văn phòng thu tiền..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4"/>
+
+                <!-- PHẦN 4: CAM KẾT NỘI QUY & KÊNH HỖ TRỢ -->
+                <div class="mb-4">
+                    <h5 class="fw-bold text-primary mb-3 d-flex align-items-center">
+                        <i class="bi bi-shield-check me-2"></i> 4. Cam kết nội quy & Thông tin hỗ trợ
+                    </h5>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="contactPhone">Hotline hỗ trợ của đợt</label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-telephone"></i>
+                                    <input class="form-control" id="contactPhone" th:field="*{contactPhone}" maxlength="30"
+                                           placeholder="VD: 024.3869.xxxx"/>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{contactPhone}"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="contactEmail">Email liên hệ hỗ trợ</label>
+                                <div class="ktx-field__control">
+                                    <i class="bi bi-envelope"></i>
+                                    <input class="form-control" type="email" id="contactEmail" th:field="*{contactEmail}" maxlength="100"
+                                           th:classappend="${#fields.hasErrors('contactEmail')} ? 'is-invalid'"
+                                           placeholder="VD: ktx@university.edu.vn"/>
+                                </div>
+                                <div class="invalid-feedback" th:errors="*{contactEmail}"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check p-3 bg-light rounded border">
+                                <input class="form-check-input ms-0 me-2" type="checkbox" id="requireDocumentProof" th:field="*{requireDocumentProof}"/>
+                                <label class="form-check-label fw-semibold" for="requireDocumentProof">
+                                    Yêu cầu nộp kèm hồ sơ / minh chứng diện chính sách
+                                </label>
+                                <div class="form-text mt-1">Bắt buộc sinh viên thuộc diện ưu tiên (chính sách, vùng sâu vùng xa) phải nộp giấy tờ xác nhận.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="description">Mô tả / Thông báo đợt đăng ký</label>
+                                <textarea class="form-control" id="description" th:field="*{description}" rows="3"
+                                          placeholder="Nhập thông tin giới thiệu, các lưu ý quan trọng gửi đến sinh viên khi mở đợt..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="ktx-field">
+                                <label class="form-label fw-semibold" for="termsAndConditions">Điều khoản nội quy & Cam kết của đợt</label>
+                                <textarea class="form-control" id="termsAndConditions" th:field="*{termsAndConditions}" rows="3"
+                                          placeholder="Nhập nội quy ký túc xá, cam kết phòng chống cháy nổ... Sinh viên sẽ phải tích đồng ý trước khi nộp đơn."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nút hành động cố định ở cuối form -->
+                <div class="ktx-dialog__foot pt-3 mt-4 border-top d-flex justify-content-between align-items-center">
+                    <a class="btn btn-outline-secondary px-4" th:href="@{/admin/periods}">
+                        <i class="bi bi-arrow-left me-1"></i> Hủy bỏ
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-ktx-submit px-4 py-2 fw-semibold">
+                        <i class="bi bi-check-lg me-1"></i> Lưu lại đợt đăng ký
                     </button>
                 </div>
             </form>

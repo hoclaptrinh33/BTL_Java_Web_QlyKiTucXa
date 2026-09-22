@@ -17,6 +17,9 @@ public interface RegistrationPeriodRepository extends JpaRepository<Registration
     @Query("SELECT p FROM RegistrationPeriod p JOIN FETCH p.createdBy")
     List<RegistrationPeriod> findAllWithCreator();
 
+    @Query("SELECT p FROM RegistrationPeriod p JOIN FETCH p.createdBy LEFT JOIN FETCH p.buildings WHERE p.id = :id")
+    java.util.Optional<RegistrationPeriod> findByIdWithBuildingsAndCreator(@org.springframework.data.repository.query.Param("id") Long id);
+
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM RegistrationPeriod p WHERE p.id = :id")
     java.util.Optional<RegistrationPeriod> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);

@@ -101,6 +101,19 @@ public class RoomApplicationService {
             throw new BusinessException(CONDUCT_SCORE_ZERO);
         }
 
+        if (period.getGenderScope() == com.ktx.domain.enums.PeriodGenderScope.MALE_ONLY && student.getGender() != Gender.MALE) {
+            throw new BusinessException("Đợt đăng ký này chỉ áp dụng cho sinh viên Nam");
+        }
+        if (period.getGenderScope() == com.ktx.domain.enums.PeriodGenderScope.FEMALE_ONLY && student.getGender() != Gender.FEMALE) {
+            throw new BusinessException("Đợt đăng ký này chỉ áp dụng cho sinh viên Nữ");
+        }
+
+        if (period.getMinConductScore() != null && period.getMinConductScore() > 0) {
+            if (student.getConductScore() == null || student.getConductScore() < period.getMinConductScore()) {
+                throw new BusinessException("Điểm rèn luyện của bạn (" + (student.getConductScore() != null ? student.getConductScore() : 0) + ") không đạt yêu cầu tối thiểu (" + period.getMinConductScore() + " điểm) của đợt này");
+            }
+        }
+
         if (roomApplicationRepository.existsByPeriodIdAndStudentId(periodId, studentId)) {
             throw new BusinessException(ALREADY_SUBMITTED);
         }
@@ -118,6 +131,13 @@ public class RoomApplicationService {
             if ((student.getGender() == Gender.MALE && policy != BuildingGenderPolicy.MALE) ||
                 (student.getGender() == Gender.FEMALE && policy != BuildingGenderPolicy.FEMALE)) {
                 throw new BusinessException(GENDER_MISMATCH);
+            }
+
+            if (period.getBuildings() != null && !period.getBuildings().isEmpty()) {
+                boolean inPeriod = period.getBuildings().stream().anyMatch(b -> b.getId().equals(preferredBuildingId));
+                if (!inPeriod) {
+                    throw new BusinessException("Tòa nhà được chọn không thuộc danh sách tòa áp dụng của đợt này");
+                }
             }
         }
 

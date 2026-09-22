@@ -32,9 +32,12 @@ import com.ktx.service.RegistrationPeriodService;
 public class AdminPeriodController {
 
     private final RegistrationPeriodService periodService;
+    private final com.ktx.repository.BuildingRepository buildingRepository;
 
-    public AdminPeriodController(RegistrationPeriodService periodService) {
+    public AdminPeriodController(RegistrationPeriodService periodService,
+                                 com.ktx.repository.BuildingRepository buildingRepository) {
         this.periodService = periodService;
+        this.buildingRepository = buildingRepository;
     }
 
     private String base(HttpServletRequest request) {
@@ -54,6 +57,9 @@ public class AdminPeriodController {
     public String createForm(Model model) {
         RegistrationPeriodForm form = new RegistrationPeriodForm();
         form.setStatus(PeriodStatus.DRAFT);
+        form.setGenderScope(com.ktx.domain.enums.PeriodGenderScope.ALL);
+        form.setMinConductScore(0);
+        form.setDepositRatio(java.math.BigDecimal.valueOf(0.50));
         formModel(model, form, null);
         return "admin/periods/form";
     }
@@ -83,7 +89,7 @@ public class AdminPeriodController {
     public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes,
                            HttpServletRequest request) {
         try {
-            RegistrationPeriod period = periodService.getById(id);
+            RegistrationPeriod period = periodService.getByIdWithDetails(id);
             RegistrationPeriodForm form = new RegistrationPeriodForm();
             form.setName(period.getName());
             form.setPeriodType(period.getPeriodType());
@@ -93,6 +99,26 @@ public class AdminPeriodController {
             form.setTermStart(period.getTermStart());
             form.setTermEnd(period.getTermEnd());
             form.setStatus(period.getStatus());
+
+            // Nâng cấp các trường
+            form.setGenderScope(period.getGenderScope());
+            form.setMinConductScore(period.getMinConductScore());
+            form.setTargetCohort(period.getTargetCohort());
+            form.setTargetQuota(period.getTargetQuota());
+            form.setPaymentDeadline(period.getPaymentDeadline());
+            form.setCheckinStart(period.getCheckinStart());
+            form.setCheckinEnd(period.getCheckinEnd());
+            form.setDepositRatio(period.getDepositRatio());
+            form.setPaymentGuide(period.getPaymentGuide());
+            form.setRequireDocumentProof(period.getRequireDocumentProof());
+            form.setTermsAndConditions(period.getTermsAndConditions());
+            form.setDescription(period.getDescription());
+            form.setContactPhone(period.getContactPhone());
+            form.setContactEmail(period.getContactEmail());
+
+            if (period.getBuildings() != null) {
+                form.setBuildingIds(period.getBuildings().stream().map(com.ktx.domain.Building::getId).toList());
+            }
 
             formModel(model, form, id);
             return "admin/periods/form";
@@ -169,17 +195,23 @@ public class AdminPeriodController {
         return PeriodStatus.values();
     }
 
+    @ModelAttribute("genderScopes")
+    public com.ktx.domain.enums.PeriodGenderScope[] genderScopes() {
+        return com.ktx.domain.enums.PeriodGenderScope.values();
+    }
+
     private static void page(Model model, String title, String subtitle) {
         model.addAttribute("pageTitle", title);
         model.addAttribute("pageSubtitle", subtitle);
         model.addAttribute("activeMenu", "periods");
     }
 
-    private static void formModel(Model model, RegistrationPeriodForm form, Long periodId) {
+    private void formModel(Model model, RegistrationPeriodForm form, Long periodId) {
         boolean editing = periodId != null;
         page(model, editing ? "Sửa đợt đăng ký" : "Thêm đợt đăng ký",
                 editing ? "Cập nhật thông tin đợt đăng ký" : "Tạo mới một đợt đăng ký");
         model.addAttribute("form", form);
         model.addAttribute("periodId", periodId);
+        model.addAttribute("allBuildings", buildingRepository.findByActiveTrueOrderByNameAsc());
     }
 }
