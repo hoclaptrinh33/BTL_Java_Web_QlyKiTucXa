@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h2 class="h4 fw-bold text-dark mb-1">Tài khoản quản trị hệ thống</h2>
+            <p class="text-secondary small mb-0">Quản trị viên có toàn quyền cấu hình tham số hệ thống và quản lý tài khoản admin</p>
+        </div>
+        <div>
+            <a th:href="@{/admin/accounts/new}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-person-plus me-1"></i> Thêm Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- Overview Card -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-4">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="d-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary" style="width:48px;height:48px;">
+                        <i class="bi bi-shield-lock fs-4"></i>
+                    </span>
+                    <div>
+                        <span class="text-secondary small d-block">Tổng số Admin</span>
+                        <strong class="fs-5 text-dark" th:text="${admins.size()}">1</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="d-flex align-items-center justify-content-center rounded-3 bg-success bg-opacity-10 text-success" style="width:48px;height:48px;">
+                        <i class="bi bi-check-circle fs-4"></i>
+                    </span>
+                    <div>
+                        <span class="text-secondary small d-block">Đang hoạt động</span>
+                        <strong class="fs-5 text-success" th:text="${enabledCount}">1</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admins Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th scope="col" style="width: 70px;">ID</th>
+                    <th scope="col">Tên đăng nhập</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Trạng thái</th>
+                    <th scope="col">Ngày tạo</th>
+                    <th scope="col" class="text-end" style="min-width: 150px;">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="admin : ${admins}">
+                    <td class="font-monospace text-secondary" th:text="${admin.id}">1</td>
+                    <td>
+                        <strong class="text-dark d-block" th:text="${admin.username}">admin</strong>
+                        <small class="badge bg-primary-subtle text-primary border border-primary-subtle">SYSTEM_ADMIN</small>
+                    </td>
+                    <td th:text="${admin.email}">admin@example.com</td>
+                    <td>
+                        <span th:if="${admin.enabled}" class="badge bg-success-subtle text-success border border-success-subtle">
+                            <i class="bi bi-check-circle-fill me-1"></i> Hoạt động
+                        </span>
+                        <span th:unless="${admin.enabled}" class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                            <i class="bi bi-lock-fill me-1"></i> Đã khóa
+                        </span>
+                    </td>
+                    <td class="small text-secondary" th:text="${admin.createdAt != null ? #temporals.format(admin.createdAt, 'dd/MM/yyyy HH:mm') : '—'}">
+                        22/09/2026 10:00
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex justify-content-end gap-2">
+                            <!-- Toggle status form -->
+                            <form th:action="@{/admin/accounts/{id}/toggle-status(id=${admin.id})}" method="post" class="d-inline">
+                                <button type="submit"
+                                        class="btn btn-sm"
+                                        th:classappend="${admin.enabled} ? 'btn-outline-warning' : 'btn-outline-success'"
+                                        th:title="${admin.enabled} ? 'Khóa tài khoản' : 'Mở khóa tài khoản'">
+                                    <i class="bi" th:classappend="${admin.enabled} ? 'bi-lock' : 'bi-unlock'"></i>
+                                    <span class="d-none d-md-inline" th:text="${admin.enabled} ? 'Khóa' : 'Mở khóa'"></span>
+                                </button>
+                            </form>
+
+                            <!-- Reset password trigger button -->
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    data-bs-toggle="modal"
+                                    th:data-bs-target="'#resetPwdModal-' + ${admin.id}"
+                                    title="Đặt lại mật khẩu">
+                                <i class="bi bi-key"></i>
+                            </button>
+                        </div>
+
+                        <!-- Reset Password Modal -->
+                        <div class="modal fade text-start" th:id="'resetPwdModal-' + ${admin.id}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-sm">
+                                <div class="modal-content">
+                                    <form th:action="@{/admin/accounts/{id}/reset-password(id=${admin.id})}" method="post">
+                                        <div class="modal-header">
+                                            <h6 class="modal-title fw-bold">Đặt lại mật khẩu: <span th:text="${admin.username}"></span></h6>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <label class="form-label small fw-semibold text-secondary">Mật khẩu mới</label>
+                                            <input type="password" name="newPassword" class="form-control form-control-sm" required minlength="8" placeholder="Tối thiểu 8 ký tự"/>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                            <button type="submit" class="btn btn-sm btn-primary">Lưu</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>

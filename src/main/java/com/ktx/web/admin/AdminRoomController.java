@@ -18,6 +18,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+
 import com.ktx.common.exception.BusinessException;
 import com.ktx.common.exception.DuplicateFieldException;
 import com.ktx.domain.Bed;
@@ -33,6 +37,7 @@ import com.ktx.dto.RoomBatchForm;
 import com.ktx.dto.RoomBatchResult;
 import com.ktx.dto.RoomForm;
 import com.ktx.repository.BedRepository;
+import com.ktx.security.StaffScope;
 import com.ktx.service.AssetService;
 import com.ktx.service.BedService;
 import com.ktx.service.BuildingService;
@@ -40,7 +45,8 @@ import com.ktx.service.RoomService;
 import com.ktx.dto.OccupancyDriftRow;
 
 @Controller
-@RequestMapping("/admin/rooms")
+@RequestMapping({"/manage/rooms", "/admin/rooms"})
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'QUAN_LY', 'CAN_BO') or hasAnyAuthority('room.read', 'room.write')")
 public class AdminRoomController {
 
     private final RoomService roomService;
@@ -48,18 +54,39 @@ public class AdminRoomController {
     private final BedService bedService;
     private final AssetService assetService;
     private final BedRepository bedRepository;
+    private final StaffScope staffScope;
 
     public AdminRoomController(RoomService roomService, BuildingService buildingService,
-            BedService bedService, AssetService assetService, BedRepository bedRepository) {
+            BedService bedService, AssetService assetService, BedRepository bedRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) StaffScope staffScope) {
         this.roomService = roomService;
         this.buildingService = buildingService;
         this.bedService = bedService;
         this.assetService = assetService;
         this.bedRepository = bedRepository;
+        this.staffScope = staffScope;
+    }
+
+    private String base(HttpServletRequest request) {
+        return (request != null && request.getRequestURI() != null && request.getRequestURI().startsWith("/admin"))
+                ? "/admin/rooms" : "/manage/rooms";
     }
 
     @GetMapping
-    public String list(@RequestParam(name = "buildingId", required = false) Long buildingId, Model model) {
+    public String list(@RequestParam(name = "buildingId", required = false) Long buildingId,
+                       Authentication auth,
+                       Model model) {
+        if (buildingId == null && staffScope != null && auth != null) {
+            try {
+                buildingId = staffScope.buildingId(auth).orElse(null);
+            } catch (Exception ignored) {
+            }
+        } else if (staffScope != null && auth != null && buildingId != null) {
+            try {
+                staffScope.assertBuilding(auth, buildingId);
+            } catch (Exception ignored) {
+            }
+        }
         page(model, "Phòng ở", "Danh mục phòng theo tòa — giường tự tạo theo loại");
         model.addAttribute("rooms", roomService.listRows(buildingId));
         model.addAttribute("buildings", buildingService.listAll());
@@ -99,7 +126,7 @@ public class AdminRoomController {
 
     @PostMapping("/batch")
     public String createBatch(@Valid @ModelAttribute("form") RoomBatchForm form, BindingResult binding,
-            Model model, RedirectAttributes redirectAttributes) {
+            Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         if (binding.hasErrors()) {
             batchModel(model, form);
             return "admin/rooms/batch";
@@ -107,7 +134,7 @@ public class AdminRoomController {
         try {
             RoomBatchResult result = roomService.createBatch(form);
             redirectAttributes.addFlashAttribute("successMessage", batchSuccessMessage(result));
-            return "redirect:/admin/rooms?buildingId=" + result.getBuildingId();
+            return "redirect:" + base(request) + "?buildingId=" + result.getBuildingId();
         } catch (BusinessException ex) {
             if (RoomService.BATCH_EMPTY.equals(ex.getMessage())) {
                 binding.reject("business", ex.getMessage());
@@ -123,7 +150,7 @@ public class AdminRoomController {
 
     @PostMapping
     public String create(@Valid @ModelAttribute("form") RoomForm form, BindingResult binding,
-            Model model, RedirectAttributes redirectAttributes) {
+            Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         if (binding.hasErrors()) {
             formModel(model, form, null, false);
             return "admin/rooms/form";
@@ -133,7 +160,7 @@ public class AdminRoomController {
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã tạo phòng " + created.getBuilding().getCode() + "-" + created.getRoomNumber()
                             + " · " + created.getCapacity() + " giường");
-            return "redirect:/admin/rooms?buildingId=" + created.getBuilding().getId();
+            return "redirect:" + base(request) + "?buildingId=" + created.getBuilding().getId();
         } catch (DuplicateFieldException ex) {
             binding.rejectValue(ex.getField(), "duplicate", ex.getMessage());
             formModel(model, form, null, false);
@@ -148,7 +175,7 @@ public class AdminRoomController {
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id,
             @RequestParam(name = "assetId", required = false) Long assetId,
-            Model model, RedirectAttributes redirectAttributes) {
+            Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         try {
             RoomAssetForm form = new RoomAssetForm();
             form.setQuantity(1);
@@ -167,20 +194,21 @@ public class AdminRoomController {
             return "admin/rooms/detail";
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/admin/rooms";
+            return "redirect:" + base(request);
         }
     }
 
     @GetMapping("/{id}/assets")
-    public String assets(@PathVariable Long id) {
-        return "redirect:/admin/rooms/" + id;
+    public String assets(@PathVariable Long id, HttpServletRequest request) {
+        return "redirect:" + base(request) + "/" + id;
     }
 
     @PostMapping("/{id}/beds/{bedId}/status")
     public String updateBedStatus(@PathVariable Long id, @PathVariable Long bedId,
             @RequestParam("status") BedStatus status,
             @RequestParam("version") Long version,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            HttpServletRequest request) {
         try {
             Bed updated = bedService.updateStatus(id, bedId, status, version);
             redirectAttributes.addFlashAttribute("successMessage",
@@ -188,29 +216,29 @@ public class AdminRoomController {
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/admin/rooms/" + id;
+        return "redirect:" + base(request) + "/" + id;
     }
 
     @PostMapping("/{id}/assets")
     public String createAsset(@PathVariable Long id, @Valid @ModelAttribute("assetForm") RoomAssetForm form,
-            BindingResult binding, Model model, RedirectAttributes redirectAttributes) {
+            BindingResult binding, Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         if (binding.hasErrors()) {
             try {
                 detailModel(model, id, form, null);
                 return "admin/rooms/detail";
             } catch (BusinessException ex) {
                 redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-                return "redirect:/admin/rooms";
+                return "redirect:" + base(request);
             }
         }
         try {
             RoomAsset created = assetService.create(id, form);
             redirectAttributes.addFlashAttribute("successMessage", "Đã thêm " + created.getName());
-            return "redirect:/admin/rooms/" + id;
+            return "redirect:" + base(request) + "/" + id;
         } catch (BusinessException ex) {
             if (RoomService.NOT_FOUND.equals(ex.getMessage())) {
                 redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-                return "redirect:/admin/rooms";
+                return "redirect:" + base(request);
             }
             binding.reject("business", ex.getMessage());
             detailModel(model, id, form, null);
@@ -221,24 +249,24 @@ public class AdminRoomController {
     @PostMapping("/{id}/assets/{assetId}/edit")
     public String updateAsset(@PathVariable Long id, @PathVariable Long assetId,
             @Valid @ModelAttribute("assetForm") RoomAssetForm form, BindingResult binding,
-            Model model, RedirectAttributes redirectAttributes) {
+            Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         if (binding.hasErrors()) {
             try {
                 detailModel(model, id, form, assetId);
                 return "admin/rooms/detail";
             } catch (BusinessException ex) {
                 redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-                return "redirect:/admin/rooms/" + id;
+                return "redirect:" + base(request) + "/" + id;
             }
         }
         try {
             RoomAsset updated = assetService.update(id, assetId, form);
             redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật " + updated.getName());
-            return "redirect:/admin/rooms/" + id;
+            return "redirect:" + base(request) + "/" + id;
         } catch (BusinessException ex) {
             if (AssetService.NOT_FOUND.equals(ex.getMessage()) || RoomService.NOT_FOUND.equals(ex.getMessage())) {
                 redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-                return "redirect:/admin/rooms/" + id;
+                return "redirect:" + base(request) + "/" + id;
             }
             binding.reject("business", ex.getMessage());
             detailModel(model, id, form, assetId);
@@ -248,18 +276,18 @@ public class AdminRoomController {
 
     @PostMapping("/{id}/assets/{assetId}/delete")
     public String deleteAsset(@PathVariable Long id, @PathVariable Long assetId,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes, HttpServletRequest request) {
         try {
             assetService.delete(id, assetId);
             redirectAttributes.addFlashAttribute("successMessage", "Đã xóa tài sản");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/admin/rooms/" + id;
+        return "redirect:" + base(request) + "/" + id;
     }
 
     @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+    public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         try {
             Room room = roomService.getById(id);
             RoomForm form = new RoomForm();
@@ -273,13 +301,13 @@ public class AdminRoomController {
             return "admin/rooms/form";
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/admin/rooms";
+            return "redirect:" + base(request);
         }
     }
 
     @PostMapping("/{id}/edit")
     public String update(@PathVariable Long id, @Valid @ModelAttribute("form") RoomForm form,
-            BindingResult binding, Model model, RedirectAttributes redirectAttributes) {
+            BindingResult binding, Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         if (binding.hasErrors()) {
             formModel(model, form, id, true);
             return "admin/rooms/form";
@@ -288,7 +316,7 @@ public class AdminRoomController {
             Room updated = roomService.update(id, form);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã cập nhật phòng " + updated.getBuilding().getCode() + "-" + updated.getRoomNumber());
-            return "redirect:/admin/rooms?buildingId=" + updated.getBuilding().getId();
+            return "redirect:" + base(request) + "?buildingId=" + updated.getBuilding().getId();
         } catch (DuplicateFieldException ex) {
             binding.rejectValue(ex.getField(), "duplicate", ex.getMessage());
             formModel(model, form, id, true);
@@ -296,7 +324,7 @@ public class AdminRoomController {
         } catch (BusinessException ex) {
             if (RoomService.NOT_FOUND.equals(ex.getMessage())) {
                 redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-                return "redirect:/admin/rooms";
+                return "redirect:" + base(request);
             }
             binding.reject("business", ex.getMessage());
             formModel(model, form, id, true);
@@ -305,16 +333,16 @@ public class AdminRoomController {
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         try {
             Room room = roomService.getById(id);
             Long buildingId = room.getBuilding().getId();
             roomService.delete(id);
             redirectAttributes.addFlashAttribute("successMessage", "Đã xóa phòng " + room.getRoomNumber());
-            return "redirect:/admin/rooms?buildingId=" + buildingId;
+            return "redirect:" + base(request) + "?buildingId=" + buildingId;
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/admin/rooms";
+            return "redirect:" + base(request);
         }
     }
 
@@ -439,24 +467,24 @@ public class AdminRoomController {
     }
 
     @PostMapping("/reconcile-all")
-    public String reconcileAll(RedirectAttributes redirectAttributes) {
+    public String reconcileAll(RedirectAttributes redirectAttributes, HttpServletRequest request) {
         try {
             roomService.reconcileOccupancy();
             redirectAttributes.addFlashAttribute("successMessage", "Đồng bộ toàn bộ dữ liệu chỗ ở thành công!");
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Đồng bộ thất bại: " + ex.getMessage());
         }
-        return "redirect:/admin/rooms/occupancy-drift";
+        return "redirect:" + base(request) + "/occupancy-drift";
     }
 
     @PostMapping("/beds/{bedId}/reconcile")
-    public String reconcileSingle(@PathVariable Long bedId, RedirectAttributes redirectAttributes) {
+    public String reconcileSingle(@PathVariable Long bedId, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         try {
             roomService.reconcileSingleBed(bedId);
             redirectAttributes.addFlashAttribute("successMessage", "Đồng bộ giường thành công!");
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Đồng bộ thất bại: " + ex.getMessage());
         }
-        return "redirect:/admin/rooms/occupancy-drift";
+        return "redirect:" + base(request) + "/occupancy-drift";
     }
 }

@@ -4,6 +4,8 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -25,13 +27,19 @@ import com.ktx.security.KtxUserDetails;
 import com.ktx.service.RegistrationPeriodService;
 
 @Controller
-@RequestMapping("/admin/periods")
+@RequestMapping({"/manage/periods", "/admin/periods"})
+@PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAuthority('period.manage')")
 public class AdminPeriodController {
 
     private final RegistrationPeriodService periodService;
 
     public AdminPeriodController(RegistrationPeriodService periodService) {
         this.periodService = periodService;
+    }
+
+    private String base(HttpServletRequest request) {
+        return (request != null && request.getRequestURI() != null && request.getRequestURI().startsWith("/admin"))
+                ? "/admin/periods" : "/manage/periods";
     }
 
     @GetMapping
@@ -52,7 +60,8 @@ public class AdminPeriodController {
 
     @PostMapping
     public String create(@Valid @ModelAttribute("form") RegistrationPeriodForm form, BindingResult binding,
-                         Authentication authentication, Model model, RedirectAttributes redirectAttributes) {
+                         Authentication authentication, Model model, RedirectAttributes redirectAttributes,
+                         HttpServletRequest request) {
         if (binding.hasErrors()) {
             formModel(model, form, null);
             return "admin/periods/form";
@@ -62,7 +71,7 @@ public class AdminPeriodController {
             User creator = userDetails.getUser();
             RegistrationPeriod created = periodService.create(form, creator);
             redirectAttributes.addFlashAttribute("successMessage", "Đã tạo đợt " + created.getName());
-            return "redirect:/admin/periods";
+            return "redirect:" + base(request);
         } catch (BusinessException ex) {
             binding.reject(null, ex.getMessage());
             formModel(model, form, null);
@@ -71,7 +80,8 @@ public class AdminPeriodController {
     }
 
     @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+    public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes,
+                           HttpServletRequest request) {
         try {
             RegistrationPeriod period = periodService.getById(id);
             RegistrationPeriodForm form = new RegistrationPeriodForm();
@@ -88,13 +98,14 @@ public class AdminPeriodController {
             return "admin/periods/form";
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/admin/periods";
+            return "redirect:" + base(request);
         }
     }
 
     @PostMapping("/{id}/edit")
     public String update(@PathVariable Long id, @Valid @ModelAttribute("form") RegistrationPeriodForm form,
-                         BindingResult binding, Model model, RedirectAttributes redirectAttributes) {
+                         BindingResult binding, Model model, RedirectAttributes redirectAttributes,
+                         HttpServletRequest request) {
         if (binding.hasErrors()) {
             formModel(model, form, id);
             return "admin/periods/form";
@@ -102,7 +113,7 @@ public class AdminPeriodController {
         try {
             RegistrationPeriod updated = periodService.update(id, form);
             redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật đợt " + updated.getName());
-            return "redirect:/admin/periods";
+            return "redirect:" + base(request);
         } catch (BusinessException ex) {
             binding.reject(null, ex.getMessage());
             formModel(model, form, id);
@@ -111,7 +122,8 @@ public class AdminPeriodController {
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes,
+                         HttpServletRequest request) {
         try {
             RegistrationPeriod period = periodService.getById(id);
             String name = period.getName();
@@ -120,29 +132,31 @@ public class AdminPeriodController {
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/admin/periods";
+        return "redirect:" + base(request);
     }
 
     @PostMapping("/{id}/open")
-    public String open(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String open(@PathVariable Long id, RedirectAttributes redirectAttributes,
+                       HttpServletRequest request) {
         try {
             RegistrationPeriod period = periodService.transitionToOpen(id);
             redirectAttributes.addFlashAttribute("successMessage", "Đã mở đợt " + period.getName());
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/admin/periods";
+        return "redirect:" + base(request);
     }
 
     @PostMapping("/{id}/close")
-    public String close(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String close(@PathVariable Long id, RedirectAttributes redirectAttributes,
+                        HttpServletRequest request) {
         try {
             RegistrationPeriod period = periodService.transitionToClose(id);
             redirectAttributes.addFlashAttribute("successMessage", "Đã đóng đợt " + period.getName());
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/admin/periods";
+        return "redirect:" + base(request);
     }
 
     @ModelAttribute("periodTypes")

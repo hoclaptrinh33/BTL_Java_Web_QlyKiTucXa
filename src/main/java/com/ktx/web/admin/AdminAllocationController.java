@@ -27,13 +27,14 @@ import com.ktx.repository.StudentRepository;
 import com.ktx.security.KtxUserDetails;
 import com.ktx.service.AllocationService;
 import com.ktx.service.ContractService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 @Controller
-@RequestMapping("/admin/allocations")
-@PreAuthorize("hasRole('ADMIN')")
+@RequestMapping({"/manage/allocations", "/admin/allocations"})
+@PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAuthority('allocation.manage')")
 public class AdminAllocationController {
 
     private final AllocationService allocationService;
@@ -52,6 +53,19 @@ public class AdminAllocationController {
         this.contractService = contractService;
         this.studentRepository = studentRepository;
         this.bedRepository = bedRepository;
+    }
+
+    private String base() {
+        try {
+            org.springframework.web.context.request.ServletRequestAttributes attrs = 
+                (org.springframework.web.context.request.ServletRequestAttributes) 
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attrs != null && attrs.getRequest() != null && attrs.getRequest().getRequestURI() != null) {
+                return attrs.getRequest().getRequestURI().startsWith("/manage") ? "/manage/allocations" : "/admin/allocations";
+            }
+        } catch (Exception ignored) {
+        }
+        return "/admin/allocations";
     }
 
     @GetMapping
@@ -89,7 +103,7 @@ public class AdminAllocationController {
 
     @GetMapping("/periods/{id}")
     public String periodDetail(@PathVariable("id") Long id) {
-        return "redirect:/admin/allocations?periodId=" + id;
+        return "redirect:" + base() + "?periodId=" + id;
     }
 
     @PostMapping("/periods/{id}/preview")
@@ -105,16 +119,16 @@ public class AdminAllocationController {
             AllocationRun run = allocationService.previewAndStore(id, adminUserId);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã chạy xem trước phân bổ (Dry-run) thành công. Dữ liệu giường và đơn đăng ký chưa bị thay đổi.");
-            return "redirect:/admin/allocations/runs/" + run.getId();
+            return "redirect:" + base() + "/runs/" + run.getId();
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/admin/allocations?periodId=" + id;
+            return "redirect:" + base() + "?periodId=" + id;
         } catch (org.springframework.dao.PessimisticLockingFailureException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Hệ thống đang phân bổ, thử lại");
-            return "redirect:/admin/allocations?periodId=" + id;
+            return "redirect:" + base() + "?periodId=" + id;
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi chạy phân bổ: " + ex.getMessage());
-            return "redirect:/admin/allocations?periodId=" + id;
+            return "redirect:" + base() + "?periodId=" + id;
         }
     }
 
@@ -131,16 +145,16 @@ public class AdminAllocationController {
             AllocationRun run = allocationService.commit(id, adminUserId);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã chốt phân bổ thành công (Lượt #" + run.getId() + "). Toàn bộ giường đã được khóa và tạo hợp đồng nháp (DRAFT).");
-            return "redirect:/admin/allocations/runs/" + run.getId();
+            return "redirect:" + base() + "/runs/" + run.getId();
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/admin/allocations?periodId=" + id;
+            return "redirect:" + base() + "?periodId=" + id;
         } catch (org.springframework.dao.PessimisticLockingFailureException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Hệ thống đang phân bổ, thử lại");
-            return "redirect:/admin/allocations?periodId=" + id;
+            return "redirect:" + base() + "?periodId=" + id;
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi chốt phân bổ: " + ex.getMessage());
-            return "redirect:/admin/allocations?periodId=" + id;
+            return "redirect:" + base() + "?periodId=" + id;
         }
     }
 
@@ -158,9 +172,9 @@ public class AdminAllocationController {
         }
 
         if (runId != null) {
-            return "redirect:/admin/allocations/runs/" + runId;
+            return "redirect:" + base() + "/runs/" + runId;
         }
-        return "redirect:/admin/allocations";
+        return "redirect:" + base();
     }
 
     @GetMapping("/runs/{runId}")
@@ -185,7 +199,7 @@ public class AdminAllocationController {
             return "admin/allocations/run_detail";
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/admin/allocations";
+            return "redirect:" + base();
         }
     }
 
@@ -196,10 +210,10 @@ public class AdminAllocationController {
             Long periodId = run.getPeriod().getId();
             allocationService.discardRun(runId);
             redirectAttributes.addFlashAttribute("successMessage", "Đã hủy kết quả xem trước phân bổ #" + runId);
-            return "redirect:/admin/allocations?periodId=" + periodId;
+            return "redirect:" + base() + "?periodId=" + periodId;
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/admin/allocations";
+            return "redirect:" + base();
         }
     }
 
@@ -237,18 +251,18 @@ public class AdminAllocationController {
             redirectAttributes.addFlashAttribute("successMessage",
                     "Gán giường thành công! Hợp đồng DRAFT " + contract.getContractNo() + " đã được tạo.");
             if (form.getPeriodId() != null) {
-                return "redirect:/admin/allocations?periodId=" + form.getPeriodId();
+                return "redirect:" + base() + "?periodId=" + form.getPeriodId();
             }
-            return "redirect:/admin/allocations";
+            return "redirect:" + base();
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/admin/allocations/manual" + (form.getPeriodId() != null ? "?periodId=" + form.getPeriodId() : "");
+            return "redirect:" + base() + "/manual" + (form.getPeriodId() != null ? "?periodId=" + form.getPeriodId() : "");
         } catch (org.springframework.dao.PessimisticLockingFailureException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Hệ thống đang phân bổ, thử lại");
-            return "redirect:/admin/allocations/manual" + (form.getPeriodId() != null ? "?periodId=" + form.getPeriodId() : "");
+            return "redirect:" + base() + "/manual" + (form.getPeriodId() != null ? "?periodId=" + form.getPeriodId() : "");
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi gán giường: " + ex.getMessage());
-            return "redirect:/admin/allocations/manual" + (form.getPeriodId() != null ? "?periodId=" + form.getPeriodId() : "");
+            return "redirect:" + base() + "/manual" + (form.getPeriodId() != null ? "?periodId=" + form.getPeriodId() : "");
         }
     }
 

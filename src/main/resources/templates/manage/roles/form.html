@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4" style="max-width: 900px;">
+
+    <div class="mb-4">
+        <a th:href="@{/manage/roles}" class="btn btn-sm btn-outline-secondary rounded-circle mb-2" title="Quay lại">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="h4 fw-bold text-dark mb-1" th:text="${pageTitle}">Thêm vai trò vận hành</h2>
+        <p class="text-secondary small mb-0" th:text="${pageSubtitle}">Tạo vai trò mới với các quyền OPERATION</p>
+    </div>
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <!-- Alert for system locked roles -->
+    <div th:if="${roleForm.systemLocked}" class="alert alert-warning d-flex align-items-center mb-4 border-0 shadow-sm" style="border-radius: 12px;">
+        <i class="bi bi-lock-fill fs-4 me-3 text-warning"></i>
+        <div>
+            <strong class="d-block">Vai trò mặc định hệ thống (<span th:text="${roleForm.code}">QUAN_LY</span>)</strong>
+            <small class="text-secondary">Vai trò này được bảo vệ bởi hệ thống (system_locked). Bạn chỉ có thể cập nhật thông tin mô tả chức năng, không thể đổi tên, mã vai trò hoặc thay đổi danh mục quyền đã đóng băng.</small>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm p-4">
+        <form th:action="${roleForm.code != null and roleForm.code != ''} ? @{/manage/roles/{code}(code=${roleForm.code})} : @{/manage/roles}"
+              th:object="${roleForm}" method="post">
+
+            <!-- Hidden input for code if editing -->
+            <input type="hidden" th:if="${roleForm.code != null and roleForm.code != ''}" th:field="*{code}"/>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label for="code" class="form-label fw-semibold text-secondary small">Mã vai trò <span class="text-danger">*</span></label>
+                    <input type="text" id="code" th:field="*{code}" class="form-control font-monospace"
+                           th:classappend="${#fields.hasErrors('code')} ? 'is-invalid'"
+                           placeholder="Ví dụ: KY_THUAT_VIEN"
+                           th:readonly="${roleForm.systemLocked or (roleForm.code != null and roleForm.code != '')}"
+                           required/>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('code')}" th:errors="*{code}">Lỗi</div>
+                    <small class="form-text text-muted" th:unless="${roleForm.systemLocked}">Chữ in hoa, số và dấu gạch dưới (VD: QUAN_LY_TOA)</small>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="name" class="form-label fw-semibold text-secondary small">Tên hiển thị <span class="text-danger">*</span></label>
+                    <input type="text" id="name" th:field="*{name}" class="form-control"
+                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                           placeholder="Ví dụ: Kỹ thuật viên bảo trì"
+                           th:readonly="${roleForm.systemLocked}"
+                           required/>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Lỗi</div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label fw-semibold text-secondary small">Mô tả chức năng</label>
+                <textarea id="description" th:field="*{description}" class="form-control" rows="2"
+                          placeholder="Mô tả phạm vi trách nhiệm và công việc của vai trò..."></textarea>
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">Lỗi</div>
+            </div>
+
+            <div class="mb-4" th:unless="${roleForm.systemLocked}">
+                <label class="form-label fw-semibold text-secondary small d-block">Phạm vi mặc định (Scope)</label>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" id="scopeAll" value="ALL" th:field="*{scope}"/>
+                    <label class="form-check-label small" for="scopeAll">Toàn bộ ký túc xá (ALL)</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" id="scopeBuildings" value="BUILDINGS" th:field="*{scope}"/>
+                    <label class="form-check-label small" for="scopeBuildings">Theo tòa được gán (BUILDINGS)</label>
+                </div>
+            </div>
+
+            <!-- Permissions assignment section -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label fw-semibold text-secondary small mb-0">
+                        Danh sách quyền vận hành (OPERATION)
+                    </label>
+                    <div th:unless="${roleForm.systemLocked}">
+                        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 me-3" id="selectAllBtn">Chọn tất cả</button>
+                        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-secondary" id="deselectAllBtn">Bỏ chọn</button>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 border">
+                    <div class="row g-2">
+                        <div class="col-md-6" th:each="perm : ${operationPermissions}">
+                            <div class="form-check">
+                                <input class="form-check-input perm-checkbox" type="checkbox"
+                                       name="permissions"
+                                       th:value="${perm.code}"
+                                       th:id="'perm_' + ${perm.code}"
+                                       th:checked="${roleForm.permissions != null and roleForm.permissions.contains(perm.code)}"
+                                       th:disabled="${roleForm.systemLocked}"/>
+                                <label class="form-check-label small" th:for="'perm_' + ${perm.code}">
+                                    <strong class="font-monospace text-dark" th:text="${perm.code}">perm.code</strong>
+                                    <span class="d-block text-secondary" style="font-size: 0.8rem;" th:text="${perm.name}">perm.name</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <small class="form-text text-muted mt-1 d-block">
+                    <i class="bi bi-info-circle me-1"></i> Lưu ý: Chỉ được gắn quyền thuộc hợp đồng OPERATION. Người thao tác chỉ có thể gắn các quyền mà mình đang sở hữu.
+                </small>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                <a th:href="@{/manage/roles}" class="btn btn-outline-secondary">Hủy bỏ</a>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-check-lg me-1"></i> Lưu vai trò
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script th:unless="${roleForm.systemLocked}">
+        document.getElementById('selectAllBtn')?.addEventListener('click', function() {
+            document.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = true);
+        });
+        document.getElementById('deselectAllBtn')?.addEventListener('click', function() {
+            document.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = false);
+        });
+    </script>
+
+</main>
+</body>
+</html>

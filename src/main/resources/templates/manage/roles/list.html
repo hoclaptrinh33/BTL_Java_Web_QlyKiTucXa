@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h2 class="h4 fw-bold text-dark mb-1">Vai trò &amp; Quyền vận hành</h2>
+            <p class="text-secondary small mb-0">Quản lý các vai trò vận hành trong KTX và phân quyền theo hợp đồng OPERATION</p>
+        </div>
+        <div>
+            <a th:href="@{/manage/roles/new}" class="btn btn-primary shadow-sm"
+               sec:authorize="hasRole('ADMIN') or hasAuthority('role.manage')">
+                <i class="bi bi-shield-plus me-1"></i> Thêm vai trò mới
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards summary -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-4">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="d-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary" style="width:48px;height:48px;">
+                        <i class="bi bi-shield-check fs-4"></i>
+                    </span>
+                    <div>
+                        <span class="text-secondary small d-block">Tổng số vai trò</span>
+                        <strong class="fs-5 text-dark" th:text="${roles.size()}">3</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="d-flex align-items-center justify-content-center rounded-3 bg-warning bg-opacity-10 text-warning" style="width:48px;height:48px;">
+                        <i class="bi bi-lock-fill fs-4"></i>
+                    </span>
+                    <div>
+                        <span class="text-secondary small d-block">Vai trò hệ thống khóa</span>
+                        <strong class="fs-5 text-dark">3 (SYSTEM_ADMIN, QUAN_LY, CAN_BO)</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Roles Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th scope="col" style="width: 160px;">Mã vai trò</th>
+                    <th scope="col" style="width: 180px;">Tên hiển thị</th>
+                    <th scope="col">Mô tả chức năng</th>
+                    <th scope="col" style="width: 130px;">Phạm vi</th>
+                    <th scope="col" style="width: 100px;">Số quyền</th>
+                    <th scope="col" style="width: 110px;">Người dùng</th>
+                    <th scope="col" class="text-end" style="min-width: 140px;">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="role : ${roles}">
+                    <td>
+                        <strong class="font-monospace text-primary" th:text="${role.code}">QUAN_LY</strong>
+                        <span th:if="${role.systemLocked}" class="badge bg-secondary-subtle text-secondary border d-block mt-1" style="font-size: 0.7rem;">
+                            <i class="bi bi-lock me-1"></i>system_locked
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fw-semibold text-dark" th:text="${role.name}">Quản lý KTX</span>
+                    </td>
+                    <td class="small text-secondary" th:text="${role.description}">
+                        Toàn quyền vận hành
+                    </td>
+                    <td>
+                        <span th:if="${role.scope == 'ALL'}" class="badge bg-primary-subtle text-primary border border-primary-subtle">Toàn KTX (ALL)</span>
+                        <span th:if="${role.scope == 'BUILDINGS'}" class="badge bg-info-subtle text-info border border-info-subtle">Theo tòa (BUILDINGS)</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border font-monospace" th:text="${role.permissions.size()} + ' quyền'">
+                            22 quyền
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge rounded-pill bg-light text-secondary border font-monospace" th:text="${role.userCount} + ' người'">
+                            1 người
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a th:href="@{/manage/roles/{code}/edit(code=${role.code})}"
+                               class="btn btn-sm btn-outline-primary"
+                               th:title="${role.systemLocked} ? 'Sửa mô tả' : 'Sửa vai trò'">
+                                <i class="bi bi-pencil"></i>
+                                <span class="d-none d-md-inline" th:text="${role.systemLocked} ? 'Sửa mô tả' : 'Sửa'">Sửa</span>
+                            </a>
+
+                            <!-- Delete button (only for non-system-locked roles) -->
+                            <form th:if="${!role.systemLocked}" th:action="@{/manage/roles/{code}/delete(code=${role.code})}" method="post" class="d-inline"
+                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa vai trò này?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa vai trò">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>

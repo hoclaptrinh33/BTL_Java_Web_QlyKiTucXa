@@ -4,6 +4,9 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -25,7 +28,8 @@ import com.ktx.dto.BuildingRowDto;
 import com.ktx.service.BuildingService;
 
 @Controller
-@RequestMapping("/admin/buildings")
+@RequestMapping({"/manage/buildings", "/admin/buildings"})
+@PreAuthorize("hasAnyRole('ADMIN', 'QUAN_LY') or hasAuthority('building.read')")
 public class AdminBuildingController {
 
     private final BuildingService buildingService;
@@ -93,7 +97,7 @@ public class AdminBuildingController {
 
     @PostMapping
     public String create(@Valid @ModelAttribute("form") BuildingForm form, BindingResult binding,
-            Model model, RedirectAttributes redirectAttributes) {
+            HttpServletRequest request, Model model, RedirectAttributes redirectAttributes) {
         if (binding.hasErrors()) {
             formModel(model, form, null, false);
             return "admin/buildings/form";
@@ -101,7 +105,7 @@ public class AdminBuildingController {
         try {
             Building created = buildingService.create(form);
             redirectAttributes.addFlashAttribute("successMessage", "Đã tạo tòa " + created.getCode());
-            return "redirect:/admin/buildings";
+            return "redirect:" + getBaseUrl(request);
         } catch (DuplicateFieldException ex) {
             binding.rejectValue(ex.getField(), "duplicate", ex.getMessage());
             formModel(model, form, null, false);
@@ -122,13 +126,13 @@ public class AdminBuildingController {
             return "admin/buildings/form";
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/admin/buildings";
+            return "redirect:/manage/buildings";
         }
     }
 
     @PostMapping("/{id}/edit")
     public String update(@PathVariable Long id, @Valid @ModelAttribute("form") BuildingForm form,
-            BindingResult binding, Model model, RedirectAttributes redirectAttributes) {
+            BindingResult binding, HttpServletRequest request, Model model, RedirectAttributes redirectAttributes) {
         boolean occupying = buildingService.hasOccupyingContracts(id);
         if (binding.hasErrors()) {
             formModel(model, form, id, occupying);
@@ -137,7 +141,7 @@ public class AdminBuildingController {
         try {
             Building updated = buildingService.update(id, form);
             redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật tòa " + updated.getCode());
-            return "redirect:/admin/buildings";
+            return "redirect:" + getBaseUrl(request);
         } catch (DuplicateFieldException ex) {
             binding.rejectValue(ex.getField(), "duplicate", ex.getMessage());
             formModel(model, form, id, occupying);
@@ -145,7 +149,7 @@ public class AdminBuildingController {
         } catch (BusinessException ex) {
             if (BuildingService.NOT_FOUND.equals(ex.getMessage())) {
                 redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-                return "redirect:/admin/buildings";
+                return "redirect:" + getBaseUrl(request);
             }
             binding.rejectValue("genderPolicy", "locked", ex.getMessage());
             formModel(model, form, id, occupying);
@@ -154,7 +158,7 @@ public class AdminBuildingController {
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String delete(@PathVariable Long id, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         try {
             Building building = buildingService.getById(id);
             String code = building.getCode();
@@ -163,7 +167,14 @@ public class AdminBuildingController {
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
-        return "redirect:/admin/buildings";
+        return "redirect:" + getBaseUrl(request);
+    }
+
+    private String getBaseUrl(HttpServletRequest request) {
+        if (request == null || request.getRequestURI() == null) {
+            return "/manage/buildings";
+        }
+        return request.getRequestURI().startsWith("/admin") ? "/admin/buildings" : "/manage/buildings";
     }
 
     @ModelAttribute("genderPolicies")

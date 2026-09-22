@@ -16,7 +16,7 @@
 <body>
 <div th:replace="~{fragments/alerts :: alerts}"></div>
 <div th:replace="~{fragments/confirm-modal :: confirm-modal}"></div>
-<div class="ktx-shell" sec:authorize="hasAnyRole('ADMIN','STAFF')">
+<div class="ktx-shell" sec:authorize="hasAnyRole('ADMIN','STAFF','QUAN_LY','CAN_BO','SYSTEM_ADMIN') or (isAuthenticated() and !hasRole('STUDENT'))">
     <aside class="ktx-sidebar d-none d-lg-flex">
         <div th:replace="~{fragments/sidebar :: inner}"></div>
     </aside>

@@ -20,14 +20,17 @@
     </button>
     <div class="dropdown">
         <button class="ktx-user" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <span class="ktx-avatar" sec:authorize="hasRole('ADMIN')">AD</span>
-            <span class="ktx-avatar" sec:authorize="hasRole('STAFF')">ST</span>
+            <span class="ktx-avatar" sec:authorize="hasRole('SYSTEM_ADMIN')">SA</span>
+            <span class="ktx-avatar" sec:authorize="hasRole('ADMIN') and !hasRole('SYSTEM_ADMIN')">AD</span>
+            <span class="ktx-avatar" sec:authorize="hasRole('QUAN_LY')">QL</span>
+            <span class="ktx-avatar" sec:authorize="hasRole('CAN_BO')">CB</span>
+            <span class="ktx-avatar" sec:authorize="hasRole('STAFF') and !hasAnyRole('CAN_BO', 'QUAN_LY')">ST</span>
             <span class="ktx-avatar" sec:authorize="hasRole('STUDENT')">SV</span>
             <span class="ktx-avatar" sec:authorize="hasAnyAuthority('config.read', 'admin_account.manage') and !hasRole('ADMIN')">SA</span>
             <span class="ktx-user__meta">
                 <strong sec:authentication="name">user</strong>
-                <small sec:authorize="hasRole('ADMIN')">Quản lý</small>
-                <small sec:authorize="hasRole('STAFF')">Nhân viên</small>
+                <small sec:authorize="hasRole('QUAN_LY') or (hasRole('ADMIN') and hasAuthority('allocation.manage'))">Quản lý KTX</small>
+                <small sec:authorize="hasRole('STAFF') or hasRole('CAN_BO')">Cán bộ tòa</small>
                 <small sec:authorize="hasRole('STUDENT')">Sinh viên</small>
                 <small sec:authorize="hasAnyAuthority('config.read', 'admin_account.manage') and !hasRole('ADMIN')">Quản trị hệ thống</small>
             </span>

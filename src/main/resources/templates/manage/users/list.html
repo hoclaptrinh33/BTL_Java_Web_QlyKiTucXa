@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h2 class="h4 fw-bold text-dark mb-1">Người dùng nội bộ</h2>
+            <p class="text-secondary small mb-0">Quản lý nhân sự KTX, gán nhiều vai trò và phân công quản lý theo tòa nhà</p>
+        </div>
+        <div>
+            <a th:href="@{/manage/users/new}" class="btn btn-primary shadow-sm"
+               sec:authorize="hasRole('ADMIN') or hasAuthority('user.manage')">
+                <i class="bi bi-person-plus me-1"></i> Thêm người dùng nội bộ
+            </a>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th scope="col" style="width: 70px;">ID</th>
+                    <th scope="col">Tài khoản &amp; Họ tên</th>
+                    <th scope="col">Email &amp; SĐT</th>
+                    <th scope="col">Vai trò được gán</th>
+                    <th scope="col">Phạm vi quản lý</th>
+                    <th scope="col">Trạng thái</th>
+                    <th scope="col" class="text-end" style="min-width: 140px;">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="user : ${users}">
+                    <td class="font-monospace text-secondary" th:text="${user.id}">1</td>
+                    <td>
+                        <strong class="text-dark d-block" th:text="${user.username}">username</strong>
+                        <span class="text-secondary small" th:text="${user.fullName != null and user.fullName != '' ? user.fullName : '—'}">Nguyễn Văn A</span>
+                    </td>
+                    <td>
+                        <span class="d-block" th:text="${user.email}">user@example.com</span>
+                        <small class="text-muted" th:text="${user.phone != null and user.phone != '' ? user.phone : '—'}">0912345678</small>
+                    </td>
+                    <td>
+                        <!-- Display assigned roles -->
+                        <span th:if="${roleService != null}" th:each="r : ${roleService.getRolesForUser(user.id)}"
+                              class="badge bg-primary-subtle text-primary border border-primary-subtle me-1"
+                              th:text="${r}">QUAN_LY</span>
+                        <span th:if="${roleService == null or roleService.getRolesForUser(user.id).empty}">
+                            <span th:if="${user.role != null and user.role.name() == 'ADMIN'}" class="badge bg-primary-subtle text-primary border border-primary-subtle">QUAN_LY</span>
+                            <span th:if="${user.role != null and user.role.name() == 'STAFF'}" class="badge bg-info-subtle text-info border border-info-subtle">CAN_BO</span>
+                        </span>
+                    </td>
+                    <td>
+                        <span th:if="${roleService != null and roleService.getScopeForUser(user.id) == 'ALL'}" class="badge bg-light text-dark border">
+                            <i class="bi bi-globe me-1"></i>Toàn KTX (ALL)
+                        </span>
+                        <span th:if="${roleService != null and roleService.getScopeForUser(user.id) == 'BUILDINGS'}" class="badge bg-light text-primary border">
+                            <i class="bi bi-building me-1"></i>Theo tòa gán
+                        </span>
+                        <span th:if="${user.assignedBuildingCode != null and user.assignedBuildingCode != ''}" class="badge bg-light text-primary border" th:text="${user.assignedBuildingCode}">Tòa A</span>
+                    </td>
+                    <td>
+                        <span th:if="${user.enabled}" class="badge bg-success-subtle text-success border border-success-subtle">
+                            <i class="bi bi-check-circle-fill me-1"></i> Hoạt động
+                        </span>
+                        <span th:unless="${user.enabled}" class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                            <i class="bi bi-lock-fill me-1"></i> Đã khóa
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a th:href="@{/manage/users/{id}/edit(id=${user.id})}" class="btn btn-sm btn-outline-primary" title="Sửa thông tin">
+                                <i class="bi bi-pencil"></i>
+                                <span class="d-none d-md-inline">Sửa</span>
+                            </a>
+
+                            <form th:action="@{/manage/users/{id}/toggle-status(id=${user.id})}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm"
+                                        th:classappend="${user.enabled} ? 'btn-outline-warning' : 'btn-outline-success'"
+                                        th:title="${user.enabled} ? 'Khóa tài khoản' : 'Kích hoạt tài khoản'">
+                                    <i class="bi" th:classappend="${user.enabled} ? 'bi-lock' : 'bi-unlock'"></i>
+                                </button>
+                            </form>
+
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    data-bs-toggle="modal"
+                                    th:data-bs-target="'#resetPwdModal-' + ${user.id}"
+                                    title="Đặt lại mật khẩu">
+                                <i class="bi bi-key"></i>
+                            </button>
+                        </div>
+
+                        <!-- Reset Password Modal -->
+                        <div class="modal fade text-start" th:id="'resetPwdModal-' + ${user.id}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-sm">
+                                <div class="modal-content">
+                                    <form th:action="@{/manage/users/{id}/reset-password(id=${user.id})}" method="post">
+                                        <div class="modal-header">
+                                            <h6 class="modal-title fw-bold">Đặt lại mật khẩu: <span th:text="${user.username}"></span></h6>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <label class="form-label small fw-semibold text-secondary">Mật khẩu mới</label>
+                                            <input type="password" name="newPassword" class="form-control form-control-sm" required minlength="8" placeholder="Tối thiểu 8 ký tự"/>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                            <button type="submit" class="btn btn-sm btn-primary">Lưu</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>
