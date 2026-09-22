@@ -47,6 +47,14 @@ class StaffScopeTest {
     }
 
     @Test
+    void systemAdminBuildingIdIsEmpty_noFilter() {
+        Authentication sysAdmin = auth("admin", "config.read");
+        assertTrue(staffScope.buildingId(sysAdmin).isEmpty());
+        staffScope.assertBuilding(sysAdmin, 99L);
+        staffScope.assertRoom(sysAdmin, room(99L));
+    }
+
+    @Test
     void staffCanAssertOwnBuilding() {
         when(staffRepository.findByUserUsername("staffA")).thenReturn(Optional.of(staff("staffA", 1L)));
         Authentication staff = auth("staffA", "ROLE_STAFF");

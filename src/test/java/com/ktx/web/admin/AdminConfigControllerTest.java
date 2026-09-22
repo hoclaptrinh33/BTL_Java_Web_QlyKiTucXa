@@ -77,8 +77,23 @@ class AdminConfigControllerTest {
                 .andExpect(forwardedUrl("/error/403"));
     }
 
+    private static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor systemAdmin() {
+        return user("admin").authorities(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("config.read"),
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("config.write")
+        );
+    }
+
     @Test
-    @DisplayName("ADMIN role can view /admin/configs with grouped configs and mail status")
+    @DisplayName("QUAN_LY (ROLE_ADMIN) is forbidden from accessing /admin/configs")
+    void quanly_forbiddenFromConfigs() throws Exception {
+        mockMvc.perform(get("/admin/configs").with(user("quanly").roles("ADMIN")))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/error/403"));
+    }
+
+    @Test
+    @DisplayName("SYSTEM_ADMIN can view /admin/configs with grouped configs and mail status")
     void admin_canViewConfigs() throws Exception {
         Map<String, List<SystemConfig>> mockGrouped = new LinkedHashMap<>();
         mockGrouped.put("alloc", new ArrayList<>());
@@ -90,7 +105,7 @@ class AdminConfigControllerTest {
         when(systemConfigService.getConfigsGrouped()).thenReturn(mockGrouped);
         when(mailConfig.isMailEnabled()).thenReturn(false);
 
-        mockMvc.perform(get("/admin/configs").with(user("admin").roles("ADMIN")))
+        mockMvc.perform(get("/admin/configs").with(systemAdmin()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("admin/configs/index"))
                 .andExpect(model().attributeExists("groupedConfigs"))
@@ -99,10 +114,10 @@ class AdminConfigControllerTest {
     }
 
     @Test
-    @DisplayName("ADMIN can batch update configs successfully")
+    @DisplayName("SYSTEM_ADMIN can batch update configs successfully")
     void admin_canBatchUpdateConfigs() throws Exception {
         mockMvc.perform(post("/admin/configs")
-                        .with(user("admin").roles("ADMIN"))
+                        .with(systemAdmin())
                         .with(csrf())
                         .param("contract.deposit.ratio", "0.4")
                         .param("billing.water.price_per_m3", "16000"))
@@ -114,13 +129,13 @@ class AdminConfigControllerTest {
     }
 
     @Test
-    @DisplayName("ADMIN batch update with invalid data adds error flash attribute")
+    @DisplayName("SYSTEM_ADMIN batch update with invalid data adds error flash attribute")
     void admin_batchUpdateInvalid_showsErrorMessage() throws Exception {
         doThrow(new IllegalArgumentException("Tỉ lệ đặt cọc không hợp lệ"))
                 .when(systemConfigService).updateConfigs(anyMap());
 
         mockMvc.perform(post("/admin/configs")
-                        .with(user("admin").roles("ADMIN"))
+                        .with(systemAdmin())
                         .with(csrf())
                         .param("contract.deposit.ratio", "2.0"))
                 .andExpect(status().is3xxRedirection())
@@ -129,10 +144,10 @@ class AdminConfigControllerTest {
     }
 
     @Test
-    @DisplayName("ADMIN can update single config")
+    @DisplayName("SYSTEM_ADMIN can update single config")
     void admin_canUpdateSingleConfig() throws Exception {
         mockMvc.perform(post("/admin/configs/single")
-                        .with(user("admin").roles("ADMIN"))
+                        .with(systemAdmin())
                         .with(csrf())
                         .param("key", "alloc.preference.mode")
                         .param("value", "STRICT"))

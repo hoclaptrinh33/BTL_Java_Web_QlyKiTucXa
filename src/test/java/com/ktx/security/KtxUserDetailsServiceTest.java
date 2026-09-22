@@ -62,6 +62,12 @@ class KtxUserDetailsServiceTest {
     @Test
     void loadUserByUsername_findsByEmail() {
         User user = user("admin", "admin@ktx.local", Role.ADMIN, true);
+        com.ktx.domain.Role adminRole = new com.ktx.domain.Role();
+        adminRole.setCode("SYSTEM_ADMIN");
+        com.ktx.domain.Permission p1 = new com.ktx.domain.Permission("config.read", com.ktx.domain.enums.PermissionPlane.SYSTEM);
+        adminRole.setPermissions(java.util.Set.of(p1));
+        user.setRoles(java.util.Set.of(adminRole));
+
         when(userRepository.findByUsernameOrEmail("admin@ktx.local", "admin@ktx.local"))
                 .thenReturn(Optional.of(user));
 
@@ -69,7 +75,30 @@ class KtxUserDetailsServiceTest {
 
         assertEquals("admin", details.getUsername());
         assertTrue(details.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("config.read")));
+        assertTrue(details.getAuthorities().stream()
+                .noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN")));
+    }
+
+    @Test
+    void loadUserByUsername_quanlyGetsRoleAdminAndOperations() {
+        User user = user("quanly", "quanly@ktx.local", Role.ADMIN, true);
+        com.ktx.domain.Role qlyRole = new com.ktx.domain.Role();
+        qlyRole.setCode("QUAN_LY");
+        com.ktx.domain.Permission p1 = new com.ktx.domain.Permission("student.read", com.ktx.domain.enums.PermissionPlane.OPERATION);
+        qlyRole.setPermissions(java.util.Set.of(p1));
+        user.setRoles(java.util.Set.of(qlyRole));
+
+        when(userRepository.findByUsernameOrEmail("quanly", "quanly"))
+                .thenReturn(Optional.of(user));
+
+        UserDetails details = service.loadUserByUsername("quanly");
+
+        assertEquals("quanly", details.getUsername());
+        assertTrue(details.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")));
+        assertTrue(details.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("student.read")));
     }
 
     @Test

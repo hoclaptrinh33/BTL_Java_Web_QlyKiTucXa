@@ -27,6 +27,11 @@ class LoginSuccessHandlerTest {
         assertEquals("/student/dashboard", handler.resolveTarget(auth("ROLE_STUDENT")));
     }
 
+    @Test
+    void systemAdminGoesToAdminConfigs() {
+        assertEquals("/admin/configs", handler.resolveTarget(auth("config.read")));
+    }
+
     private static UsernamePasswordAuthenticationToken auth(String role) {
         return UsernamePasswordAuthenticationToken.authenticated(
                 "user", "n/a", List.of(new SimpleGrantedAuthority(role)));

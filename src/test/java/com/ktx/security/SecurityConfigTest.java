@@ -25,6 +25,7 @@ import com.ktx.service.StudentService;
 import com.ktx.web.ErrorPageController;
 import com.ktx.web.HomeController;
 import com.ktx.web.admin.AdminDashboardController;
+import com.ktx.web.admin.AdminStudentController;
 import com.ktx.web.auth.LoginController;
 import com.ktx.web.auth.RegisterController;
 import com.ktx.web.staff.StaffDashboardController;
@@ -36,6 +37,7 @@ import com.ktx.web.student.StudentDashboardController;
     RegisterController.class,
     ErrorPageController.class,
     AdminDashboardController.class,
+    AdminStudentController.class,
     StaffDashboardController.class,
     StudentDashboardController.class
 })
@@ -95,6 +97,29 @@ class SecurityConfigTest {
     }
 
     @Test
+    void adminCannotAccessStudents() throws Exception {
+        mockMvc.perform(get("/admin/students").with(user("admin").authorities(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("config.read"))))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/error/403"));
+    }
+
+    @Test
+    void quanlyCanAccessStudents() throws Exception {
+        mockMvc.perform(get("/admin/students").with(user("quanly").authorities(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN"),
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("student.read"))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void staffCannotAccessStudents() throws Exception {
+        mockMvc.perform(get("/admin/students").with(user("staff").roles("STAFF")))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl("/error/403"));
+    }
+
+    @Test
     void adminCanAccessStaff() throws Exception {
         mockMvc.perform(get("/staff/dashboard").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk());
@@ -142,6 +167,14 @@ class SecurityConfigTest {
         mockMvc.perform(get("/").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl("/admin/dashboard"));
+    }
+
+    @Test
+    void rootRedirectsSystemAdminToConfigs() throws Exception {
+        mockMvc.perform(get("/").with(user("admin").authorities(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("config.read"))))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/admin/configs"));
     }
 
     @Test

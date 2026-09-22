@@ -2,9 +2,12 @@ package com.ktx.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -30,9 +33,40 @@ public class SecurityConfig {
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
                 .requestMatchers("/login", "/login/google", "/oauth2/**", "/login/oauth2/**",
                         "/register", "/register/google", "/error", "/error/403", "/error/404").permitAll()
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/staff/**").hasAnyRole("ADMIN", "STAFF")
-                .requestMatchers("/student/**").hasRole("STUDENT")
+                // Specific matcher for system configs
+                .requestMatchers("/admin/configs", "/admin/configs/**")
+                    .hasAnyAuthority("config.read", "config.write", "admin_account.manage")
+                // Specific matchers for profile and password
+                .requestMatchers("/admin/profile", "/admin/profile/**", "/admin/password", "/admin/password/**")
+                    .hasAnyAuthority("config.read", "config.write", "admin_account.manage", "ROLE_ADMIN")
+                // General admin matchers: QUAN_LY (ROLE_ADMIN or operation permissions), while staff and SYSTEM_ADMIN are blocked
+                .requestMatchers("/admin/**")
+                    .access((authentication, context) -> {
+                        Authentication a = authentication.get();
+                        if (a == null || !a.isAuthenticated() || a instanceof AnonymousAuthenticationToken) {
+                            return new AuthorizationDecision(false);
+                        }
+                        boolean hasAdminRole = a.getAuthorities().stream()
+                                .anyMatch(authItem -> "ROLE_ADMIN".equals(authItem.getAuthority()));
+                        if (hasAdminRole) {
+                            return new AuthorizationDecision(true);
+                        }
+                        boolean isStaff = a.getAuthorities().stream()
+                                .anyMatch(authItem -> "ROLE_STAFF".equals(authItem.getAuthority()));
+                        if (isStaff) {
+                            return new AuthorizationDecision(false);
+                        }
+                        boolean hasOp = a.getAuthorities().stream()
+                                .anyMatch(authItem -> KtxUserDetails.OPERATION_PERMISSIONS.contains(authItem.getAuthority()));
+                        return new AuthorizationDecision(hasOp);
+                    })
+                // Staff endpoints
+                .requestMatchers("/staff/**")
+                    .hasAnyAuthority("ROLE_ADMIN", "ROLE_STAFF",
+                            "room.read", "ticket.handle", "violation.write", "checkin.operate", "meter.read")
+                // Student endpoints
+                .requestMatchers("/student/**")
+                    .hasAnyAuthority("student.portal", "ROLE_STUDENT")
                 .anyRequest().authenticated())
             .formLogin(form -> form
                 .loginPage("/login")
