@@ -66,7 +66,7 @@ class AdminDashboardControllerTest {
                 .andExpect(content().string(containsString("Hóa đơn")))
                 .andExpect(content().string(containsString("Yêu cầu sửa chữa")))
                 .andExpect(content().string(containsString("Thống kê")))
-                .andExpect(content().string(containsString("Cài đặt hệ thống")));
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Cài đặt hệ thống"))));
     }
 
     @Test

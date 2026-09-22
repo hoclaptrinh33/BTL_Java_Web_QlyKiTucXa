@@ -29,6 +29,8 @@ import com.ktx.domain.RoomAsset;
 import com.ktx.domain.Staff;
 import com.ktx.domain.Student;
 import com.ktx.domain.User;
+import com.ktx.domain.enums.AccountKind;
+import com.ktx.repository.RoleRepository;
 import com.ktx.domain.UtilityReading;
 import com.ktx.domain.Violation;
 import com.ktx.domain.enums.ApplicationStatus;
@@ -85,6 +87,7 @@ import com.ktx.repository.ViolationRepository;
 public class DataSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final BuildingRepository buildingRepository;
     private final StaffRepository staffRepository;
     private final StudentRepository studentRepository;
@@ -109,6 +112,7 @@ public class DataSeeder implements CommandLineRunner {
     private int invoiceSeqCounter = 1;
 
     public DataSeeder(UserRepository userRepository,
+                      RoleRepository roleRepository,
                       BuildingRepository buildingRepository,
                       StaffRepository staffRepository,
                       StudentRepository studentRepository,
@@ -129,6 +133,7 @@ public class DataSeeder implements CommandLineRunner {
                       DocumentSequenceRepository documentSequenceRepository,
                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.buildingRepository = buildingRepository;
         this.staffRepository = staffRepository;
         this.studentRepository = studentRepository;
@@ -158,11 +163,26 @@ public class DataSeeder implements CommandLineRunner {
             return;
         }
 
+        com.ktx.domain.Role systemAdminRole = roleRepository.findByCode("SYSTEM_ADMIN").orElse(null);
+        com.ktx.domain.Role quanLyRole = roleRepository.findByCode("QUAN_LY").orElse(null);
+        com.ktx.domain.Role canBoRole = roleRepository.findByCode("CAN_BO").orElse(null);
+
         // =========================================================================
-        // 1. TÀI KHOẢN HỆ THỐNG (ADMIN & STAFF) - Phụ lục A
+        // 1. TÀI KHOẢN HỆ THỐNG (ADMIN & QUANLY & STAFF) - Phụ lục A + RBAC
         // =========================================================================
         User adminUser = createUser("admin", "admin@example.com", "Admin@123", Role.ADMIN);
+        adminUser.setAccountKind(AccountKind.INTERNAL);
+        if (systemAdminRole != null) {
+            adminUser.getRoles().add(systemAdminRole);
+        }
         adminUser = userRepository.save(adminUser);
+
+        User quanLyUser = createUser("quanly", "quanly@example.com", "Admin@123", Role.ADMIN);
+        quanLyUser.setAccountKind(AccountKind.INTERNAL);
+        if (quanLyRole != null) {
+            quanLyUser.getRoles().add(quanLyRole);
+        }
+        quanLyUser = userRepository.save(quanLyUser);
 
         // Tòa A (Nam), Tòa B (Nữ), Tòa C (Nam)
         Building buildingA = createBuilding("A", "Tòa A", BuildingGenderPolicy.MALE);
@@ -170,10 +190,20 @@ public class DataSeeder implements CommandLineRunner {
         Building buildingC = createBuilding("C", "Tòa C", BuildingGenderPolicy.MALE);
 
         User staffUserA = createUser("staffA", "staffa@example.com", "Admin@123", Role.STAFF);
+        staffUserA.setAccountKind(AccountKind.INTERNAL);
+        if (canBoRole != null) {
+            staffUserA.getRoles().add(canBoRole);
+        }
+        staffUserA.getAssignedBuildings().add(buildingA);
         staffUserA = userRepository.save(staffUserA);
         createStaff(staffUserA, "Cán bộ A", "0912345678", buildingA);
 
         User staffUserB = createUser("staffB", "staffb@example.com", "Admin@123", Role.STAFF);
+        staffUserB.setAccountKind(AccountKind.INTERNAL);
+        if (canBoRole != null) {
+            staffUserB.getRoles().add(canBoRole);
+        }
+        staffUserB.getAssignedBuildings().add(buildingB);
         staffUserB = userRepository.save(staffUserB);
         createStaff(staffUserB, "Cán bộ B", "0987654321", buildingB);
 
@@ -548,6 +578,7 @@ public class DataSeeder implements CommandLineRunner {
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setRole(role);
+        user.setAccountKind(role == Role.STUDENT ? AccountKind.STUDENT : AccountKind.INTERNAL);
         user.setEnabled(true);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());

@@ -1,17 +1,23 @@
 package com.ktx.domain;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 
-import com.ktx.domain.enums.Role;
+import com.ktx.domain.enums.AccountKind;
 
 @Entity
 @Table(name = "users")
@@ -32,7 +38,27 @@ public class User {
 
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
-    private Role role;
+    private com.ktx.domain.enums.Role role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_kind", nullable = false, length = 20)
+    private AccountKind accountKind = AccountKind.INTERNAL;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_buildings",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "building_id")
+    )
+    private Set<Building> assignedBuildings = new HashSet<>();
 
     @Column(nullable = false)
     private Boolean enabled;
@@ -81,12 +107,47 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
-    public Role getRole() {
+    public com.ktx.domain.enums.Role getRole() {
         return role;
     }
 
-    public void setRole(Role role) {
+    public void setRole(com.ktx.domain.enums.Role role) {
         this.role = role;
+        if (role == com.ktx.domain.enums.Role.STUDENT) {
+            this.accountKind = AccountKind.STUDENT;
+        } else if (this.accountKind == null || this.accountKind == AccountKind.STUDENT) {
+            this.accountKind = AccountKind.INTERNAL;
+        }
+    }
+
+    public AccountKind getAccountKind() {
+        if (role == com.ktx.domain.enums.Role.STUDENT) {
+            return AccountKind.STUDENT;
+        }
+        if (accountKind != null) {
+            return accountKind;
+        }
+        return AccountKind.INTERNAL;
+    }
+
+    public void setAccountKind(AccountKind accountKind) {
+        this.accountKind = accountKind;
+    }
+
+    public Set<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles != null ? roles : new HashSet<>();
+    }
+
+    public Set<Building> getAssignedBuildings() {
+        return assignedBuildings;
+    }
+
+    public void setAssignedBuildings(Set<Building> assignedBuildings) {
+        this.assignedBuildings = assignedBuildings != null ? assignedBuildings : new HashSet<>();
     }
 
     public Boolean getEnabled() {

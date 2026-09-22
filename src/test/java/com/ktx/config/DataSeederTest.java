@@ -30,6 +30,7 @@ import com.ktx.repository.*;
 class DataSeederTest {
 
     @Mock private UserRepository userRepository;
+    @Mock private RoleRepository roleRepository;
     @Mock private BuildingRepository buildingRepository;
     @Mock private StaffRepository staffRepository;
     @Mock private StudentRepository studentRepository;
@@ -56,6 +57,7 @@ class DataSeederTest {
     void setUp() {
         dataSeeder = new DataSeeder(
                 userRepository,
+                roleRepository,
                 buildingRepository,
                 staffRepository,
                 studentRepository,

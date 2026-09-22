@@ -110,6 +110,10 @@
             <a th:href="@{/admin/users}" th:classappend="${activeMenu == 'users'} ? 'is-active'">
                 <i class="bi bi-person-gear"></i> <span>Người dùng</span>
             </a>
+        </th:block>
+
+        <th:block sec:authorize="hasAnyAuthority('config.read', 'config.write')">
+            <p class="ktx-nav__label" sec:authorize="!hasRole('ADMIN')">Cài đặt</p>
             <a th:href="@{/admin/configs}" th:classappend="${activeMenu == 'configs'} ? 'is-active'">
                 <i class="bi bi-gear"></i> <span>Cài đặt hệ thống</span>
             </a>

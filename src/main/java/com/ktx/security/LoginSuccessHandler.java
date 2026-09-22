@@ -29,20 +29,24 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         if (authentication == null || authentication.getAuthorities() == null) {
             return "/login";
         }
-        Set<String> roles = new HashSet<>();
+        Set<String> authorities = new HashSet<>();
         for (GrantedAuthority a : authentication.getAuthorities()) {
             if (a != null && a.getAuthority() != null) {
-                roles.add(a.getAuthority());
+                authorities.add(a.getAuthority());
             }
         }
-        if (roles.contains("ROLE_ADMIN")) {
+        if (authorities.contains("ROLE_ADMIN")) {
             return "/admin/dashboard";
         }
-        if (roles.contains("ROLE_STAFF")) {
+        if (authorities.contains("ROLE_STAFF")) {
             return "/staff/dashboard";
         }
-        if (roles.contains("ROLE_STUDENT")) {
+        if (authorities.contains("ROLE_STUDENT") || authorities.contains("student.portal")) {
             return "/student/dashboard";
+        }
+        if (authorities.contains("config.read") || authorities.contains("config.write")
+                || authorities.contains("admin_account.manage")) {
+            return "/admin/configs";
         }
         return "/login";
     }
