@@ -42,11 +42,9 @@ public class RegistrationPeriodForm {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime closeAt;
 
-    @NotNull(message = "Ngày bắt đầu kỳ học không được để trống")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate termStart;
 
-    @NotNull(message = "Ngày kết thúc kỳ học không được để trống")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate termEnd;
 

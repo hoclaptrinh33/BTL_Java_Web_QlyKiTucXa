@@ -127,7 +127,7 @@ class AdminPeriodControllerTest {
 
         mockMvc.perform(get("/admin/periods/new").with(user(createAdminUserDetails())))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("1. Thông tin cơ bản & Thời gian kỳ học")))
+                .andExpect(content().string(containsString("1. Thông tin cơ bản & Thời gian nhận đơn")))
                 .andExpect(content().string(containsString("2. Đối tượng & Phạm vi quỹ phòng")))
                 .andExpect(content().string(containsString("3. Lộ trình xác nhận & Chính sách tài chính")))
                 .andExpect(content().string(containsString("4. Cam kết nội quy & Thông tin hỗ trợ")))

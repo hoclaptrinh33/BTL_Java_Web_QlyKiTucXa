@@ -78,10 +78,9 @@ public class RegistrationPeriodService {
         period.setAcademicYear(form.getAcademicYear().trim());
         period.setOpenAt(form.getOpenAt());
         period.setCloseAt(form.getCloseAt());
-        period.setTermStart(form.getTermStart());
-        period.setTermEnd(form.getTermEnd());
         period.setStatus(PeriodStatus.DRAFT);
         period.setCreatedBy(creator);
+        resolveTermDates(form, period);
 
         // Các trường nâng cấp
         period.setGenderScope(form.getGenderScope() != null ? form.getGenderScope() : PeriodGenderScope.ALL);
@@ -135,8 +134,7 @@ public class RegistrationPeriodService {
         period.setAcademicYear(form.getAcademicYear().trim());
         period.setOpenAt(form.getOpenAt());
         period.setCloseAt(form.getCloseAt());
-        period.setTermStart(form.getTermStart());
-        period.setTermEnd(form.getTermEnd());
+        resolveTermDates(form, period);
         if (form.getStatus() != null) {
             period.setStatus(form.getStatus());
         }
@@ -242,5 +240,36 @@ public class RegistrationPeriodService {
                 throw new BusinessException(INVALID_PAYMENT_DEADLINE);
             }
         }
+    }
+
+    private void resolveTermDates(RegistrationPeriodForm form, RegistrationPeriod period) {
+        java.time.LocalDate start = form.getTermStart();
+        if (start == null && period.getId() != null) {
+            start = period.getTermStart();
+        }
+        if (start == null) {
+            if (form.getCheckinStart() != null) {
+                start = form.getCheckinStart();
+            } else if (form.getCloseAt() != null) {
+                start = form.getCloseAt().toLocalDate().plusDays(1);
+            } else {
+                start = java.time.LocalDate.now().plusDays(7);
+            }
+        }
+
+        java.time.LocalDate end = form.getTermEnd();
+        if (end == null && period.getId() != null) {
+            end = period.getTermEnd();
+        }
+        if (end == null) {
+            if (form.getCheckinEnd() != null && form.getCheckinEnd().isAfter(start)) {
+                end = form.getCheckinEnd();
+            } else {
+                end = start.plusMonths(5);
+            }
+        }
+
+        period.setTermStart(start);
+        period.setTermEnd(end);
     }
 }

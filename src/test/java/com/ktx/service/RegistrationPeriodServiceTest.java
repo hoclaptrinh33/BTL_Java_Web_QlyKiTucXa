@@ -108,6 +108,23 @@ class RegistrationPeriodServiceTest {
     }
 
     @Test
+    void create_autoResolvesTermDatesWhenNull() {
+        RegistrationPeriodForm form = createValidForm();
+        form.setTermStart(null);
+        form.setTermEnd(null);
+        form.setCheckinStart(LocalDate.of(2026, 9, 5));
+        form.setCheckinEnd(LocalDate.of(2027, 1, 15));
+
+        when(periodRepository.save(any(RegistrationPeriod.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RegistrationPeriod result = periodService.create(form, testUser);
+
+        assertNotNull(result);
+        assertEquals(LocalDate.of(2026, 9, 5), result.getTermStart());
+        assertEquals(LocalDate.of(2027, 1, 15), result.getTermEnd());
+    }
+
+    @Test
     void create_throwsWhenOpenAtAfterCloseAt() {
         RegistrationPeriodForm form = createValidForm();
         form.setOpenAt(LocalDateTime.now().plusDays(2));
