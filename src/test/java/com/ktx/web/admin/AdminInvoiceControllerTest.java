@@ -8,7 +8,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,10 +110,9 @@ class AdminInvoiceControllerTest {
     @DisplayName("GET /admin/invoices: Admin truy cập thành công")
     void adminCanAccessInvoiceList() throws Exception {
         Invoice inv = createSampleInvoice();
-        when(invoiceService.searchInvoices(any(), any(), any())).thenReturn(List.of(inv));
-        when(invoiceRepository.findAllByOrderByDueDateDesc()).thenReturn(List.of(inv));
-        when(invoiceService.getRemainingAmount(100L)).thenReturn(new BigDecimal("250000"));
-        when(invoiceService.getTotalPaid(100L)).thenReturn(BigDecimal.ZERO);
+        when(invoiceService.searchInvoices(any(), any(), any(), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(inv)));
+        when(invoiceService.summarizeByStatus()).thenReturn(List.<Object[]>of(new Object[] {InvoiceStatus.UNPAID, 1L, new BigDecimal("250000")}));
+        when(invoiceService.paidAmounts(any())).thenReturn(java.util.Map.of());
 
         mockMvc.perform(get("/admin/invoices")
                         .with(user("admin").roles("ADMIN")))

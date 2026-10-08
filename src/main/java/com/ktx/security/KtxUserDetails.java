@@ -18,7 +18,8 @@ public class KtxUserDetails implements UserDetails {
     public static final Set<String> SYSTEM_PERMISSIONS = Set.of(
             "config.read",
             "config.write",
-            "admin_account.manage"
+            "admin_account.manage",
+            "log.read"
     );
 
     public static final Set<String> OPERATION_PERMISSIONS = Set.of(
@@ -89,6 +90,9 @@ public class KtxUserDetails implements UserDetails {
         if (user.getRoles() != null && !user.getRoles().isEmpty()) {
             for (Role role : user.getRoles()) {
                 if (role == null) continue;
+                if (role.getCode() != null) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getCode().toUpperCase()));
+                }
                 if ("QUAN_LY".equalsIgnoreCase(role.getCode())) {
                     hasQuanLyRole = true;
                 }
@@ -111,6 +115,7 @@ public class KtxUserDetails implements UserDetails {
             } else if (user.getRole() == com.ktx.domain.enums.Role.ADMIN) {
                 hasQuanLyRole = true;
                 permissionCodes.addAll(OPERATION_PERMISSIONS);
+                permissionCodes.addAll(SYSTEM_PERMISSIONS);
             }
         }
 

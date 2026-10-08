@@ -23,14 +23,22 @@ public class AdminConfigController {
 
     private final SystemConfigService systemConfigService;
     private final MailConfig mailConfig;
+    private final com.ktx.service.AuditLogService auditLogService;
 
-    public AdminConfigController(SystemConfigService systemConfigService, MailConfig mailConfig) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public AdminConfigController(SystemConfigService systemConfigService, MailConfig mailConfig,
+                                 @org.springframework.beans.factory.annotation.Autowired(required = false) com.ktx.service.AuditLogService auditLogService) {
         this.systemConfigService = systemConfigService;
         this.mailConfig = mailConfig;
+        this.auditLogService = auditLogService;
+    }
+
+    public AdminConfigController(SystemConfigService systemConfigService, MailConfig mailConfig) {
+        this(systemConfigService, mailConfig, null);
     }
 
     @GetMapping
-    public String index(Model model) {
+    public String index(@RequestParam(value = "q", required = false) String q, Model model) {
         Map<String, List<SystemConfig>> groupedConfigs = systemConfigService.getConfigsGrouped();
 
         model.addAttribute("groupedConfigs", groupedConfigs);
@@ -38,6 +46,7 @@ public class AdminConfigController {
         model.addAttribute("pageTitle", "Cài đặt hệ thống");
         model.addAttribute("pageSubtitle", "Quản trị tham số phân bổ, hợp đồng, đơn giá điện nước và điểm rèn luyện");
         model.addAttribute("activeMenu", "configs");
+        model.addAttribute("q", q);
 
         return "admin/configs/index";
     }
@@ -54,8 +63,16 @@ public class AdminConfigController {
 
         try {
             systemConfigService.updateConfigs(configsToUpdate);
+            if (auditLogService != null) {
+                auditLogService.logCurrent("CONFIG_UPDATE", "SYSTEM_CONFIG", "batch",
+                        "Cập nhật cấu hình hệ thống hàng loạt (" + configsToUpdate.size() + " tham số)", "SUCCESS");
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật cấu hình hệ thống thành công!");
         } catch (BusinessException | IllegalArgumentException e) {
+            if (auditLogService != null) {
+                auditLogService.logCurrent("CONFIG_UPDATE", "SYSTEM_CONFIG", "batch",
+                        "Lỗi cập nhật cấu hình hàng loạt: " + e.getMessage(), "FAILURE");
+            }
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/admin/configs";
@@ -67,8 +84,16 @@ public class AdminConfigController {
                                RedirectAttributes redirectAttributes) {
         try {
             systemConfigService.set(key, value);
+            if (auditLogService != null) {
+                auditLogService.logCurrent("CONFIG_UPDATE", "SYSTEM_CONFIG", key,
+                        "Cập nhật tham số cấu hình '" + key + "' = '" + value + "'", "SUCCESS");
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật cấu hình '" + key + "' thành công!");
         } catch (BusinessException | IllegalArgumentException e) {
+            if (auditLogService != null) {
+                auditLogService.logCurrent("CONFIG_UPDATE", "SYSTEM_CONFIG", key,
+                        "Lỗi cập nhật cấu hình '" + key + "': " + e.getMessage(), "FAILURE");
+            }
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/admin/configs";

@@ -51,9 +51,7 @@ erDiagram
     beds ||--o{ contracts : occupied_by
     contracts ||--o{ check_in_outs : events
     contracts ||--o{ room_change_requests : amends
-    students ||--|{ room_change_requests : requests
     contracts ||--o{ renewal_requests : renewals
-    students ||--|{ renewal_requests : requests
     students ||--|{ invoices : owes
     invoices ||--|{ invoice_items : lines
     invoices ||--o{ payments : settled
@@ -207,7 +205,7 @@ Sinh viên **không được** có bất kỳ hợp đồng `OCCUPYING` nào khi
 
 `AllocationRun`: `period_id`, `dry_run` BOOLEAN, `status` (`PENDING`,`RUNNING`,`COMPLETED`,`FAILED`,`COMMITTED`,`DISCARDED`), `started_at`, `finished_at`, `run_by`, `summary_json` (số assigned/waitlisted), `seed_note`, `weights_json` TEXT nullable (audit: weight/`mode` lúc `plan()` của run đó; **commit luôn đọc config sống**, không có UI “chốt đúng preview”).
 
-`AllocationItem`: `run_id`, `application_id`, `student_id`, `bed_id` nullable, `rank_no`, `score`, `result` (`ASSIGNED`,`WAITLISTED`,`SKIPPED`), `reason` (`NO_VACANT_BED`, `NO_TYPE_MATCH`, `NO_BUILDING_MATCH`, `SKIPPED_ALREADY_HOUSED`, `SKIPPED_BLOCKED`, `NO_GENDER_MATCH` — lý do phòng thủ nếu giới tính/tòa đổi giữa preview và commit).
+`AllocationItem`: `run_id`, `application_id`, `bed_id` nullable, `rank_no`, `score`, `result` (`ASSIGNED`,`WAITLISTED`,`SKIPPED`), `reason` (`NO_VACANT_BED`, `NO_TYPE_MATCH`, `NO_BUILDING_MATCH`, `SKIPPED_ALREADY_HOUSED`, `SKIPPED_BLOCKED`, `NO_GENDER_MATCH` — lý do phòng thủ nếu giới tính/tòa đổi giữa preview và commit). Sinh viên của dòng phân bổ là `room_applications.student_id`, không lưu lại trên dòng.
 
 Một `room_application` có **nhiều** `allocation_items` (mỗi preview/commit một dòng). Map `result` → `ApplicationStatus` khi **commit** ([mục 6.3.7](./04-03-phan-bo.md)).
 
@@ -237,7 +235,7 @@ Index: `(student_id, status)`, `(bed_id, status)`, `(end_date)`. Generated UNIQU
 
 ### 5.2.13. `room_change_requests` — `RoomChangeRequest`
 
-`student_id`, `contract_id`, `current_bed_id`, `requested_building_id`, `requested_room_type`, `reason`, `target_bed_id` (admin chọn), `status` (`SUBMITTED`,`APPROVED`,`REJECTED`,`COMPLETED`,`CANCELLED`), `admin_note`.
+`contract_id`, `current_bed_id` (giường tại lúc gửi đơn), `requested_building_id`, `requested_room_type`, `reason`, `target_bed_id` (admin chọn), `status` (`SUBMITTED`,`APPROVED`,`REJECTED`,`COMPLETED`,`CANCELLED`), `admin_note`. Sinh viên lấy từ hợp đồng.
 
 Loại `RETURN_ROOM` dùng cùng bảng với `request_kind` = `CHANGE` | `RETURN`.
 
@@ -246,8 +244,7 @@ Loại `RETURN_ROOM` dùng cùng bảng với `request_kind` = `CHANGE` | `RETUR
 | Cột                            | Ghi chú                                                 |
 | ------------------------------- | -------------------------------------------------------- |
 | `id`                          | BIGINT PK AI                                             |
-| `student_id`                  | FK                                                       |
-| `contract_id`                 | FK                                                       |
+| `contract_id`                 | FK. Sinh viên của đơn là sinh viên của hợp đồng.       |
 | `requested_end`               | DATE —`end_date` mới đề xuất                      |
 | `status`                      | `SUBMITTED`, `APPROVED`, `REJECTED`, `CANCELLED` |
 | `admin_note`                  | VARCHAR(500)                                             |
@@ -273,7 +270,7 @@ Không còn cột `meter_replaced`. Công thức — [mục 6.5.1](./04-05-dien-
 
 ### 5.2.16. `invoices`, `invoice_items`, `payments`
 
-`Invoice`: `invoice_no` UNIQUE (cấp `document_sequences` kind `INVOICE_NO`), `student_id`, `room_id`, `contract_id` nullable, `invoice_type` (`ROOM_TERM`,`UTILITY`,`DEPOSIT`,`OTHER`), `billing_month` nullable, `subtotal`, `late_fee` default 0, `total` (= `subtotal + late_fee`), `due_date`, `status` (`UNPAID`,`PAID`,`OVERDUE`,`CANCELLED`), `paid_at`, `idempotency_key` VARCHAR(80) **UNIQUE NOT NULL**.
+`Invoice`: `invoice_no` UNIQUE (cấp `document_sequences` kind `INVOICE_NO`), `student_id`, `room_id`, `contract_id` nullable, `invoice_type` (`ROOM_TERM`,`UTILITY`,`DEPOSIT`,`OTHER`), `billing_month` nullable, `subtotal`, `late_fee` default 0, `total` cột sinh `subtotal + late_fee`, `due_date`, `status` (`UNPAID`,`PAID`,`OVERDUE`,`CANCELLED`), `paid_at`, `idempotency_key` VARCHAR(80) **UNIQUE NOT NULL**.
 
 Quy ước `idempotency_key` (idempotent phát hành):
 
@@ -288,7 +285,7 @@ Logical key ổn định như bảng trên. **Khi hủy hóa đơn** (`CANCELLED
 
 Bỏ qua phát hành khi đã tồn tại hàng **cùng logical key** và `status != CANCELLED`. Hàng `CANCELLED` không chặn insert mới.
 
-`InvoiceItem`: `description`, `qty`, `unit_price`, `amount`, `item_code` (`ELEC`,`WATER`,`SANITATION`,`INTERNET`,`PARKING`,`ROOM`,`DEPOSIT`,`LATE_FEE`). **`sum(items.amount) = invoice.total`** luôn.
+`InvoiceItem`: `description`, `qty`, `unit_price`, `amount`, `item_code` (`ELEC`,`WATER`,`SANITATION`,`INTERNET`,`PARKING`,`ROOM`,`DEPOSIT`,`LATE_FEE`). **`sum(items.amount) = invoice.total`** luôn. `amount` là tiền của dòng (điện bậc thang, phần dư chia phòng), không suy ra từ `qty * unit_price`.
 
 `Payment`: `invoice_id`, `amount`, `method` (`CASH`,`BANK_TRANSFER`), `paid_at`, `recorded_by`, `reference_no`. Tổng payment ≥ `total` → `PAID`.
 

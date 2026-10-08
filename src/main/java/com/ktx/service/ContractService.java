@@ -42,6 +42,9 @@ public interface ContractService {
      */
     List<Contract> searchContracts(Long buildingId, ContractStatus status, String keyword);
 
+    org.springframework.data.domain.Page<Contract> searchContracts(Long buildingId, ContractStatus status, String keyword,
+                                                                   org.springframework.data.domain.Pageable pageable);
+
     /**
      * Danh sách hợp đồng theo tòa và nhóm trạng thái
      */
@@ -52,4 +55,9 @@ public interface ContractService {
      * Giường VẪN giữ OCCUPIED cho đến khi checkout (§04-04).
      */
     void terminate(Long contractId, boolean forfeitDeposit);
+
+    /**
+     * Lấy lịch sử thuê phòng và giường theo roomId và tùy chọn bedId
+     */
+    List<Contract> findRentalHistory(Long roomId, Long bedId);
 }

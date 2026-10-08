@@ -44,6 +44,27 @@ public interface MaintenanceTicketRepository extends JpaRepository<MaintenanceTi
             """)
     List<MaintenanceTicket> findAllWithDetails();
 
+    @Query(value = """
+            SELECT t FROM MaintenanceTicket t
+            JOIN FETCH t.student s
+            JOIN FETCH s.user
+            JOIN FETCH t.room r
+            JOIN FETCH r.building b
+            WHERE (:buildingId IS NULL OR r.building.id = :buildingId)
+              AND (:status IS NULL OR t.status = :status)
+            ORDER BY t.createdAt DESC
+            """,
+           countQuery = """
+            SELECT COUNT(t) FROM MaintenanceTicket t
+            JOIN t.room r
+            WHERE (:buildingId IS NULL OR r.building.id = :buildingId)
+              AND (:status IS NULL OR t.status = :status)
+            """)
+    org.springframework.data.domain.Page<MaintenanceTicket> searchTicketsForAdmin(
+            @Param("buildingId") Long buildingId,
+            @Param("status") TicketStatus status,
+            org.springframework.data.domain.Pageable pageable);
+
     List<MaintenanceTicket> findByStatusAndResolvedAtBefore(TicketStatus status, LocalDateTime cutoff);
 
     long countByStudentIdAndStatus(Long studentId, TicketStatus status);

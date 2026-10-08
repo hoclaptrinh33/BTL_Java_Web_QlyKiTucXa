@@ -54,4 +54,9 @@ public interface RenewalService {
      * Tìm kiếm và lọc đơn gia hạn cho admin.
      */
     List<RenewalRequest> searchRequests(RenewalStatus status, Long buildingId);
+
+    /**
+     * Tìm kiếm và phân trang đơn gia hạn cho admin.
+     */
+    org.springframework.data.domain.Page<RenewalRequest> searchRequests(RenewalStatus status, Long buildingId, org.springframework.data.domain.Pageable pageable);
 }

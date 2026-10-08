@@ -16,11 +16,11 @@
     </div>
 
     <!-- 3 Thẻ trạng thái ticket -->
-    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+    <div class="row row-cols-1 row-cols-sm-3 g-2 g-md-3 mb-3 mb-md-4">
         <div class="col">
             <div class="ktx-card h-100 p-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="p-3 rounded-circle bg-warning-subtle text-warning fs-3"><i class="bi bi-hourglass-split"></i></div>
+                    <div class="p-2 p-md-3 rounded-circle bg-warning-subtle text-warning fs-3"><i class="bi bi-hourglass-split"></i></div>
                     <div>
                         <div class="text-muted small">Đang chờ xử lý</div>
                         <div class="h4 fw-bold text-dark mb-0" th:text="${countWaiting}">1</div>
@@ -32,7 +32,7 @@
         <div class="col">
             <div class="ktx-card h-100 p-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="p-3 rounded-circle bg-info-subtle text-info fs-3"><i class="bi bi-wrench-adjustable"></i></div>
+                    <div class="p-2 p-md-3 rounded-circle bg-info-subtle text-info fs-3"><i class="bi bi-wrench-adjustable"></i></div>
                     <div>
                         <div class="text-muted small">Đang sửa chữa</div>
                         <div class="h4 fw-bold text-dark mb-0" th:text="${countInProgress}">1</div>
@@ -44,7 +44,7 @@
         <div class="col">
             <div class="ktx-card h-100 p-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="p-3 rounded-circle bg-success-subtle text-success fs-3"><i class="bi bi-check-circle"></i></div>
+                    <div class="p-2 p-md-3 rounded-circle bg-success-subtle text-success fs-3"><i class="bi bi-check-circle"></i></div>
                     <div>
                         <div class="text-muted small">Đã hoàn thành</div>
                         <div class="h4 fw-bold text-dark mb-0" th:text="${countCompleted}">2</div>
@@ -61,68 +61,109 @@
             <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-tools me-2 text-primary"></i>Danh sách yêu cầu sửa chữa đã gửi</h2>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle ktx-table mb-0">
-                <thead>
-                    <tr>
-                        <th>Mã sự cố</th>
-                        <th>Danh mục / Thiết bị</th>
-                        <th>Nội dung mô tả</th>
-                        <th>Mức độ</th>
-                        <th>Ngày gửi</th>
-                        <th>Trạng thái</th>
-                        <th class="text-end">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:if="${#lists.isEmpty(tickets)}">
-                        <td colspan="7" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox fs-3 d-block mb-1"></i>
-                            Bạn chưa có yêu cầu sửa chữa nào.
-                        </td>
-                    </tr>
-                    <tr th:each="t : ${tickets}">
-                        <td><span class="ktx-chip" th:text="${'#TK-' + t.id}">#TK-2041</span></td>
-                        <td>
-                            <strong class="text-dark" th:text="${t.title}">Báo hỏng thiết bị</strong>
-                            <div class="small text-muted" th:text="${t.room != null ? t.room.building.name + ' — P.' + t.room.roomNumber : ''}">Phòng 101</div>
-                        </td>
-                        <td th:text="${t.description}">Mô tả chi tiết sự cố</td>
-                        <td>
+        <div th:if="${#lists.isEmpty(tickets)}" class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+            <p class="mb-0">Bạn chưa có yêu cầu sửa chữa nào.</p>
+        </div>
+
+        <div th:if="${!#lists.isEmpty(tickets)}">
+            <!-- 1. Desktop Table View -->
+            <div class="table-responsive d-none d-md-block">
+                <table class="table table-hover align-middle ktx-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Mã sự cố</th>
+                            <th>Danh mục / Thiết bị</th>
+                            <th>Nội dung mô tả</th>
+                            <th>Mức độ</th>
+                            <th>Ngày gửi</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="t : ${tickets}">
+                            <td><span class="ktx-chip" th:text="${'#TK-' + t.id}">#TK-2041</span></td>
+                            <td>
+                                <strong class="text-dark" th:text="${t.title}">Báo hỏng thiết bị</strong>
+                                <div class="small text-muted" th:text="${t.room != null ? t.room.building.name + ' — P.' + t.room.roomNumber : ''}">Phòng 101</div>
+                            </td>
+                            <td th:text="${t.description}">Mô tả chi tiết sự cố</td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${t.priority != null && t.priority.name() == 'HIGH' ? 'bg-danger-subtle text-danger' : (t.priority != null && t.priority.name() == 'MEDIUM' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary')}"
+                                      th:text="${t.priority != null ? (t.priority.name() == 'HIGH' ? 'Khẩn cấp' : (t.priority.name() == 'MEDIUM' ? 'Bình thường' : 'Thấp')) : 'Bình thường'}">Bình thường</span>
+                            </td>
+                            <td th:text="${#temporals.format(t.createdAt, 'dd/MM/yyyy HH:mm')}">24/08/2026</td>
+                            <td>
+                                <span class="ktx-pill"
+                                      th:classappend="${t.status != null && t.status.name() == 'OPEN' ? 'bg-warning-subtle text-warning' : (t.status != null && t.status.name() == 'IN_PROGRESS' ? 'bg-info-subtle text-info' : (t.status != null && t.status.name() == 'RESOLVED' ? 'bg-primary-subtle text-primary' : (t.status != null && t.status.name() == 'REJECTED' ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success')))}"
+                                      th:text="${t.status != null ? (t.status.name() == 'OPEN' ? 'Chờ tiếp nhận' : (t.status.name() == 'IN_PROGRESS' ? 'Đang xử lý' : (t.status.name() == 'RESOLVED' ? 'Đã sửa xong' : (t.status.name() == 'REJECTED' ? 'Từ chối' : 'Đã đóng')))) : 'Chờ tiếp nhận'}">OPEN</span>
+                            </td>
+                            <td class="text-end">
+                                <!-- Nút Đóng ticket khi Đã sửa xong (RESOLVED) -->
+                                <form th:if="${t.status != null && t.status.name() == 'RESOLVED'}" th:action="@{'/student/tickets/' + ${t.id} + '/close'}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                        <i class="bi bi-check2 me-1"></i>Đóng ticket
+                                    </button>
+                                </form>
+                                <span th:if="${t.status != null && t.status.name() == 'CLOSED'}" class="text-muted small">
+                                    <i class="bi bi-check-all text-success me-1"></i>Đã đóng
+                                </span>
+                                <span th:if="${t.status != null && t.status.name() == 'OPEN'}" class="text-muted small">
+                                    Chờ BQL
+                                </span>
+                                <span th:if="${t.status != null && t.status.name() == 'IN_PROGRESS'}" class="text-muted small">
+                                    Thợ đang sửa
+                                </span>
+                                <span th:if="${t.status != null && t.status.name() == 'REJECTED'}" class="text-danger small">
+                                    Đã từ chối
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 2. Mobile Cards View -->
+            <div class="d-md-none">
+                <div th:each="t : ${tickets}" class="student-mobile-card">
+                    <div class="student-mobile-card__header">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="ktx-chip fw-bold text-dark font-monospace" th:text="${'#TK-' + t.id}">#TK-2041</span>
                             <span class="badge"
                                   th:classappend="${t.priority != null && t.priority.name() == 'HIGH' ? 'bg-danger-subtle text-danger' : (t.priority != null && t.priority.name() == 'MEDIUM' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary')}"
-                                  th:text="${t.priority != null ? t.priority : 'MEDIUM'}">Bình thường</span>
-                        </td>
-                        <td th:text="${#temporals.format(t.createdAt, 'dd/MM/yyyy HH:mm')}">24/08/2026</td>
-                        <td>
-                            <span class="ktx-pill"
-                                  th:classappend="${t.status != null && t.status.name() == 'OPEN' ? 'bg-warning-subtle text-warning' : (t.status != null && t.status.name() == 'IN_PROGRESS' ? 'bg-info-subtle text-info' : (t.status != null && t.status.name() == 'RESOLVED' ? 'bg-primary-subtle text-primary' : (t.status != null && t.status.name() == 'REJECTED' ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success')))}"
-                                  th:text="${t.status != null ? t.status : 'OPEN'}">OPEN</span>
-                        </td>
-                        <td class="text-end">
-                            <!-- Nút Đóng ticket khi Đã sửa xong (RESOLVED) -->
-                            <form th:if="${t.status != null && t.status.name() == 'RESOLVED'}" th:action="@{'/student/tickets/' + ${t.id} + '/close'}" method="post" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">
-                                    <i class="bi bi-check2 me-1"></i>Đóng ticket
-                                </button>
-                            </form>
-                            <!-- Trạng thái Đã đóng -->
-                            <span th:if="${t.status != null && t.status.name() == 'CLOSED'}" class="text-muted small">
-                                <i class="bi bi-check-all text-success me-1"></i>Đã đóng
-                            </span>
-                            <span th:if="${t.status != null && t.status.name() == 'OPEN'}" class="text-muted small">
-                                Chờ tiếp nhận
-                            </span>
-                            <span th:if="${t.status != null && t.status.name() == 'IN_PROGRESS'}" class="text-muted small">
-                                Đang xử lý
-                            </span>
-                            <span th:if="${t.status != null && t.status.name() == 'REJECTED'}" class="text-danger small">
-                                Đã từ chối
-                            </span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                                  th:text="${t.priority != null ? (t.priority.name() == 'HIGH' ? 'Khẩn' : (t.priority.name() == 'MEDIUM' ? 'Thường' : 'Thấp')) : 'Thường'}">Thường</span>
+                        </div>
+                        <span class="ktx-pill"
+                              th:classappend="${t.status != null && t.status.name() == 'OPEN' ? 'bg-warning-subtle text-warning' : (t.status != null && t.status.name() == 'IN_PROGRESS' ? 'bg-info-subtle text-info' : (t.status != null && t.status.name() == 'RESOLVED' ? 'bg-primary-subtle text-primary' : (t.status != null && t.status.name() == 'REJECTED' ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success')))}"
+                              th:text="${t.status != null ? (t.status.name() == 'OPEN' ? 'Chờ tiếp nhận' : (t.status.name() == 'IN_PROGRESS' ? 'Đang sửa' : (t.status.name() == 'RESOLVED' ? 'Đã xong' : (t.status.name() == 'REJECTED' ? 'Từ chối' : 'Đã đóng')))) : 'Chờ tiếp nhận'}">
+                            Trạng thái
+                        </span>
+                    </div>
+
+                    <div class="student-mobile-card__title" th:text="${t.title}">Báo hỏng thiết bị</div>
+                    <div class="small text-muted mb-2" th:if="${t.room != null}">
+                        <i class="bi bi-geo-alt me-1 text-primary"></i><span th:text="${t.room.building.name + ' — Phòng ' + t.room.roomNumber}">Phòng 101</span>
+                    </div>
+
+                    <p class="small text-secondary mb-2" style="line-height: 1.45;" th:text="${t.description}">Mô tả chi tiết sự cố phòng ở</p>
+
+                    <div class="student-mobile-card__row">
+                        <span class="student-mobile-card__label"><i class="bi bi-clock me-1"></i>Thời gian gửi:</span>
+                        <span class="student-mobile-card__value text-muted" th:text="${#temporals.format(t.createdAt, 'dd/MM/yyyy HH:mm')}">24/08/2026 14:00</span>
+                    </div>
+
+                    <!-- Hành động nếu ticket đã sửa xong (RESOLVED) -->
+                    <div class="student-mobile-card__action" th:if="${t.status != null && t.status.name() == 'RESOLVED'}">
+                        <form th:action="@{'/student/tickets/' + ${t.id} + '/close'}" method="post">
+                            <button type="submit" class="btn btn-outline-success rounded-pill w-100">
+                                <i class="bi bi-check2-circle me-1"></i> Xác nhận nghiệm thu & Đóng ticket
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </main>

@@ -230,7 +230,7 @@ public class DataSeeder implements CommandLineRunner {
         Student s3 = createStudentUser("D22CQCN003", "d22cqcn003@example.com", "Admin@123",
                 "Lê Hoàng Long", Gender.MALE, "CNTT", "D22CQCN02", PriorityCategory.REMOTE_AREA, false, 100, false);
 
-        Student s4 = createStudentUser("D22CQCN004", "d22cqcn004@example.com", "Admin@123",
+        createStudentUser("D22CQCN004", "d22cqcn004@example.com", "Admin@123",
                 "Vũ Hải Đăng", Gender.MALE, "CNTT", "D22CQCN03", PriorityCategory.NONE, false, 100, false);
 
         Student sFemale2 = createStudentUser("D22CQDT002", "d22cqdt002@example.com", "Admin@123",

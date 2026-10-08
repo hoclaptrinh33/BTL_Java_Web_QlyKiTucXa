@@ -3,7 +3,6 @@ package com.ktx.service.impl;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -19,7 +18,6 @@ import com.ktx.domain.SystemConfig;
 import com.ktx.domain.AllocationItem;
 import com.ktx.domain.enums.AllocationResult;
 import com.ktx.domain.enums.ApplicationStatus;
-import com.ktx.domain.enums.RoomType;
 import com.ktx.dto.AllocConfig;
 import com.ktx.dto.AllocationRunResult;
 import com.ktx.repository.BedRepository;
@@ -75,7 +73,6 @@ public class AllocationEngineImpl implements AllocationEngine {
 
             AllocationItem item = new AllocationItem();
             item.setApplication(app);
-            item.setStudent(sv);
             item.setRankNo(rank);
             item.setScore(sa.score());
 

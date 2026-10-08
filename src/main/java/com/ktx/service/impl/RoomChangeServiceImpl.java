@@ -90,7 +90,6 @@ public class RoomChangeServiceImpl implements RoomChangeService {
         }
 
         RoomChangeRequest request = new RoomChangeRequest();
-        request.setStudent(student);
         request.setContract(activeContract);
         request.setCurrentBed(activeContract.getBed());
         request.setRequestKind(RoomChangeKind.CHANGE);
@@ -104,7 +103,7 @@ public class RoomChangeServiceImpl implements RoomChangeService {
     @Override
     @Transactional
     public RoomChangeRequest submitReturnRoomRequest(Long studentId, String returnDate, String reason, String bankName, String bankAccount) {
-        Student student = studentRepository.findById(studentId)
+        studentRepository.findById(studentId)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy sinh viên #" + studentId));
 
         List<Contract> contracts = contractRepository.findByStudentIdAndStatusInWithDetails(
@@ -142,7 +141,6 @@ public class RoomChangeServiceImpl implements RoomChangeService {
         }
 
         RoomChangeRequest request = new RoomChangeRequest();
-        request.setStudent(student);
         request.setContract(contract);
         request.setCurrentBed(contract.getBed());
         request.setRequestKind(RoomChangeKind.RETURN);
@@ -315,5 +313,11 @@ public class RoomChangeServiceImpl implements RoomChangeService {
     @Transactional(readOnly = true)
     public List<RoomChangeRequest> searchRequests(RoomChangeKind kind, RoomChangeStatus status, Long buildingId) {
         return roomChangeRequestRepository.searchRequests(kind, status, buildingId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<RoomChangeRequest> searchRequests(RoomChangeKind kind, RoomChangeStatus status, Long buildingId, org.springframework.data.domain.Pageable pageable) {
+        return roomChangeRequestRepository.searchRequests(kind, status, buildingId, pageable);
     }
 }

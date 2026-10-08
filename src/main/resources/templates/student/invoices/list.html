@@ -11,11 +11,11 @@
     </div>
 
     <!-- 3 Thẻ chỉ số tài chính -->
-    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+    <div class="row row-cols-1 row-cols-sm-3 g-2 g-md-3 mb-3 mb-md-4">
         <div class="col">
             <div class="ktx-card h-100 p-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="p-3 rounded-circle bg-danger-subtle text-danger fs-3"><i class="bi bi-exclamation-octagon"></i></div>
+                    <div class="p-2 p-md-3 rounded-circle bg-danger-subtle text-danger fs-3"><i class="bi bi-exclamation-octagon"></i></div>
                     <div>
                         <div class="text-muted small">Cần thanh toán ngay</div>
                         <div class="h4 fw-bold text-danger mb-0" th:text="${unpaidCount > 0 ? #numbers.formatInteger(totalUnpaidAmount, 1, 'POINT') + ' đ' : '0 đ'}">0 đ</div>
@@ -27,7 +27,7 @@
         <div class="col">
             <div class="ktx-card h-100 p-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="p-3 rounded-circle bg-primary-subtle text-primary fs-3"><i class="bi bi-receipt"></i></div>
+                    <div class="p-2 p-md-3 rounded-circle bg-primary-subtle text-primary fs-3"><i class="bi bi-receipt"></i></div>
                     <div>
                         <div class="text-muted small">Tổng hóa đơn phát hành</div>
                         <div class="h4 fw-bold text-dark mb-0" th:text="${invoices != null ? invoices.size() : 0}">0</div>
@@ -39,7 +39,7 @@
         <div class="col">
             <div class="ktx-card h-100 p-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="p-3 rounded-circle bg-success-subtle text-success fs-3"><i class="bi bi-check2-circle"></i></div>
+                    <div class="p-2 p-md-3 rounded-circle bg-success-subtle text-success fs-3"><i class="bi bi-check2-circle"></i></div>
                     <div>
                         <div class="text-muted small">Hình thức thanh toán</div>
                         <div class="fw-bold text-dark mb-0">Tiền mặt / Chuyển khoản</div>
@@ -56,54 +56,99 @@
             <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-list-ul me-2 text-primary"></i>Danh sách tất cả hóa đơn</h2>
         </div>
 
-        <div class="table-responsive" th:if="${invoices != null && !invoices.empty}">
-            <table class="table table-hover align-middle ktx-table mb-0">
-                <thead>
-                    <tr>
-                        <th>Mã hóa đơn</th>
-                        <th>Loại phí</th>
-                        <th>Tháng / Kỳ áp dụng</th>
-                        <th>Hạn thanh toán</th>
-                        <th>Số tiền (VNĐ)</th>
-                        <th>Trạng thái</th>
-                        <th class="text-end">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="i : ${invoices}">
-                        <td>
-                            <a th:href="@{'/student/invoices/' + ${i.id}}" class="fw-bold text-primary text-decoration-none">
-                                <span class="ktx-chip" th:text="${i.invoiceNo}">HD-00001</span>
-                            </a>
-                        </td>
-                        <td>
-                            <strong class="text-dark" th:text="${i.invoiceType.name() == 'ROOM_TERM' || i.invoiceType.name() == 'ROOM_FEE' ? 'Tiền thuê phòng' : (i.invoiceType.name() == 'DEPOSIT' ? 'Tiền đặt cọc' : 'Điện nước & Tiện ích')}">Loại phí</strong>
-                        </td>
-                        <td th:text="${i.billingMonth != null ? #temporals.format(i.billingMonth, 'MM/yyyy') : 'Theo học kỳ'}">—</td>
-                        <td>
-                            <div th:text="${#temporals.format(i.dueDate, 'dd/MM/yyyy')}">20/09/2026</div>
-                            <small class="text-danger fw-semibold" th:if="${i.status.name() == 'OVERDUE'}">Đã quá hạn</small>
-                        </td>
-                        <td>
-                            <div class="fw-bold text-dark fs-6" th:text="${#numbers.formatInteger(i.total, 1, 'POINT')} + ' đ'">0 đ</div>
-                            <small class="text-danger" th:if="${remainingMap != null && remainingMap.containsKey(i.id) && remainingMap.get(i.id).compareTo(i.total) < 0 && remainingMap.get(i.id).compareTo(T(java.math.BigDecimal).ZERO) > 0}"
-                                   th:text="'Còn nợ: ' + ${#numbers.formatInteger(remainingMap.get(i.id), 1, 'POINT')} + ' đ'">Còn nợ: 0 đ</small>
-                        </td>
-                        <td>
-                            <span class="ktx-pill"
-                                  th:classappend="${i.status.name() == 'PAID' ? 'is-mint' : (i.status.name() == 'OVERDUE' ? 'is-rose' : 'is-peach')}"
-                                  th:text="${i.status.name() == 'PAID' ? 'Đã đóng' : (i.status.name() == 'OVERDUE' ? 'Quá hạn' : 'Chưa đóng')}">
-                                Trạng thái
-                            </span>
-                        </td>
-                        <td class="text-end">
-                            <a th:href="@{'/student/invoices/' + ${i.id}}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                                Chi tiết <i class="bi bi-chevron-right ms-1"></i>
-                            </a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <div th:if="${invoices != null && !invoices.empty}">
+            <!-- 1. Giao diện Desktop (Bảng đầy đủ) -->
+            <div class="table-responsive d-none d-md-block">
+                <table class="table table-hover align-middle ktx-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Mã hóa đơn</th>
+                            <th>Loại phí</th>
+                            <th>Tháng / Kỳ áp dụng</th>
+                            <th>Hạn thanh toán</th>
+                            <th>Số tiền (VNĐ)</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="i : ${invoices}">
+                            <td>
+                                <a th:href="@{'/student/invoices/' + ${i.id}}" class="fw-bold text-primary text-decoration-none">
+                                    <span class="ktx-chip" th:text="${i.invoiceNo}">HD-00001</span>
+                                </a>
+                            </td>
+                            <td>
+                                <strong class="text-dark" th:text="${i.invoiceType.name() == 'ROOM_TERM' || i.invoiceType.name() == 'ROOM_FEE' ? 'Tiền thuê phòng' : (i.invoiceType.name() == 'DEPOSIT' ? 'Tiền đặt cọc' : 'Điện nước & Tiện ích')}">Loại phí</strong>
+                            </td>
+                            <td th:text="${i.billingMonth != null ? #temporals.format(i.billingMonth, 'MM/yyyy') : 'Theo học kỳ'}">—</td>
+                            <td>
+                                <div th:text="${#temporals.format(i.dueDate, 'dd/MM/yyyy')}">20/09/2026</div>
+                                <small class="text-danger fw-semibold" th:if="${i.status.name() == 'OVERDUE'}">Đã quá hạn</small>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark fs-6" th:text="${#numbers.formatInteger(i.total, 1, 'POINT')} + ' đ'">0 đ</div>
+                                <small class="text-danger" th:if="${remainingMap != null && remainingMap.containsKey(i.id) && remainingMap.get(i.id).compareTo(i.total) < 0 && remainingMap.get(i.id).compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                                       th:text="'Còn nợ: ' + ${#numbers.formatInteger(remainingMap.get(i.id), 1, 'POINT')} + ' đ'">Còn nợ: 0 đ</small>
+                            </td>
+                            <td>
+                                <span class="ktx-pill"
+                                      th:classappend="${i.status.name() == 'PAID' ? 'is-mint' : (i.status.name() == 'OVERDUE' ? 'is-rose' : 'is-peach')}"
+                                      th:text="${i.status.name() == 'PAID' ? 'Đã đóng' : (i.status.name() == 'OVERDUE' ? 'Quá hạn' : 'Chưa đóng')}">
+                                    Trạng thái
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a th:href="@{'/student/invoices/' + ${i.id}}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                    Chi tiết <i class="bi bi-chevron-right ms-1"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 2. Giao diện Mobile (Dạng thẻ danh sách trực quan, dễ bấm) -->
+            <div class="d-md-none">
+                <div th:each="i : ${invoices}" class="student-mobile-card">
+                    <div class="student-mobile-card__header">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="ktx-chip fw-bold text-primary font-monospace" th:text="${i.invoiceNo}">HD-00001</span>
+                            <small class="text-muted" th:text="${i.billingMonth != null ? 'Tháng ' + #temporals.format(i.billingMonth, 'MM/yyyy') : 'Học kỳ'}">Tháng</small>
+                        </div>
+                        <span class="ktx-pill"
+                              th:classappend="${i.status.name() == 'PAID' ? 'is-mint' : (i.status.name() == 'OVERDUE' ? 'is-rose' : 'is-peach')}"
+                              th:text="${i.status.name() == 'PAID' ? 'Đã đóng' : (i.status.name() == 'OVERDUE' ? 'Quá hạn' : 'Chưa đóng')}">
+                            Trạng thái
+                        </span>
+                    </div>
+
+                    <div class="student-mobile-card__title" th:text="${i.invoiceType.name() == 'ROOM_TERM' || i.invoiceType.name() == 'ROOM_FEE' ? 'Tiền thuê phòng ký túc xá' : (i.invoiceType.name() == 'DEPOSIT' ? 'Tiền đặt cọc lưu trú' : 'Hóa đơn Điện nước & Tiện ích')}">
+                        Tiền thuê phòng
+                    </div>
+
+                    <div class="student-mobile-card__row">
+                        <span class="student-mobile-card__label"><i class="bi bi-calendar-event me-1"></i>Hạn thanh toán:</span>
+                        <span class="student-mobile-card__value" th:classappend="${i.status.name() == 'OVERDUE' ? 'text-danger fw-bold' : ''}" th:text="${#temporals.format(i.dueDate, 'dd/MM/yyyy')}">20/09/2026</span>
+                    </div>
+
+                    <div class="student-mobile-card__row">
+                        <span class="student-mobile-card__label"><i class="bi bi-cash-stack me-1"></i>Số tiền cần đóng:</span>
+                        <span class="student-mobile-card__value text-primary fs-6" th:text="${#numbers.formatInteger(i.total, 1, 'POINT')} + ' đ'">1.200.000 đ</span>
+                    </div>
+
+                    <div class="student-mobile-card__row" th:if="${remainingMap != null && remainingMap.containsKey(i.id) && remainingMap.get(i.id).compareTo(i.total) < 0 && remainingMap.get(i.id).compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+                        <span class="student-mobile-card__label text-danger">Còn nợ lại:</span>
+                        <span class="student-mobile-card__value text-danger" th:text="${#numbers.formatInteger(remainingMap.get(i.id), 1, 'POINT')} + ' đ'">300.000 đ</span>
+                    </div>
+
+                    <div class="student-mobile-card__action">
+                        <a th:href="@{'/student/invoices/' + ${i.id}}" class="btn btn-outline-primary rounded-pill w-100">
+                            <i class="bi bi-qr-code me-1"></i> Xem chi tiết & Hướng dẫn thanh toán
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="text-center py-5 text-muted" th:if="${invoices == null || invoices.empty}">

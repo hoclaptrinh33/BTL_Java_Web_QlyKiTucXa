@@ -15,9 +15,17 @@ import org.springframework.stereotype.Component;
 public class LoginFailureHandler implements AuthenticationFailureHandler {
 
     private final LoginAttemptService loginAttemptService;
+    private final com.ktx.service.AuditLogService auditLogService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public LoginFailureHandler(LoginAttemptService loginAttemptService,
+                               @org.springframework.beans.factory.annotation.Autowired(required = false) com.ktx.service.AuditLogService auditLogService) {
+        this.loginAttemptService = loginAttemptService;
+        this.auditLogService = auditLogService;
+    }
 
     public LoginFailureHandler(LoginAttemptService loginAttemptService) {
-        this.loginAttemptService = loginAttemptService;
+        this(loginAttemptService, null);
     }
 
     @Override
@@ -27,13 +35,24 @@ public class LoginFailureHandler implements AuthenticationFailureHandler {
         String ip = getClientIP(request);
 
         String target;
+        String reason;
         if (exception instanceof DisabledException) {
             target = "/login?disabled";
+            reason = "Tài khoản bị vô hiệu hóa";
         } else if (exception instanceof LockedException || loginAttemptService.isBlocked(ip, username)) {
             target = "/login?locked";
+            reason = "Tài khoản tạm thời bị khóa do nhập sai nhiều lần";
         } else {
             target = "/login?error";
+            reason = "Sai tên đăng nhập hoặc mật khẩu";
         }
+
+        if (auditLogService != null) {
+            auditLogService.log(username != null ? username : "anonymous", "GUEST",
+                    "LOGIN_FAILED", "AUTH", username,
+                    "Đăng nhập thất bại: " + reason, ip, "FAILURE");
+        }
+
         response.sendRedirect(request.getContextPath() + target);
     }
 

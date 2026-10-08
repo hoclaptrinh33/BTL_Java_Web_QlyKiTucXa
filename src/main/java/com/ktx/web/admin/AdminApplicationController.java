@@ -2,7 +2,6 @@ package com.ktx.web.admin;
 
 import java.util.List;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -48,7 +47,9 @@ public class AdminApplicationController {
     }
 
     @GetMapping
-    public String list(@RequestParam(value = "periodId", required = false) Long periodId, Model model) {
+    public String list(@RequestParam(value = "periodId", required = false) Long periodId,
+                       @RequestParam(value = "page", defaultValue = "0") int page,
+                       Model model) {
         List<RegistrationPeriod> periods = periodService.listAll();
         
         Long selectedPeriodId = periodId;
@@ -56,14 +57,19 @@ public class AdminApplicationController {
             selectedPeriodId = periods.get(0).getId();
         }
 
-        List<RoomApplication> applications = List.of();
+        var applicationPage = org.springframework.data.domain.Page.<RoomApplication>empty();
         if (selectedPeriodId != null) {
-            applications = roomApplicationService.listAllByPeriod(selectedPeriodId);
+            applicationPage = roomApplicationService.pageByPeriod(selectedPeriodId,
+                    org.springframework.data.domain.PageRequest.of(Math.max(page, 0), 40));
+            if (applicationPage == null) {
+                applicationPage = org.springframework.data.domain.Page.empty();
+            }
         }
 
         model.addAttribute("periods", periods);
         model.addAttribute("selectedPeriodId", selectedPeriodId);
-        model.addAttribute("applications", applications);
+        model.addAttribute("applications", applicationPage.getContent());
+        model.addAttribute("applicationPage", applicationPage);
 
         page(model, "Danh sách đơn đăng ký", "Quản lý và duyệt đơn nguyện vọng phòng ở ký túc xá");
         return "admin/applications/list";

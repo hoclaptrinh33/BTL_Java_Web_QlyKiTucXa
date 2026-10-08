@@ -50,15 +50,19 @@ public class AdminRenewalController {
     @GetMapping({"/manage/renewals", "/admin/renewals"})
     public String list(@RequestParam(value = "status", required = false) RenewalStatus status,
                        @RequestParam(value = "buildingId", required = false) Long buildingId,
+                       @RequestParam(value = "page", defaultValue = "0") int page,
                        Model model) {
-        List<RenewalRequest> requests = renewalService.searchRequests(status, buildingId);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(Math.max(page, 0), 20);
+        org.springframework.data.domain.Page<RenewalRequest> requestPage = renewalService.searchRequests(status, buildingId, pageable);
         List<Building> buildings = buildingRepository.findAll();
 
-        model.addAttribute("requests", requests);
+        model.addAttribute("requestPage", requestPage);
+        model.addAttribute("requests", requestPage.getContent());
         model.addAttribute("buildings", buildings);
         model.addAttribute("statuses", RenewalStatus.values());
         model.addAttribute("selectedStatus", status);
         model.addAttribute("selectedBuildingId", buildingId);
+        model.addAttribute("baseUri", base());
         model.addAttribute("pageTitle", "Quản lý Gia hạn hợp đồng");
         model.addAttribute("pageSubtitle", "Xét duyệt đơn xin ở tiếp và gia hạn thời hạn lưu trú của sinh viên");
         model.addAttribute("activeMenu", "renewals");

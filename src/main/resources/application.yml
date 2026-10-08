@@ -1,8 +1,10 @@
 spring:
   application:
     name: ktx-app
+  thymeleaf:
+    cache: false
   datasource:
-    url: jdbc:mysql://localhost:3306/ktx?sslMode=DISABLED&characterEncoding=utf8
+    url: jdbc:mysql://localhost:3306/ktx?sslMode=DISABLED&characterEncoding=utf8&allowPublicKeyRetrieval=true
     username: ${KTX_DB_USER:ktx}
     password: ${KTX_DB_PASSWORD:ktx}
   jpa:
@@ -12,6 +14,10 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 50MB
 
 server:
   servlet:
@@ -21,6 +27,8 @@ server:
         http-only: true
 
 ktx:
+  upload:
+    dir: uploads
   mail:
     enabled: false
   timezone: Asia/Ho_Chi_Minh

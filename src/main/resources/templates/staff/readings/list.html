@@ -3,46 +3,76 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       th:replace="~{layouts/main :: layout(~{::content})}">
 <body>
-<main th:fragment="content" class="container-fluid py-4">
+<main th:fragment="content" class="container-fluid py-4"
+      th:with="recordPct=${totalRooms > 0 ? (recordedCount * 100 / totalRooms) : 0}">
 
-    <!-- Header card -->
-    <div class="card shadow-sm border-0 mb-4 bg-primary text-white">
-        <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <!-- Hero / Header Control Card -->
+    <div class="ktx-hero-header mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 position-relative" style="z-index: 1;">
             <div>
-                <h4 class="fw-bold mb-1 d-flex align-items-center gap-2">
-                    <i class="bi bi-lightning-charge"></i>
-                    <span th:if="${building != null}" th:text="${'Chỉ số điện nước & Hóa đơn — Tòa ' + building.code + ' (' + building.name + ')'}">Tòa A</span>
-                    <span th:if="${building == null}">Chỉ số điện nước ký túc xá</span>
-                </h4>
-                <p class="mb-0 opacity-75 small">Ghi nhận chỉ số tiêu thụ điện, nước sinh hoạt và phát hành hóa đơn chia đều theo số sinh viên đang ở</p>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge rounded-pill bg-warning-subtle text-dark border border-warning-subtle px-3 py-1 fw-semibold">
+                        <i class="bi bi-lightning-charge-fill text-warning me-1"></i>Quản lý Tiêu thụ Năng lượng
+                    </span>
+                    <span class="badge rounded-pill bg-light text-secondary border">Điện nước sinh hoạt</span>
+                    <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle">
+                        <span class="status-dot dot-info"></span>Kỳ chốt chỉ số
+                    </span>
+                </div>
+                <h3 class="fw-bold mb-1 d-flex align-items-center gap-2 text-dark">
+                    <span class="ktx-kpi__icon is-peach d-inline-flex align-items-center justify-content-center shadow-xs" style="width:42px;height:42px;margin:0;border-radius:12px;">
+                        <i class="bi bi-speedometer2 fs-4"></i>
+                    </span>
+                    <span th:if="${building != null}" th:text="${'Chỉ số Điện Nước — Tòa ' + building.code + ' (' + building.name + ')'}">Tòa A</span>
+                    <span th:unless="${building != null}">Chỉ số Điện Nước Ký Túc Xá</span>
+                </h3>
+                <p class="text-muted small mb-0 mt-1">
+                    Ghi nhận số điện (kWh), số nước (m³) hàng tháng và phát hành hóa đơn chia đều cho các sinh viên đang cư trú
+                </p>
             </div>
+
+            <!-- Toolbar: Bộ chọn Tòa & Tháng & Phát hành toàn tòa -->
             <div class="d-flex gap-2 align-items-center flex-wrap">
-                <!-- Form chọn tháng & tòa (nếu admin) -->
-                <form method="get" th:action="@{/staff/readings}" class="d-flex gap-2 align-items-center">
+                <form method="get" th:action="@{/manage/readings}" class="d-flex gap-2 align-items-center flex-wrap" id="buildingMonthForm">
+                    <!-- Dropdown chọn tòa cho Quản lý / Admin -->
                     <div th:if="${isAdmin}" class="d-flex align-items-center">
-                        <select name="buildingId" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option th:each="b : ${buildings}"
-                                    th:value="${b.id}"
-                                    th:text="${'Tòa ' + b.code + ' - ' + b.name}"
-                                    th:selected="${building != null && b.id == building.id}">Tòa A</option>
-                        </select>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-building"></i></span>
+                            <select name="buildingId" class="form-select form-select-sm border-start-0 fw-semibold" onchange="this.form.submit()">
+                                <option th:each="b : ${buildings}"
+                                        th:value="${b.id}"
+                                        th:text="${'Tòa ' + b.code + ' — ' + b.name}"
+                                        th:selected="${building != null && b.id == building.id}">Tòa A</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-center">
-                        <input type="month" name="month" class="form-select form-select-sm"
-                               th:value="${selectedMonth}" onchange="this.form.submit()"/>
+
+                    <!-- Bộ chọn Tháng với nút Điều hướng Trước/Sau -->
+                    <div class="d-flex align-items-center gap-1">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" title="Tháng trước" onclick="navigateMonth(-1)">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <input type="month" id="monthInput" name="month" class="form-control form-control-sm fw-bold font-mono-num"
+                               style="width: 145px;" th:value="${selectedMonth}" onchange="this.form.submit()"/>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" title="Tháng sau" onclick="navigateMonth(1)">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
                     </div>
                 </form>
 
-                <!-- Nút phát hành toàn tòa cho Admin -->
-                <th:block sec:authorize="hasRole('ADMIN')">
-                    <form th:if="${building != null}" th:action="@{/admin/invoices/generate}" method="post"
-                          data-confirm="Bạn có chắc chắn muốn phát hành hóa đơn điện nước cho TẤT CẢ các phòng đã ghi chỉ số thuộc tòa này?"
+                <!-- Nút phát hành hóa đơn toàn tòa -->
+                <th:block sec:authorize="hasRole('ADMIN') or hasRole('QUAN_LY') or hasAuthority('invoice.issue')">
+                    <form th:if="${building != null and recordedCount > 0}"
+                          th:action="@{/admin/invoices/generate}" method="post"
+                          th:attr="data-confirm=${'Xác nhận phát hành hóa đơn điện nước tháng ' + selectedMonth + ' cho TẤT CẢ ' + recordedCount + ' phòng đã ghi chỉ số thuộc Tòa ' + building.code + '?'}"
                           data-confirm-title="Phát hành hóa đơn toàn tòa"
-                          data-confirm-button="Phát hành ngay">
+                          data-confirm-button="Phát hành ngay"
+                          data-confirm-type="info">
                         <input type="hidden" name="buildingId" th:value="${building.id}"/>
                         <input type="hidden" name="month" th:value="${selectedMonth}"/>
-                        <button type="submit" class="btn btn-warning btn-sm fw-semibold shadow-sm text-dark">
+                        <button type="submit" class="btn btn-warning btn-sm fw-semibold shadow-xs text-dark px-3">
                             <i class="bi bi-receipt-cutoff me-1"></i>Phát hành cả tòa
+                            <span class="badge bg-dark text-white ms-1 rounded-pill" th:text="${recordedCount}">0</span>
                         </button>
                     </form>
                 </th:block>
@@ -50,58 +80,155 @@
         </div>
     </div>
 
-    <!-- Metric Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-primary border-4">
-                <div class="card-body p-3">
-                    <div class="text-muted small fw-medium">Tổng số phòng</div>
-                    <div class="h4 fw-bold mb-0 mt-1 text-dark" th:text="${totalRooms}">0</div>
+    <!-- 4 Interactive KPI Metric Cards -->
+    <section class="ktx-kpi-grid mb-4">
+        <!-- Card 1: Tổng số phòng -->
+        <article class="ktx-kpi-interactive">
+            <span class="ktx-kpi__icon is-lilac"><i class="bi bi-door-closed"></i></span>
+            <p class="ktx-kpi__label">Tổng số phòng</p>
+            <p class="ktx-kpi__value text-dark font-mono-num" th:text="${totalRooms}">0</p>
+            <p class="ktx-kpi__meta text-muted">
+                <i class="bi bi-building me-1"></i><span th:text="${building != null ? ('Tòa ' + building.code) : 'Toàn ký túc xá'}">Tòa A</span>
+            </p>
+        </article>
+
+        <!-- Card 2: Đã ghi chỉ số -->
+        <article class="ktx-kpi-interactive">
+            <span class="ktx-kpi__icon is-sky"><i class="bi bi-speedometer2"></i></span>
+            <p class="ktx-kpi__label">Đã ghi chỉ số</p>
+            <div class="d-flex align-items-baseline gap-2">
+                <p class="ktx-kpi__value text-primary font-mono-num" th:text="${recordedCount + ' / ' + totalRooms}">0 / 0</p>
+                <span class="badge bg-primary-subtle text-primary small font-mono-num fw-bold" th:text="${recordPct + '%'}">0%</span>
+            </div>
+            <div class="progress mt-2" style="height: 6px; background: #E2E8F0;" title="Tiến độ ghi số điện nước">
+                <div class="progress-bar rounded bg-primary" role="progressbar"
+                     th:style="'width: ' + ${recordPct} + '%;'"
+                     th:aria-valuenow="${recordPct}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </article>
+
+        <!-- Card 3: Đã lập hóa đơn -->
+        <article class="ktx-kpi-interactive">
+            <span class="ktx-kpi__icon is-mint"><i class="bi bi-receipt"></i></span>
+            <p class="ktx-kpi__label">Đã phát hành HĐ</p>
+            <p class="ktx-kpi__value text-success font-mono-num" th:text="${issuedCount + ' phòng'}">0 phòng</p>
+            <p class="ktx-kpi__meta text-muted">
+                <i class="bi bi-check-circle text-success me-1"></i>Hóa đơn đã gửi sinh viên
+            </p>
+        </article>
+
+        <!-- Card 4: Chưa ghi chỉ số -->
+        <article class="ktx-kpi-interactive">
+            <span class="ktx-kpi__icon is-peach"><i class="bi bi-clock-history"></i></span>
+            <p class="ktx-kpi__label">Chưa ghi chỉ số</p>
+            <p class="ktx-kpi__value font-mono-num"
+               th:classappend="${(totalRooms - recordedCount) > 0 ? 'text-warning-emphasis' : 'text-muted'}"
+               th:text="${(totalRooms - recordedCount) + ' phòng'}">0 phòng</p>
+            <p class="ktx-kpi__meta text-muted">
+                <span th:if="${(totalRooms - recordedCount) > 0}" class="text-danger fw-semibold">
+                    <i class="bi bi-exclamation-circle me-1"></i>Cần kiểm tra công tơ
+                </span>
+                <span th:unless="${(totalRooms - recordedCount) > 0}" class="text-success fw-semibold">
+                    <i class="bi bi-check-all me-1"></i>Đã hoàn thành 100%
+                </span>
+            </p>
+        </article>
+    </section>
+
+    <!-- Interactive Search & Floor Filter Toolbar -->
+    <div class="ktx-card mb-4 p-3 border-0 shadow-sm">
+        <div class="row g-3 align-items-center">
+            <!-- Tìm kiếm phòng tức thì -->
+            <div class="col-sm-6 col-md-4">
+                <label for="roomSearchInput" class="form-label fw-bold text-dark mb-1 small d-flex align-items-center gap-1">
+                    <i class="bi bi-search text-primary"></i>Tìm phòng tức thì
+                </label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="roomSearchInput" class="form-control border-start-0 ps-0"
+                           placeholder="Nhập số phòng (ví dụ: 101, 202...)" oninput="handleSearchChange()"/>
+                    <button type="button" class="btn btn-light border border-start-0 d-none" id="clearSearchBtn" onclick="clearSearchInput()" title="Xóa tìm kiếm">
+                        <i class="bi bi-x-circle text-muted"></i>
+                    </button>
                 </div>
             </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-info border-4">
-                <div class="card-body p-3">
-                    <div class="text-muted small fw-medium">Đã ghi chỉ số</div>
-                    <div class="h4 fw-bold mb-0 mt-1 text-info" th:text="${recordedCount}">0</div>
-                </div>
+
+            <!-- Lọc theo Tầng -->
+            <div class="col-sm-6 col-md-3">
+                <label for="floorFilterSelect" class="form-label fw-bold text-dark mb-1 small d-flex align-items-center gap-1">
+                    <i class="bi bi-layers text-primary"></i>Lọc theo Tầng
+                </label>
+                <select id="floorFilterSelect" class="form-select form-select-sm fw-semibold" onchange="handleFilterChange()">
+                    <option value="ALL">-- Tất cả các tầng --</option>
+                    <option value="1">Tầng 1</option>
+                    <option value="2">Tầng 2</option>
+                    <option value="3">Tầng 3</option>
+                    <option value="4">Tầng 4</option>
+                    <option value="5">Tầng 5</option>
+                    <option value="6">Tầng 6</option>
+                    <option value="7">Tầng 7</option>
+                    <option value="8">Tầng 8</option>
+                </select>
             </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-success border-4">
-                <div class="card-body p-3">
-                    <div class="text-muted small fw-medium">Đã lập hóa đơn</div>
-                    <div class="h4 fw-bold mb-0 mt-1 text-success" th:text="${issuedCount}">0</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-warning border-4">
-                <div class="card-body p-3">
-                    <div class="text-muted small fw-medium">Chưa ghi chỉ số</div>
-                    <div class="h4 fw-bold mb-0 mt-1 text-warning" th:text="${totalRooms - recordedCount}">0</div>
+
+            <!-- Lọc theo Tình trạng ghi số -->
+            <div class="col-sm-12 col-md-5">
+                <label class="form-label fw-bold text-dark mb-1 small d-flex align-items-center gap-1">
+                    <i class="bi bi-funnel text-primary"></i>Tình trạng ghi số
+                </label>
+                <div class="ktx-pill-group w-100" id="readingStatusFilterGroup">
+                    <button type="button" class="ktx-pill-btn active flex-fill justify-content-center" data-status-filter="ALL" onclick="setStatusFilter('ALL', this)">
+                        Tất cả
+                    </button>
+                    <button type="button" class="ktx-pill-btn flex-fill justify-content-center" data-status-filter="UNRECORDED" onclick="setStatusFilter('UNRECORDED', this)">
+                        <span class="status-dot dot-warning"></span>Chưa ghi
+                    </button>
+                    <button type="button" class="ktx-pill-btn flex-fill justify-content-center" data-status-filter="RECORDED" onclick="setStatusFilter('RECORDED', this)">
+                        <span class="status-dot dot-info"></span>Đã ghi
+                    </button>
+                    <button type="button" class="ktx-pill-btn flex-fill justify-content-center" data-status-filter="INVOICED" onclick="setStatusFilter('INVOICED', this)">
+                        <span class="status-dot dot-success"></span>Đã lập HĐ
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Danh sách phòng và chỉ số -->
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
-                <i class="bi bi-table text-primary"></i>
-                <span th:text="${'Bảng chỉ số điện nước tháng ' + selectedMonth}">Tháng 2026-09</span>
-            </h5>
-            <span class="badge bg-light text-secondary border" th:text="${'Hiển thị ' + #lists.size(rooms) + ' phòng'}"></span>
+    <!-- Data Table Card with Integrated Pagination -->
+    <div class="ktx-modern-table-card mb-4" id="readingTableCard">
+        <!-- Card Header: Title + Page Size Selector + Counter -->
+        <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2 fs-6">
+                    <i class="bi bi-table text-primary"></i>
+                    <span th:text="${'Bảng chỉ số điện nước tháng ' + selectedMonth}">Tháng 2026-09</span>
+                </h5>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Chọn số dòng hiển thị mỗi trang -->
+                <div class="d-flex align-items-center gap-1 small text-muted">
+                    <span>Xem:</span>
+                    <select id="pageSizeSelect" class="form-select form-select-sm font-mono-num fw-semibold py-1 pe-4"
+                            style="width: auto; min-width: 80px;" onchange="changePageSize(this.value)">
+                        <option value="15" selected>15</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="ALL">Tất cả</option>
+                    </select>
+                    <span>phòng/trang</span>
+                </div>
+                <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill font-mono-num fw-semibold" id="roomCounter"
+                      th:text="${'Hiển thị ' + #lists.size(rooms) + ' phòng'}"></span>
+            </div>
         </div>
+
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <table class="table table-hover align-middle mb-0" id="readingTable">
+                <thead>
                     <tr>
                         <th class="ps-4">Phòng</th>
-                        <th>Tầng</th>
-                        <th>Loại phòng</th>
+                        <th>Vị trí &amp; Loại</th>
                         <th class="text-center">Số SV ở (N)</th>
                         <th>Chỉ số Điện (kWh)</th>
                         <th>Chỉ số Nước (m³)</th>
@@ -110,102 +237,429 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:if="${#lists.isEmpty(rooms)}">
-                        <td colspan="8" class="text-center py-5 text-muted">
-                            <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
-                            Chưa có dữ liệu phòng cho tòa nhà này.
+                    <tr th:if="${#lists.isEmpty(rooms)}" id="emptyServerRow">
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <div class="py-4">
+                                <i class="bi bi-inbox fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                                <h6 class="fw-bold text-dark mb-1">Chưa có dữ liệu phòng cho tòa nhà này</h6>
+                                <p class="text-secondary small mb-0">Vui lòng kiểm tra danh sách phòng hoặc chuyển sang tòa nhà khác.</p>
+                            </div>
                         </td>
                     </tr>
-                    <tr th:each="r : ${rooms}">
-                        <td class="ps-4 fw-bold text-dark font-monospace" th:text="${r.roomNumber}">101</td>
-                        <td th:text="${'Tầng ' + r.floor}">Tầng 1</td>
-                        <td class="small text-muted" th:text="${r.roomTypeName}">Phòng 4 giường</td>
-                        <td class="text-center">
-                            <span class="badge bg-light text-dark border px-2 py-1" th:text="${r.occupyingCount + ' SV'}">0 SV</span>
+                    <tr th:each="r : ${rooms}"
+                        class="room-row"
+                        th:attr="data-room-number=${r.roomNumber},
+                                 data-floor=${r.floor},
+                                 data-has-reading=${r.hasReading},
+                                 data-has-invoice=${r.hasActiveInvoice},
+                                 data-occupying=${r.occupyingCount}">
+                        <!-- Phòng -->
+                        <td class="ps-4">
+                            <div class="d-inline-flex align-items-center gap-2">
+                                <span class="ktx-chip font-mono-num fw-bold fs-6" th:text="${r.roomNumber}">101</span>
+                            </div>
                         </td>
-                        <!-- Cột điện -->
+
+                        <!-- Vị trí & Loại phòng -->
+                        <td>
+                            <div class="fw-semibold text-dark small" th:text="${'Tầng ' + r.floor}">Tầng 1</div>
+                            <small class="text-muted" th:text="${r.roomTypeName}">Phòng 4 giường</small>
+                        </td>
+
+                        <!-- Số SV đang ở -->
+                        <td class="text-center">
+                            <span th:if="${r.occupyingCount > 0}"
+                                  class="badge bg-light text-dark border px-2 py-1 fw-bold">
+                                <i class="bi bi-people-fill text-primary me-1"></i>
+                                <span th:text="${r.occupyingCount + ' SV'}">4 SV</span>
+                            </span>
+                            <span th:unless="${r.occupyingCount > 0}"
+                                  class="badge bg-secondary-subtle text-secondary px-2 py-1">
+                                <i class="bi bi-dash-circle me-1"></i>Trống (N=0)
+                            </span>
+                        </td>
+
+                        <!-- Cột chỉ số Điện -->
                         <td>
                             <div th:if="${r.hasReading}">
-                                <div class="fw-bold text-dark" th:text="${r.kwh != null ? r.kwh + ' kWh' : '—'}">150 kWh</div>
-                                <div class="small text-muted" th:if="${!r.reading.elecReplaced}">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2 py-1 fs-6 font-mono-num fw-bold">
+                                        <i class="bi bi-lightning-fill text-warning me-1"></i>
+                                        <span th:text="${r.kwh != null ? r.kwh + ' kWh' : '—'}">150 kWh</span>
+                                    </span>
+                                </div>
+                                <!-- Số cũ -> Số mới -->
+                                <div class="small font-mono-num text-muted mt-1" th:if="${!r.reading.elecReplaced}">
                                     <span th:text="${r.reading.elecPrev + ' → ' + r.reading.elecCurr}">100 → 250</span>
                                 </div>
-                                <div class="small text-primary" th:if="${r.reading.elecReplaced}">
-                                    <span class="badge bg-warning text-dark py-0 px-1 me-1">Đã đổi CT</span>
-                                    <span th:text="${r.reading.elecPrev + ' → ' + r.reading.elecOldFinal + ' | ' + r.reading.elecNewStart + ' → ' + r.reading.elecCurr}"></span>
+                                <div class="small text-primary mt-1" th:if="${r.reading.elecReplaced}">
+                                    <span class="badge bg-danger-subtle text-danger py-0 px-1 me-1"><i class="bi bi-arrow-repeat me-1"></i>Đã đổi CT</span>
+                                    <span class="font-mono-num" th:text="${r.reading.elecPrev + ' → ' + r.reading.elecOldFinal + ' | ' + r.reading.elecNewStart + ' → ' + r.reading.elecCurr}"></span>
                                 </div>
                             </div>
                             <div th:unless="${r.hasReading}">
-                                <span class="badge bg-light text-muted border">Chưa ghi</span>
+                                <span class="badge bg-light text-muted border border-dashed px-2 py-1">
+                                    <i class="bi bi-dash me-1"></i>Chưa ghi
+                                </span>
                             </div>
                         </td>
-                        <!-- Cột nước -->
+
+                        <!-- Cột chỉ số Nước -->
                         <td>
                             <div th:if="${r.hasReading}">
-                                <div class="fw-bold text-dark" th:text="${r.m3 != null ? r.m3 + ' m³' : '—'}">12 m³</div>
-                                <div class="small text-muted" th:if="${!r.reading.waterReplaced}">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1 fs-6 font-mono-num fw-bold">
+                                        <i class="bi bi-droplet-fill text-info me-1"></i>
+                                        <span th:text="${r.m3 != null ? r.m3 + ' m³' : '—'}">12 m³</span>
+                                    </span>
+                                </div>
+                                <!-- Số cũ -> Số mới -->
+                                <div class="small font-mono-num text-muted mt-1" th:if="${!r.reading.waterReplaced}">
                                     <span th:text="${r.reading.waterPrev + ' → ' + r.reading.waterCurr}">10 → 22</span>
                                 </div>
-                                <div class="small text-primary" th:if="${r.reading.waterReplaced}">
-                                    <span class="badge bg-warning text-dark py-0 px-1 me-1">Đã đổi ĐH</span>
-                                    <span th:text="${r.reading.waterPrev + ' → ' + r.reading.waterOldFinal + ' | ' + r.reading.waterNewStart + ' → ' + r.reading.waterCurr}"></span>
+                                <div class="small text-primary mt-1" th:if="${r.reading.waterReplaced}">
+                                    <span class="badge bg-danger-subtle text-danger py-0 px-1 me-1"><i class="bi bi-arrow-repeat me-1"></i>Đã đổi ĐH</span>
+                                    <span class="font-mono-num" th:text="${r.reading.waterPrev + ' → ' + r.reading.waterOldFinal + ' | ' + r.reading.waterNewStart + ' → ' + r.reading.waterCurr}"></span>
                                 </div>
                             </div>
                             <div th:unless="${r.hasReading}">
-                                <span class="badge bg-light text-muted border">Chưa ghi</span>
+                                <span class="badge bg-light text-muted border border-dashed px-2 py-1">
+                                    <i class="bi bi-dash me-1"></i>Chưa ghi
+                                </span>
                             </div>
                         </td>
+
                         <!-- Trạng thái -->
                         <td class="text-center">
-                            <span th:if="${r.hasActiveInvoice}" class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                                <i class="bi bi-check2-circle me-1"></i>Đã lập HĐ
+                            <span th:if="${r.hasActiveInvoice}"
+                                  class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                <span class="status-dot dot-success"></span>Đã lập HĐ
                             </span>
-                            <span th:if="${!r.hasActiveInvoice && r.hasReading}" class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
-                                <i class="bi bi-pencil-square me-1"></i>Đã ghi số
+                            <span th:if="${!r.hasActiveInvoice && r.hasReading}"
+                                  class="badge rounded-pill bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1">
+                                <span class="status-dot dot-info"></span>Đã ghi số
                             </span>
-                            <span th:if="${!r.hasActiveInvoice && !r.hasReading}" class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">
-                                <i class="bi bi-dash-circle me-1"></i>Chưa ghi số
+                            <span th:if="${!r.hasActiveInvoice && !r.hasReading}"
+                                  class="badge rounded-pill bg-warning-subtle text-dark border border-warning-subtle px-2 py-1">
+                                <span class="status-dot dot-warning"></span>Chưa ghi
                             </span>
                         </td>
+
                         <!-- Thao tác -->
                         <td class="text-end pe-4">
                             <div class="d-inline-flex gap-1 align-items-center">
-                                <!-- Nút ghi/sửa chỉ số -->
+                                <!-- Nút ghi / sửa chỉ số -->
                                 <a th:if="${!r.hasActiveInvoice}"
-                                   th:href="@{/staff/readings/record(roomId=${r.roomId}, month=${selectedMonth})}"
-                                   class="btn btn-sm btn-outline-primary"
-                                   th:title="${r.hasReading ? 'Chỉnh sửa chỉ số' : 'Nhập chỉ số điện nước'}">
+                                   th:href="@{/manage/readings/record(roomId=${r.roomId}, month=${selectedMonth})}"
+                                   class="btn btn-sm shadow-xs fw-semibold"
+                                   th:classappend="${r.hasReading ? 'btn-outline-primary' : 'btn-primary'}"
+                                   th:title="${r.hasReading ? 'Chỉnh sửa chỉ số đã ghi' : 'Nhập chỉ số điện nước'}">
                                     <i class="bi" th:classappend="${r.hasReading} ? 'bi-pencil' : 'bi-plus-lg'"></i>
                                     <span th:text="${r.hasReading ? 'Sửa số' : 'Ghi số'}">Ghi số</span>
                                 </a>
-                                <span th:if="${r.hasActiveInvoice}" class="badge bg-light text-muted border" title="Hóa đơn đã được phát hành, không thể sửa chỉ số">
-                                    <i class="bi bi-lock-fill me-1"></i>Đã khóa
-                                </span>
 
-                                <!-- Nút phát hành hóa đơn phòng -->
+                                <!-- Nút phát hành hóa đơn phòng riêng lẻ -->
                                 <form th:if="${!r.hasActiveInvoice && r.hasReading && r.occupyingCount > 0}"
                                       th:action="@{/staff/readings/{roomId}/issue(roomId=${r.roomId})}"
                                       method="post"
-                                      data-confirm="Xác nhận phát hành hóa đơn điện nước tháng này cho các sinh viên đang ở phòng?"
-                                      data-confirm-title="Phát hành hóa đơn"
+                                      th:attr="data-confirm=${'Xác nhận phát hành hóa đơn điện nước tháng ' + selectedMonth + ' cho phòng ' + r.roomNumber + ' (' + r.occupyingCount + ' SV cư trú)?'}"
+                                      data-confirm-title="Phát hành hóa đơn phòng"
                                       data-confirm-button="Phát hành">
                                     <input type="hidden" name="month" th:value="${selectedMonth}"/>
-                                    <button type="submit" class="btn btn-sm btn-success" title="Phát hành hóa đơn cho phòng này">
-                                        <i class="bi bi-receipt"></i> Lập HĐ
+                                    <button type="submit" class="btn btn-sm btn-success shadow-xs fw-semibold" title="Phát hành hóa đơn phòng này">
+                                        <i class="bi bi-receipt me-1"></i>Lập HĐ
                                     </button>
                                 </form>
+
+                                <!-- Phòng trống N=0 không thể lập HĐ -->
                                 <button th:if="${!r.hasActiveInvoice && r.hasReading && r.occupyingCount == 0}"
                                         type="button" class="btn btn-sm btn-outline-secondary" disabled
-                                        title="Phòng không có sinh viên đang ở (N=0), không thể lập HĐ cá nhân">
-                                    <i class="bi bi-receipt"></i> N=0
+                                        title="Phòng không có sinh viên đang ở (N=0), không thể lập hóa đơn cá nhân">
+                                    <i class="bi bi-dash-circle me-1"></i>N=0
                                 </button>
+
+                                <!-- Khóa HĐ -->
+                                <span th:if="${r.hasActiveInvoice}" class="badge bg-light text-muted border px-2 py-1"
+                                      title="Hóa đơn đã phát hành chính thức, không thể sửa chỉ số">
+                                    <i class="bi bi-lock-fill me-1"></i>Đã khóa
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Hàng báo khi lọc không tìm thấy phòng -->
+                    <tr id="emptyFilterRow" style="display: none;">
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <div class="py-4">
+                                <i class="bi bi-funnel fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                                <h6 class="fw-bold text-dark mb-1">Không tìm thấy phòng nào phù hợp bộ lọc</h6>
+                                <p class="text-secondary small mb-0">Vui lòng thử tìm số phòng khác hoặc chọn tầng / trạng thái khác.</p>
                             </div>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
+
+        <!-- Integrated Pagination Footer Navigation -->
+        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top bg-light-subtle flex-wrap gap-2" id="paginationBar">
+            <div class="small text-muted font-mono-num fw-semibold" id="paginationInfo">
+                Đang tải dữ liệu phòng...
+            </div>
+
+            <nav aria-label="Phân trang danh sách phòng">
+                <ul class="pagination pagination-sm mb-0 gap-1" id="paginationControls">
+                    <!-- Dynamic Page Buttons generated by JS -->
+                </ul>
+            </nav>
+        </div>
     </div>
+
+    <!-- Client-side Fast Filtering, Pagination & Month Navigation Script -->
+    <script>
+    let currentReadingStatusFilter = 'ALL';
+    let currentPage = 1;
+    let currentPageSize = 15; // Mặc định 15 phòng / trang để bảng gọn gàng, vừa màn hình
+
+    document.addEventListener('DOMContentLoaded', function() {
+        filterAndPaginateRooms();
+    });
+
+    function setStatusFilter(status, btn) {
+        currentReadingStatusFilter = status;
+        document.querySelectorAll('#readingStatusFilterGroup .ktx-pill-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        currentPage = 1; // Reset về trang 1 khi đổi bộ lọc
+        filterAndPaginateRooms();
+    }
+
+    function handleSearchChange() {
+        const val = document.getElementById('roomSearchInput').value.trim();
+        const clearBtn = document.getElementById('clearSearchBtn');
+        if (clearBtn) {
+            clearBtn.classList.toggle('d-none', !val);
+        }
+        currentPage = 1;
+        filterAndPaginateRooms();
+    }
+
+    function clearSearchInput() {
+        const input = document.getElementById('roomSearchInput');
+        input.value = '';
+        const clearBtn = document.getElementById('clearSearchBtn');
+        if (clearBtn) clearBtn.classList.add('d-none');
+        currentPage = 1;
+        filterAndPaginateRooms();
+        input.focus();
+    }
+
+    function handleFilterChange() {
+        currentPage = 1;
+        filterAndPaginateRooms();
+    }
+
+    function changePageSize(val) {
+        if (val === 'ALL') {
+            currentPageSize = 'ALL';
+        } else {
+            currentPageSize = parseInt(val, 10);
+        }
+        currentPage = 1;
+        filterAndPaginateRooms();
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        filterAndPaginateRooms();
+
+        // Cuộn mượt nhẹ lên đầu bảng nếu đang ở xa
+        const tableCard = document.getElementById('readingTableCard');
+        if (tableCard) {
+            const rect = tableCard.getBoundingClientRect();
+            if (rect.top < 0) {
+                tableCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }
+
+    function navigateMonth(offset) {
+        const input = document.getElementById('monthInput');
+        if (!input.value) return;
+
+        const parts = input.value.split('-');
+        let year = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10);
+
+        month += offset;
+        if (month > 12) {
+            month = 1;
+            year += 1;
+        } else if (month < 1) {
+            month = 12;
+            year -= 1;
+        }
+
+        const paddedMonth = month < 10 ? '0' + month : month;
+        input.value = year + '-' + paddedMonth;
+        document.getElementById('buildingMonthForm').submit();
+    }
+
+    function filterAndPaginateRooms() {
+        const searchVal = (document.getElementById('roomSearchInput').value || '').trim().toLowerCase();
+        const selectedFloor = document.getElementById('floorFilterSelect').value;
+        const allRows = Array.from(document.querySelectorAll('.room-row'));
+        const emptyFilterRow = document.getElementById('emptyFilterRow');
+
+        if (allRows.length === 0) {
+            const paginationBar = document.getElementById('paginationBar');
+            if (paginationBar) paginationBar.style.display = 'none';
+            return;
+        }
+
+        // 1. Thu thập các dòng khớp điều kiện lọc
+        const matchedRows = [];
+        allRows.forEach(row => {
+            const roomNum = (row.getAttribute('data-room-number') || '').toLowerCase();
+            const floor = row.getAttribute('data-floor') || '';
+            const hasReading = row.getAttribute('data-has-reading') === 'true';
+            const hasInvoice = row.getAttribute('data-has-invoice') === 'true';
+
+            let matchSearch = !searchVal || roomNum.includes(searchVal);
+            let matchFloor = (selectedFloor === 'ALL') || (floor === selectedFloor);
+            let matchStatus = true;
+            if (currentReadingStatusFilter === 'UNRECORDED') {
+                matchStatus = !hasReading;
+            } else if (currentReadingStatusFilter === 'RECORDED') {
+                matchStatus = hasReading && !hasInvoice;
+            } else if (currentReadingStatusFilter === 'INVOICED') {
+                matchStatus = hasInvoice;
+            }
+
+            if (matchSearch && matchFloor && matchStatus) {
+                matchedRows.push(row);
+            }
+        });
+
+        const totalMatched = matchedRows.length;
+
+        // Xử lý khi không có kết quả nào
+        if (totalMatched === 0) {
+            allRows.forEach(r => r.style.display = 'none');
+            if (emptyFilterRow) emptyFilterRow.style.display = '';
+            updatePaginationUI(0, 0, 0, 0);
+            return;
+        }
+
+        if (emptyFilterRow) emptyFilterRow.style.display = 'none';
+
+        // 2. Tính toán phân trang
+        let pageSize = currentPageSize === 'ALL' ? totalMatched : currentPageSize;
+        let totalPages = Math.max(1, Math.ceil(totalMatched / pageSize));
+
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+        if (currentPage < 1) {
+            currentPage = 1;
+        }
+
+        let startIndex = (currentPage - 1) * pageSize;
+        let endIndex = Math.min(startIndex + pageSize, totalMatched);
+
+        // 3. Hiển thị đúng các dòng thuộc trang hiện tại
+        allRows.forEach(r => r.style.display = 'none');
+        for (let i = startIndex; i < endIndex; i++) {
+            matchedRows[i].style.display = '';
+        }
+
+        // 4. Cập nhật giao diện phân trang & bộ đếm
+        updatePaginationUI(totalMatched, allRows.length, startIndex, endIndex, totalPages);
+    }
+
+    function updatePaginationUI(totalMatched, totalRooms, startIndex, endIndex, totalPages) {
+        const counter = document.getElementById('roomCounter');
+        const paginationInfo = document.getElementById('paginationInfo');
+        const paginationControls = document.getElementById('paginationControls');
+        const paginationBar = document.getElementById('paginationBar');
+
+        if (totalMatched === 0) {
+            if (counter) counter.textContent = '0 phòng';
+            if (paginationInfo) paginationInfo.textContent = 'Không có phòng nào thỏa mãn';
+            if (paginationControls) paginationControls.innerHTML = '';
+            return;
+        }
+
+        if (paginationBar) paginationBar.style.display = 'flex';
+
+        // Cập nhật bộ đếm góc trên
+        if (counter) {
+            if (currentPageSize === 'ALL' || totalMatched <= currentPageSize) {
+                counter.textContent = 'Hiển thị ' + totalMatched + ' / ' + totalRooms + ' phòng';
+            } else {
+                counter.textContent = 'Hiển thị ' + (startIndex + 1) + '-' + endIndex + ' / ' + totalMatched + ' phòng';
+            }
+        }
+
+        // Cập nhật thông tin phân trang góc dưới
+        if (paginationInfo) {
+            if (currentPageSize === 'ALL') {
+                paginationInfo.textContent = 'Hiển thị toàn bộ ' + totalMatched + ' phòng của tòa';
+            } else {
+                paginationInfo.textContent = 'Hiển thị ' + (startIndex + 1) + ' - ' + endIndex + ' / ' + totalMatched + ' phòng · Trang ' + currentPage + ' / ' + totalPages;
+            }
+        }
+
+        // Xây dựng dãy nút phân trang Bootstrap
+        if (!paginationControls) return;
+        paginationControls.innerHTML = '';
+
+        if (currentPageSize === 'ALL' || totalPages <= 1) {
+            return; // Chỉ 1 trang thì không cần hiện các nút
+        }
+
+        // Nút Trang trước (Previous)
+        const prevLi = document.createElement('li');
+        prevLi.className = 'page-item' + (currentPage === 1 ? ' disabled' : '');
+        prevLi.innerHTML = `<button type="button" class="page-link" onclick="goToPage(${currentPage - 1})" aria-label="Trang trước"><i class="bi bi-chevron-left"></i></button>`;
+        paginationControls.appendChild(prevLi);
+
+        // Các nút số trang thông minh
+        const delta = 2; // Số trang lân cận hiển thị
+        let range = [];
+        for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+            range.push(i);
+        }
+
+        if (currentPage - delta > 2) {
+            range.unshift('...');
+        }
+        if (currentPage + delta < totalPages - 1) {
+            range.push('...');
+        }
+
+        range.unshift(1);
+        if (totalPages > 1) {
+            range.push(totalPages);
+        }
+
+        range.forEach(item => {
+            const li = document.createElement('li');
+            if (item === '...') {
+                li.className = 'page-item disabled';
+                li.innerHTML = `<span class="page-link">...</span>`;
+            } else {
+                li.className = 'page-item' + (item === currentPage ? ' active' : '');
+                li.innerHTML = `<button type="button" class="page-link font-mono-num" onclick="goToPage(${item})">${item}</button>`;
+            }
+            paginationControls.appendChild(li);
+        });
+
+        // Nút Trang sau (Next)
+        const nextLi = document.createElement('li');
+        nextLi.className = 'page-item' + (currentPage === totalPages ? ' disabled' : '');
+        nextLi.innerHTML = `<button type="button" class="page-link" onclick="goToPage(${currentPage + 1})" aria-label="Trang sau"><i class="bi bi-chevron-right"></i></button>`;
+        paginationControls.appendChild(nextLi);
+    }
+    </script>
 
 </main>
 </body>

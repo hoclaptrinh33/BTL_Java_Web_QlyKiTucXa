@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ktx.common.util.OccupyingStatuses;
@@ -54,6 +55,7 @@ public class AdminViolationController {
 
     @GetMapping
     public String listViolations(@RequestParam(value = "buildingId", required = false) Long buildingId,
+                                 @RequestParam(value = "page", defaultValue = "0") int page,
                                  Authentication auth,
                                  Model model) {
         boolean isStaffScoper = isStaffScoped(auth);
@@ -67,11 +69,13 @@ public class AdminViolationController {
             buildings = buildingRepository.findAll();
         }
 
-        List<Violation> violations = conductService.getViolationsForAdmin(effectiveBuildingId);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(Math.max(page, 0), 20);
+        org.springframework.data.domain.Page<Violation> violationPage = conductService.getViolationsForAdmin(effectiveBuildingId, pageable);
 
         model.addAttribute("buildings", buildings);
         model.addAttribute("selectedBuildingId", effectiveBuildingId);
-        model.addAttribute("violations", violations);
+        model.addAttribute("violationPage", violationPage);
+        model.addAttribute("violations", violationPage.getContent());
         model.addAttribute("pageTitle", "Kỷ luật & Điểm rèn luyện");
         model.addAttribute("pageSubtitle", "Theo dõi biên bản vi phạm và xét chuẩn điều kiện lưu trú");
         model.addAttribute("activeMenu", "violations");
@@ -79,20 +83,72 @@ public class AdminViolationController {
         return "admin/violations/list";
     }
 
-    @GetMapping("/new")
-    public String newViolationForm(Authentication auth, Model model) {
-        List<Student> students;
+    @GetMapping("/search-students")
+    @ResponseBody
+    public List<java.util.Map<String, Object>> searchStudents(
+            @RequestParam(value = "keyword", defaultValue = "") String keyword,
+            Authentication auth) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        String kw = keyword.trim();
         boolean isStaffScoper = isStaffScoped(auth);
+        List<Student> students;
         if (isStaffScoper && staffScope != null && staffScope.buildingId(auth).isPresent() && contractRepository != null) {
             Long bId = staffScope.buildingId(auth).get();
-            List<Contract> contracts = contractRepository.findOccupyingContractsByBuildingId(
-                    bId, OccupyingStatuses.OCCUPYING);
-            students = contracts.stream().map(Contract::getStudent).distinct().toList();
+            students = contractRepository.searchOccupyingByBuildingId(
+                    bId, OccupyingStatuses.OCCUPYING, kw, org.springframework.data.domain.PageRequest.of(0, 15));
         } else {
-            students = studentRepository.findAllWithUser();
+            students = studentRepository.searchByKeyword(kw, org.springframework.data.domain.PageRequest.of(0, 15));
         }
 
-        model.addAttribute("students", students);
+        if (students.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> studentIds = students.stream().map(Student::getId).toList();
+        java.util.Map<Long, String> roomMap = new java.util.HashMap<>();
+        if (contractRepository != null) {
+            List<Contract> contracts = contractRepository.findOccupyingByStudentIdsWithDetails(studentIds, OccupyingStatuses.OCCUPYING);
+            for (Contract c : contracts) {
+                if (c.getBed() != null && c.getBed().getRoom() != null) {
+                    String bldg = c.getBed().getRoom().getBuilding() != null ? c.getBed().getRoom().getBuilding().getCode() : "";
+                    roomMap.put(c.getStudent().getId(), "P." + c.getBed().getRoom().getRoomNumber() + (!bldg.isEmpty() ? " (" + bldg + ")" : ""));
+                }
+            }
+        }
+
+        return students.stream().map(s -> {
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("id", s.getId());
+            map.put("fullName", s.getFullName());
+            map.put("studentCode", s.getStudentCode());
+            map.put("conductScore", s.getConductScore() != null ? s.getConductScore() : 100);
+            map.put("facultyCode", s.getFacultyCode() != null ? s.getFacultyCode() : "");
+            map.put("classCode", s.getClassCode() != null ? s.getClassCode() : "");
+            map.put("room", roomMap.getOrDefault(s.getId(), "Chưa xếp phòng"));
+            return map;
+        }).toList();
+    }
+
+    @GetMapping("/new")
+    public String newViolationForm(
+            @RequestParam(value = "studentId", required = false) Long preselectedStudentId,
+            Authentication auth, Model model) {
+        if (preselectedStudentId != null) {
+            studentRepository.findById(preselectedStudentId).ifPresent(s -> {
+                model.addAttribute("selectedStudent", s);
+                if (contractRepository != null) {
+                    List<Contract> contracts = contractRepository.findByStudentIdAndStatusInWithDetails(s.getId(), OccupyingStatuses.OCCUPYING);
+                    if (!contracts.isEmpty() && contracts.get(0).getBed() != null && contracts.get(0).getBed().getRoom() != null) {
+                        String bldg = contracts.get(0).getBed().getRoom().getBuilding() != null ? contracts.get(0).getBed().getRoom().getBuilding().getCode() : "";
+                        model.addAttribute("selectedStudentRoom", "P." + contracts.get(0).getBed().getRoom().getRoomNumber() + (!bldg.isEmpty() ? " (" + bldg + ")" : ""));
+                    }
+                }
+            });
+        }
+
+        model.addAttribute("students", List.of());
         model.addAttribute("types", ViolationType.values());
         model.addAttribute("severities", ViolationSeverity.values());
         model.addAttribute("actions", ViolationAction.values());

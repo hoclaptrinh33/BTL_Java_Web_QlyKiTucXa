@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -26,7 +25,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.ktx.domain.Building;
 import com.ktx.domain.Staff;
 import com.ktx.domain.enums.BuildingGenderPolicy;
-import com.ktx.dto.RoomDiagramDto;
 import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.UserRepository;
 import com.ktx.repository.StaffRepository;

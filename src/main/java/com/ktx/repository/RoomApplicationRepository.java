@@ -44,6 +44,17 @@ public interface RoomApplicationRepository extends JpaRepository<RoomApplication
             """)
     List<RoomApplication> findByPeriodIdWithDetails(@Param("periodId") Long periodId);
 
+    @Query(value = """
+            SELECT a FROM RoomApplication a
+            JOIN FETCH a.student s
+            LEFT JOIN FETCH a.preferredBuilding b
+            WHERE a.period.id = :periodId
+            ORDER BY a.id DESC
+            """,
+            countQuery = "SELECT COUNT(a) FROM RoomApplication a WHERE a.period.id = :periodId")
+    org.springframework.data.domain.Page<RoomApplication> findPageByPeriodId(@Param("periodId") Long periodId,
+                                                                            org.springframework.data.domain.Pageable pageable);
+
     @Query("""
             SELECT a FROM RoomApplication a
             JOIN FETCH a.student s

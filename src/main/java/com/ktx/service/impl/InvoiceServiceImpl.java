@@ -1,7 +1,13 @@
 package com.ktx.service.impl;
 
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,7 +67,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     public Invoice getInvoiceById(long invoiceId) {
-        return invoiceRepository.findById(invoiceId)
+        return invoiceRepository.findByIdWithDetails(invoiceId)
+                .or(() -> invoiceRepository.findById(invoiceId))
                 .orElseThrow(() -> new BusinessException("Không tìm thấy hóa đơn #" + invoiceId));
     }
 
@@ -74,6 +81,42 @@ public class InvoiceServiceImpl implements InvoiceService {
     public List<Invoice> searchInvoices(InvoiceStatus status, InvoiceType type, String keyword) {
         String trimmed = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
         return invoiceRepository.searchInvoices(status, type, trimmed);
+    }
+
+    @Override
+    public Page<Invoice> searchInvoices(InvoiceStatus status, InvoiceType type, String keyword, Pageable pageable) {
+        String trimmed = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        if (status == null && type == null && trimmed == null) {
+            return invoiceRepository.findAllPage(pageable);
+        }
+        return invoiceRepository.searchPage(status, type, trimmed, pageable);
+    }
+
+    private volatile List<Object[]> cachedSummary = null;
+    private volatile long cachedSummaryTime = 0;
+
+    @Override
+    public List<Object[]> summarizeByStatus() {
+        long now = System.currentTimeMillis();
+        if (cachedSummary != null && (now - cachedSummaryTime < 30_000)) {
+            return cachedSummary;
+        }
+        List<Object[]> fresh = invoiceRepository.summarizeByStatus();
+        cachedSummary = fresh;
+        cachedSummaryTime = now;
+        return fresh;
+    }
+
+    @Override
+    public Map<Long, BigDecimal> paidAmounts(Collection<Long> invoiceIds) {
+        Map<Long, BigDecimal> paid = new HashMap<>();
+        if (invoiceIds == null || invoiceIds.isEmpty()) {
+            return paid;
+        }
+        for (Object[] row : paymentRepository.sumByInvoiceIds(invoiceIds)) {
+            paid.put((Long) row[0], (BigDecimal) row[1]);
+        }
+        return paid;
     }
 
     @Override

@@ -25,10 +25,6 @@ public class RoomChangeRequest {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "student_id", nullable = false)
-    private Student student;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "contract_id", nullable = false)
     private Contract contract;
 
@@ -74,11 +70,7 @@ public class RoomChangeRequest {
     }
 
     public Student getStudent() {
-        return student;
-    }
-
-    public void setStudent(Student student) {
-        this.student = student;
+        return contract == null ? null : contract.getStudent();
     }
 
     public Contract getContract() {

@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.ktx.domain.Bed;
 import com.ktx.domain.Building;
+import com.ktx.domain.CheckInOut;
 import com.ktx.domain.Contract;
 import com.ktx.domain.Room;
 import com.ktx.domain.Student;
@@ -138,6 +139,7 @@ class AdminContractControllerTest {
     @Test
     void adminViewsContractsListSuccessfully() throws Exception {
         when(contractService.searchContracts(any(), any(), any())).thenReturn(List.of());
+        when(contractService.searchContracts(any(), any(), any(), any())).thenReturn(org.springframework.data.domain.Page.empty());
         when(buildingRepository.findAll()).thenReturn(List.of());
 
         mockMvc.perform(get("/admin/contracts").with(user("admin").roles("ADMIN")))
@@ -219,11 +221,23 @@ class AdminContractControllerTest {
 
     @Test
     void adminViewsCheckInOutLogSuccessfully() throws Exception {
-        when(checkInOutService.findRecent(null)).thenReturn(List.of());
+        org.springframework.data.domain.Page<CheckInOut> emptyPage = org.springframework.data.domain.Page.empty();
+        when(checkInOutService.findPage(any(), any(), any(), any(), any())).thenReturn(emptyPage);
         when(buildingRepository.findAll()).thenReturn(List.of());
 
         mockMvc.perform(get("/admin/check-in-out").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Lịch sử Check-in / Check-out")));
+                .andExpect(content().string(containsString("Check-in &amp; Check-out")));
+    }
+
+    @Test
+    void adminViewsPrintContractSuccessfully() throws Exception {
+        Contract c = createSampleContract();
+        when(contractService.getByIdWithDetails(1L)).thenReturn(c);
+        when(roomAssetRepository.findByRoomIdOrderByIdAsc(any())).thenReturn(List.of());
+
+        mockMvc.perform(get("/admin/contracts/1/print").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("HỢP ĐỒNG THUÊ CHỖ Ở KÝ TÚC XÁ")));
     }
 }

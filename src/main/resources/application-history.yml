@@ -1,0 +1,22 @@
+# Profile history — nạp dữ liệu 5 năm vào database riêng, không đụng database demo `ktx`.
+#
+#   mysql -e "CREATE DATABASE IF NOT EXISTS ktx_history CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+#   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=history"
+#
+# Thử luồng ghi trên quy mô nhỏ rồi thoát:
+#   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=history" "-Dspring-boot.run.arguments=--ktx.history.scale=smoke --ktx.history.exit-when-done=true"
+#
+# scale=full là 3 cơ sở, 15 tòa, các năm học 2021-2022 đến HK1 2026-2027.
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/ktx_history?sslMode=DISABLED&characterEncoding=utf8&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&useServerPrepStmts=false
+
+server:
+  port: 8081
+
+ktx:
+  history:
+    scale: full
+    exit-when-done: false
+  mail:
+    enabled: false

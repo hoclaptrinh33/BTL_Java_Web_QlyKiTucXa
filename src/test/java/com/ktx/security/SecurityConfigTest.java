@@ -97,6 +97,16 @@ class SecurityConfigTest {
     }
 
     @Test
+    void systemAdminCanOpenOverviewAndAccounts() throws Exception {
+        mockMvc.perform(get("/admin/dashboard").with(user("admin").authorities(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("config.read"))))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/admin/accounts").with(user("admin").authorities(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("admin_account.manage"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void adminCannotAccessStudents() throws Exception {
         mockMvc.perform(get("/admin/students").with(user("admin").authorities(
                 new org.springframework.security.core.authority.SimpleGrantedAuthority("config.read"))))
@@ -170,11 +180,11 @@ class SecurityConfigTest {
     }
 
     @Test
-    void rootRedirectsSystemAdminToConfigs() throws Exception {
+    void rootRedirectsSystemAdminToDashboard() throws Exception {
         mockMvc.perform(get("/").with(user("admin").authorities(
                 new org.springframework.security.core.authority.SimpleGrantedAuthority("config.read"))))
                 .andExpect(status().isFound())
-                .andExpect(redirectedUrl("/admin/configs"));
+                .andExpect(redirectedUrl("/admin/dashboard"));
     }
 
     @Test

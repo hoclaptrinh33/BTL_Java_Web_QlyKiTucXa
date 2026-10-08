@@ -1,6 +1,5 @@
 package com.ktx.web.admin;
 
-import java.util.List;
 
 import jakarta.validation.Valid;
 
@@ -46,10 +45,15 @@ public class AdminPeriodController {
     }
 
     @GetMapping
-    public String list(Model model) {
+    public String list(@org.springframework.web.bind.annotation.RequestParam(name = "page", defaultValue = "0") int page,
+                       HttpServletRequest request,
+                       Model model) {
         page(model, "Đợt đăng ký", "Quản lý vòng đời đợt nộp đơn ở KTX");
-        List<RegistrationPeriod> periods = periodService.listAll();
-        model.addAttribute("periods", periods);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(Math.max(page, 0), 15);
+        org.springframework.data.domain.Page<RegistrationPeriod> periodPage = periodService.pageAll(pageable);
+        model.addAttribute("periodPage", periodPage);
+        model.addAttribute("periods", periodPage.getContent());
+        model.addAttribute("baseUri", base(request));
         return "admin/periods/list";
     }
 
@@ -86,7 +90,7 @@ public class AdminPeriodController {
     }
 
     @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes,
+    public String editForm(@PathVariable("id") Long id, Model model, RedirectAttributes redirectAttributes,
                            HttpServletRequest request) {
         try {
             RegistrationPeriod period = periodService.getByIdWithDetails(id);
@@ -129,7 +133,7 @@ public class AdminPeriodController {
     }
 
     @PostMapping("/{id}/edit")
-    public String update(@PathVariable Long id, @Valid @ModelAttribute("form") RegistrationPeriodForm form,
+    public String update(@PathVariable("id") Long id, @Valid @ModelAttribute("form") RegistrationPeriodForm form,
                          BindingResult binding, Model model, RedirectAttributes redirectAttributes,
                          HttpServletRequest request) {
         if (binding.hasErrors()) {
@@ -148,7 +152,7 @@ public class AdminPeriodController {
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes,
+    public String delete(@PathVariable("id") Long id, RedirectAttributes redirectAttributes,
                          HttpServletRequest request) {
         try {
             RegistrationPeriod period = periodService.getById(id);
@@ -162,7 +166,7 @@ public class AdminPeriodController {
     }
 
     @PostMapping("/{id}/open")
-    public String open(@PathVariable Long id, RedirectAttributes redirectAttributes,
+    public String open(@PathVariable("id") Long id, RedirectAttributes redirectAttributes,
                        HttpServletRequest request) {
         try {
             RegistrationPeriod period = periodService.transitionToOpen(id);
@@ -174,7 +178,7 @@ public class AdminPeriodController {
     }
 
     @PostMapping("/{id}/close")
-    public String close(@PathVariable Long id, RedirectAttributes redirectAttributes,
+    public String close(@PathVariable("id") Long id, RedirectAttributes redirectAttributes,
                         HttpServletRequest request) {
         try {
             RegistrationPeriod period = periodService.transitionToClose(id);

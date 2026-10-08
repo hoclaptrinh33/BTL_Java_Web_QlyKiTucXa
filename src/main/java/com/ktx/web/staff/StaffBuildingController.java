@@ -51,7 +51,7 @@ public class StaffBuildingController {
     }
 
     @GetMapping({"/manage/buildings/{id}/rooms", "/staff/buildings/{id}/rooms"})
-    public String viewRooms(@PathVariable Long id, Authentication authentication, HttpServletRequest request, Model model) {
+    public String viewRooms(@PathVariable("id") Long id, Authentication authentication, HttpServletRequest request, Model model) {
         staffScope.assertBuilding(authentication, id);
 
         Building building = buildingService.getById(id);

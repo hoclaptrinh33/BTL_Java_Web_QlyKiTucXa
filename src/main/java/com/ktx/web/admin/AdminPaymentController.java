@@ -36,16 +36,20 @@ public class AdminPaymentController {
 
     @GetMapping
     public String list(@RequestParam(value = "keyword", required = false) String keyword,
+                       @RequestParam(value = "page", defaultValue = "0") int page,
                        Model model) {
-        List<Payment> payments = paymentService.searchPayments(keyword);
+        var paymentPage = paymentService.searchPayments(keyword, org.springframework.data.domain.PageRequest.of(Math.max(page, 0), 30));
+        if (paymentPage == null) {
+            paymentPage = org.springframework.data.domain.Page.empty();
+        }
+        List<Payment> payments = paymentPage.getContent();
 
-        BigDecimal totalCollected = payments.stream()
-                .map(Payment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
+        model.addAttribute("paymentBase", paymentBase());
+        model.addAttribute("invoiceBase", invoiceBase());
         model.addAttribute("payments", payments);
-        model.addAttribute("totalCollected", totalCollected);
-        model.addAttribute("totalCount", payments.size());
+        model.addAttribute("paymentPage", paymentPage);
+        model.addAttribute("totalCollected", paymentService.sumPayments(keyword));
+        model.addAttribute("totalCount", paymentPage.getTotalElements());
         model.addAttribute("keyword", keyword);
         model.addAttribute("pageTitle", "Lịch sử Thanh toán & Thu tiền");
         model.addAttribute("pageSubtitle", "Nhật ký thu tiền mặt và chuyển khoản tại quầy BQL KTX");
@@ -86,5 +90,18 @@ public class AdminPaymentController {
             }
         } catch (Exception ignored) {}
         return "/admin/invoices";
+    }
+
+    private String paymentBase() {
+        try {
+            var attrs = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra) {
+                String uri = sra.getRequest().getRequestURI();
+                if (uri != null && uri.startsWith("/manage")) {
+                    return "/manage/payments";
+                }
+            }
+        } catch (Exception ignored) {}
+        return "/admin/payments";
     }
 }

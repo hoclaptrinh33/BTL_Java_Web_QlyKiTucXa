@@ -3,12 +3,21 @@
 <body>
 <main th:fragment="content" class="container-fluid py-4">
 
-    <div class="mb-4">
-        <a th:href="@{/staff/checkin}" class="btn btn-sm btn-outline-secondary rounded-circle mb-2" title="Quay lại">
-            <i class="bi bi-arrow-left"></i>
-        </a>
-        <h2 class="h3 mb-1 fw-bold text-dark">Thủ tục Check-in — Tiếp nhận sinh viên</h2>
-        <p class="text-muted small">Kiểm tra thông tin sinh viên, kiểm kê tài sản phòng và bàn giao chìa khóa chỗ ở</p>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <a th:href="@{${baseUrl} + '/checkin'}" class="btn btn-sm btn-outline-secondary rounded-circle mb-2" title="Quay lại">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h2 class="h3 mb-1 fw-bold text-dark">Thủ tục Check-in — Tiếp nhận sinh viên</h2>
+            <p class="text-muted small mb-0">Kiểm tra thông tin sinh viên, kiểm kê tài sản phòng và bàn giao chìa khóa chỗ ở</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a th:href="@{${baseUrl} + '/checkin/' + ${contract.id} + '/print'}" target="_blank"
+               class="btn btn-primary d-inline-flex align-items-center gap-2 shadow-sm">
+                <i class="bi bi-printer"></i>
+                <span>In Hợp đồng (A4)</span>
+            </a>
+        </div>
     </div>
 
     <form th:action="@{/staff/checkin/{id}(id=${contract.id})}" method="post">

@@ -1,7 +1,6 @@
 package com.ktx.web.manage;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +28,7 @@ import com.ktx.repository.BuildingRepository;
 import com.ktx.repository.StaffRepository;
 import com.ktx.repository.StudentRepository;
 import com.ktx.repository.UserRepository;
+import com.ktx.service.AuditLogService;
 import com.ktx.service.BuildingService;
 import com.ktx.service.RoleService;
 import com.ktx.service.UserService;
@@ -47,6 +47,28 @@ public class ManageUserController {
     private final StudentRepository studentRepository;
     private final BuildingRepository buildingRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ManageUserController(UserService userService,
+                                RoleService roleService,
+                                BuildingService buildingService,
+                                UserRepository userRepository,
+                                StaffRepository staffRepository,
+                                StudentRepository studentRepository,
+                                BuildingRepository buildingRepository,
+                                PasswordEncoder passwordEncoder,
+                                @org.springframework.beans.factory.annotation.Autowired(required = false) AuditLogService auditLogService) {
+        this.userService = userService;
+        this.roleService = roleService;
+        this.buildingService = buildingService;
+        this.userRepository = userRepository;
+        this.staffRepository = staffRepository;
+        this.studentRepository = studentRepository;
+        this.buildingRepository = buildingRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.auditLogService = auditLogService;
+    }
 
     public ManageUserController(UserService userService,
                                 RoleService roleService,
@@ -56,14 +78,7 @@ public class ManageUserController {
                                 StudentRepository studentRepository,
                                 BuildingRepository buildingRepository,
                                 PasswordEncoder passwordEncoder) {
-        this.userService = userService;
-        this.roleService = roleService;
-        this.buildingService = buildingService;
-        this.userRepository = userRepository;
-        this.staffRepository = staffRepository;
-        this.studentRepository = studentRepository;
-        this.buildingRepository = buildingRepository;
-        this.passwordEncoder = passwordEncoder;
+        this(userService, roleService, buildingService, userRepository, staffRepository, studentRepository, buildingRepository, passwordEncoder, null);
     }
 
     @GetMapping
@@ -162,9 +177,20 @@ public class ManageUserController {
 
             roleService.setRolesForUser(user.getId(), form.getRoles(), form.getScope(), form.getAssignedBuildingIds());
 
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_CREATE", "USER", user.getUsername(),
+                        "Tạo tài khoản người dùng nội bộ: " + user.getUsername(), "SUCCESS");
+                auditLogService.logCurrent("ROLE_ASSIGN", "USER", user.getUsername(),
+                        "Gán vai trò cho tài khoản " + user.getUsername() + ": " + form.getRoles() + " (Phạm vi: " + form.getScope() + ")", "SUCCESS");
+            }
+
             redirectAttributes.addFlashAttribute("successMessage", "Tạo tài khoản người dùng nội bộ thành công!");
             return "redirect:/manage/users";
         } catch (Exception ex) {
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_CREATE", "USER", form.getUsername(),
+                        "Lỗi tạo tài khoản người dùng nội bộ: " + ex.getMessage(), "FAILURE");
+            }
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("pageTitle", "Thêm người dùng nội bộ");
             model.addAttribute("pageSubtitle", "Tạo tài khoản cán bộ và gán vai trò vận hành");
@@ -176,7 +202,7 @@ public class ManageUserController {
     }
 
     @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model) {
+    public String editForm(@PathVariable("id") Long id, Model model) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy người dùng"));
 
@@ -225,7 +251,7 @@ public class ManageUserController {
     }
 
     @PostMapping("/{id}")
-    public String update(@PathVariable Long id,
+    public String update(@PathVariable("id") Long id,
                          @Valid @ModelAttribute("userForm") InternalUserForm form,
                          BindingResult bindingResult,
                          Model model,
@@ -278,9 +304,20 @@ public class ManageUserController {
 
             roleService.setRolesForUser(id, form.getRoles(), form.getScope(), form.getAssignedBuildingIds());
 
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_UPDATE", "USER", user.getUsername(),
+                        "Cập nhật tài khoản người dùng nội bộ: " + user.getUsername(), "SUCCESS");
+                auditLogService.logCurrent("ROLE_ASSIGN", "USER", user.getUsername(),
+                        "Cập nhật vai trò cho tài khoản " + user.getUsername() + ": " + form.getRoles() + " (Phạm vi: " + form.getScope() + ")", "SUCCESS");
+            }
+
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật người dùng nội bộ thành công!");
             return "redirect:/manage/users";
         } catch (Exception ex) {
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_UPDATE", "USER", form.getUsername(),
+                        "Lỗi cập nhật người dùng nội bộ: " + ex.getMessage(), "FAILURE");
+            }
             form.setId(id);
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("pageTitle", "Sửa người dùng nội bộ");
@@ -293,24 +330,46 @@ public class ManageUserController {
     }
 
     @PostMapping("/{id}/toggle-status")
-    public String toggleStatus(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String toggleStatus(@PathVariable("id") Long id, RedirectAttributes redirectAttributes) {
         try {
+            User targetUser = userRepository.findById(id).orElse(null);
+            String targetUsername = targetUser != null ? targetUser.getUsername() : String.valueOf(id);
             userService.toggleStatus(id);
+            User updatedUser = userRepository.findById(id).orElse(null);
+            String statusStr = (updatedUser != null && Boolean.TRUE.equals(updatedUser.getEnabled())) ? "Kích hoạt" : "Khóa";
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_TOGGLE_STATUS", "USER", targetUsername,
+                        statusStr + " tài khoản người dùng: " + targetUsername, "SUCCESS");
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Thay đổi trạng thái tài khoản thành công!");
         } catch (Exception ex) {
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_TOGGLE_STATUS", "USER", String.valueOf(id),
+                        "Lỗi thay đổi trạng thái tài khoản: " + ex.getMessage(), "FAILURE");
+            }
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/manage/users";
     }
 
     @PostMapping("/{id}/reset-password")
-    public String resetPassword(@PathVariable Long id,
+    public String resetPassword(@PathVariable("id") Long id,
                                 @RequestParam("newPassword") String newPassword,
                                 RedirectAttributes redirectAttributes) {
         try {
+            User targetUser = userRepository.findById(id).orElse(null);
+            String targetUsername = targetUser != null ? targetUser.getUsername() : String.valueOf(id);
             userService.resetPassword(id, newPassword);
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_RESET_PASSWORD", "USER", targetUsername,
+                        "Đặt lại mật khẩu cho tài khoản người dùng: " + targetUsername, "SUCCESS");
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Đặt lại mật khẩu thành công!");
         } catch (Exception ex) {
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_RESET_PASSWORD", "USER", String.valueOf(id),
+                        "Lỗi đặt lại mật khẩu: " + ex.getMessage(), "FAILURE");
+            }
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/manage/users";

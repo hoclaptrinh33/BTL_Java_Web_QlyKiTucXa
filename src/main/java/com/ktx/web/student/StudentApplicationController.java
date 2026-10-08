@@ -3,14 +3,11 @@ package com.ktx.web.student;
 import java.security.Principal;
 import java.util.List;
 
-import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,11 +24,11 @@ import com.ktx.domain.enums.BuildingGenderPolicy;
 import com.ktx.domain.enums.Gender;
 import com.ktx.domain.enums.PeriodStatus;
 import com.ktx.domain.enums.RoomType;
-import com.ktx.dto.RegistrationPeriodForm; // just in case
 import com.ktx.repository.BuildingRepository;
 import com.ktx.repository.ContractRepository;
 import com.ktx.repository.RegistrationPeriodRepository;
 import com.ktx.repository.StudentRepository;
+import com.ktx.service.MediaGalleryService;
 import com.ktx.service.RoomApplicationService;
 
 @Controller
@@ -43,18 +40,21 @@ public class StudentApplicationController {
     private final RegistrationPeriodRepository periodRepository;
     private final BuildingRepository buildingRepository;
     private final ContractRepository contractRepository;
+    private final MediaGalleryService mediaGalleryService;
 
     @Autowired
     public StudentApplicationController(RoomApplicationService roomApplicationService,
                                         StudentRepository studentRepository,
                                         RegistrationPeriodRepository periodRepository,
                                         BuildingRepository buildingRepository,
-                                        ContractRepository contractRepository) {
+                                        ContractRepository contractRepository,
+                                        MediaGalleryService mediaGalleryService) {
         this.roomApplicationService = roomApplicationService;
         this.studentRepository = studentRepository;
         this.periodRepository = periodRepository;
         this.buildingRepository = buildingRepository;
         this.contractRepository = contractRepository;
+        this.mediaGalleryService = mediaGalleryService;
     }
 
     @GetMapping
@@ -69,6 +69,12 @@ public class StudentApplicationController {
         model.addAttribute("openPeriods", openPeriods);
         model.addAttribute("student", student);
         
+        // Gallery DTOs for Campus & Room Showcase
+        BuildingGenderPolicy genderPolicy = student.getGender() == Gender.MALE ? BuildingGenderPolicy.MALE : BuildingGenderPolicy.FEMALE;
+        model.addAttribute("buildingGalleries", mediaGalleryService.getBuildingGalleries(null));
+        model.addAttribute("studentGenderPolicy", genderPolicy);
+        model.addAttribute("roomTypeGalleries", mediaGalleryService.getRoomTypeGalleries());
+
         // Ràng buộc nhanh hiển thị ở UI
         boolean hasOccupying = contractRepository.existsByStudentIdAndStatusIn(student.getId(), OccupyingStatuses.OCCUPYING);
         model.addAttribute("hasOccupyingContract", hasOccupying);
@@ -143,6 +149,8 @@ public class StudentApplicationController {
         model.addAttribute("buildings", buildings);
         model.addAttribute("roomTypes", RoomType.values());
         model.addAttribute("student", student);
+        model.addAttribute("buildingGalleries", mediaGalleryService.getBuildingGalleries(genderPolicy));
+        model.addAttribute("roomTypeGalleries", mediaGalleryService.getRoomTypeGalleries());
 
         RoomApplication app = new RoomApplication();
         app.setPeriod(selectedPeriod);

@@ -3,6 +3,8 @@ package com.ktx.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,4 +22,17 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     @Query("SELECT s FROM Student s JOIN FETCH s.user ORDER BY s.studentCode")
     List<Student> findAllWithUser();
+
+    @Query(value = "SELECT s FROM Student s JOIN FETCH s.user ORDER BY s.studentCode",
+            countQuery = "SELECT COUNT(s) FROM Student s")
+    Page<Student> findPageWithUser(Pageable pageable);
+
+    @Query("""
+            SELECT s FROM Student s
+            JOIN FETCH s.user
+            WHERE LOWER(s.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(s.studentCode) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            ORDER BY s.studentCode
+            """)
+    List<Student> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 }

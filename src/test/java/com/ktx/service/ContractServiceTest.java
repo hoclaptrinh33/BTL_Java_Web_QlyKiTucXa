@@ -258,4 +258,18 @@ class ContractServiceTest {
         assertEquals(bed, contract.getBed());
         verify(bedRepository).occupyBed(60L, 99L);
     }
+
+    @Test
+    @DisplayName("findRentalHistory chuyển tiếp truy vấn roomId và bedId tới contractRepository")
+    void findRentalHistory_delegatesToRepository() {
+        Contract c1 = new Contract();
+        c1.setId(1L);
+        when(contractRepository.findRentalHistoryByRoomOrBed(10L, 5L)).thenReturn(java.util.List.of(c1));
+
+        java.util.List<Contract> result = contractService.findRentalHistory(10L, 5L);
+
+        assertEquals(1, result.size());
+        assertEquals(1L, result.get(0).getId());
+        verify(contractRepository).findRentalHistoryByRoomOrBed(10L, 5L);
+    }
 }

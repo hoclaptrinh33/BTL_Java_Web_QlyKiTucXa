@@ -17,6 +17,10 @@ public interface RegistrationPeriodRepository extends JpaRepository<Registration
     @Query("SELECT p FROM RegistrationPeriod p JOIN FETCH p.createdBy")
     List<RegistrationPeriod> findAllWithCreator();
 
+    @Query(value = "SELECT p FROM RegistrationPeriod p JOIN FETCH p.createdBy ORDER BY p.id DESC",
+           countQuery = "SELECT COUNT(p) FROM RegistrationPeriod p")
+    org.springframework.data.domain.Page<RegistrationPeriod> findAllWithCreator(org.springframework.data.domain.Pageable pageable);
+
     @Query("SELECT p FROM RegistrationPeriod p JOIN FETCH p.createdBy LEFT JOIN FETCH p.buildings WHERE p.id = :id")
     java.util.Optional<RegistrationPeriod> findByIdWithBuildingsAndCreator(@org.springframework.data.repository.query.Param("id") Long id);
 

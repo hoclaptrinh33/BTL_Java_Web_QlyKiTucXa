@@ -2,7 +2,6 @@ package com.ktx.web.manage;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,6 +33,7 @@ import com.ktx.security.KtxUserDetailsService;
 import com.ktx.security.LoginFailureHandler;
 import com.ktx.security.LoginSuccessHandler;
 import com.ktx.security.SecurityConfig;
+import com.ktx.service.AuditLogService;
 import com.ktx.service.RoleService;
 
 @WebMvcTest(controllers = ManageRoleController.class)
@@ -54,6 +54,9 @@ class ManageRoleControllerTest {
 
     @MockitoBean
     private com.ktx.security.LoginAttemptService loginAttemptService;
+
+    @MockitoBean
+    private AuditLogService auditLogService;
 
     @Test
     void canViewRolesList() throws Exception {
@@ -93,6 +96,11 @@ class ManageRoleControllerTest {
                 .andExpect(flash().attributeExists("successMessage"));
 
         verify(roleService).createRole(any(RoleDto.class), any());
+        verify(auditLogService).logCurrent(org.mockito.ArgumentMatchers.eq("ROLE_CREATE"),
+                org.mockito.ArgumentMatchers.eq("ROLE"),
+                org.mockito.ArgumentMatchers.eq("KY_THUAT"),
+                org.mockito.ArgumentMatchers.contains("KY_THUAT"),
+                org.mockito.ArgumentMatchers.eq("SUCCESS"));
     }
 
     @Test

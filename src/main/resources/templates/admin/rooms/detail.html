@@ -2,182 +2,466 @@
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
 <body>
 <main th:fragment="content">
-    <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
+    <!-- Header & Action Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
-            <a class="text-decoration-none small" th:href="@{/admin/rooms(buildingId=${room.building.id})}">
-                ← Danh sách phòng
-            </a>
-            <h1 class="h4 mb-1 mt-1">
-                <span class="ktx-chip" th:text="${row.doorCode}">A-101</span>
-                <span class="ms-1" th:text="${row.buildingName}">Tòa A</span>
-            </h1>
-            <p class="text-muted mb-0" th:text="${row.typeLabel} + ' · ' + ${row.genderLabel} + ' · tầng ' + ${row.floor}">
-                Phòng 6 giường
+            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <a th:href="@{/admin/rooms(buildingId=${room.building.id})}" class="btn btn-sm btn-outline-secondary rounded-circle" title="Quay lại danh sách phòng">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h1 class="h3 mb-0 text-dark fw-bold" th:text="'Phòng ' + ${row.doorCode}">Phòng A-101</h1>
+                <span class="badge bg-primary-subtle text-primary fs-6" th:text="${row.buildingName}">Tòa A</span>
+                <span class="badge bg-secondary-subtle text-secondary" th:text="'Tầng ' + ${row.floor}">Tầng 1</span>
+                <span class="badge bg-info-subtle text-info" th:text="${row.typeLabel}">Phòng 4 giường</span>
+                <span class="badge" th:classappend="${row.genderLabel == 'Nam' ? 'bg-primary text-white' : 'bg-danger text-white'}" th:text="${row.genderLabel}">Nam</span>
+            </div>
+            <p class="text-muted mb-0 small">
+                Đơn giá: <strong class="text-dark" th:text="${row.pricePerTerm != null ? #numbers.formatInteger(row.pricePerTerm, 1, 'POINT') + ' đ / kỳ' : '—'}">1.200.000 đ / kỳ</strong>
+                · Sức chứa tối đa: <strong class="text-dark" th:text="${row.capacity} + ' người'">4 người</strong>
             </p>
         </div>
+
         <div class="d-flex gap-2">
-            <a class="btn btn-outline-primary" th:href="@{/admin/rooms/{id}/edit(id=${room.id})}">Sửa phòng</a>
+            <a class="btn btn-outline-primary shadow-sm" th:href="@{/admin/rooms/{id}/edit(id=${room.id})}">
+                <i class="bi bi-pencil-square me-1"></i>Sửa thông tin phòng
+            </a>
         </div>
     </div>
 
-    <section class="ktx-roomstat mb-3">
-        <div>
-            <i class="bi bi-person-check is-mint"></i>
-            <span>Đang ở</span>
-            <b th:text="${row.occupiedBeds}">0</b>
+    <!-- Banner hình ảnh không gian phòng -->
+    <div class="card border-0 shadow-sm mb-4 overflow-hidden" style="border-radius: 12px; background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);">
+        <div class="row g-0 align-items-center">
+            <div class="col-md-4 col-lg-3" style="max-height: 180px; overflow: hidden;">
+                <img th:src="${row.imageUrl}" alt="Ảnh không gian phòng"
+                     class="w-100 h-100 object-fit-cover" style="min-height: 160px; max-height: 180px;"
+                     onerror="this.src='/images/rooms/room-standard-4.jpg'">
+            </div>
+            <div class="col-md-8 col-lg-9 p-3 p-md-4 d-flex flex-column justify-content-between">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                    <div>
+                        <div class="text-uppercase text-muted fw-bold small" style="font-size: 0.75rem; letter-spacing: 0.05em;">Hình ảnh & Tiêu chuẩn không gian</div>
+                        <h4 class="mb-1 text-dark fw-bold" th:text="${row.typeLabel}">Phòng 4 giường tiêu chuẩn</h4>
+                        <p class="text-muted small mb-0">Thiết kế hiện đại, thông thoáng, tối ưu hóa diện tích sinh hoạt và học tập cho sinh viên.</p>
+                    </div>
+                    <a class="btn btn-sm btn-outline-info d-inline-flex align-items-center gap-1 shadow-xs" 
+                       th:href="@{/admin/room-types/images(type=${row.roomType})}">
+                        <i class="bi bi-images"></i> Xem album ảnh loại phòng này
+                    </a>
+                </div>
+                <div class="d-flex flex-wrap gap-2 pt-2 border-top">
+                    <span class="badge bg-light text-secondary border"><i class="bi bi-shield-check text-success me-1"></i>Vệ sinh khép kín</span>
+                    <span class="badge bg-light text-secondary border"><i class="bi bi-wifi text-primary me-1"></i>Wifi cáp quang</span>
+                    <span class="badge bg-light text-secondary border"><i class="bi bi-lock text-warning me-1"></i>Tủ khóa cá nhân</span>
+                    <span class="badge bg-light text-secondary border"><i class="bi bi-sun text-info me-1"></i>Ban công phơi đồ</span>
+                </div>
+            </div>
         </div>
-        <div>
-            <i class="bi bi-door-open is-sky"></i>
-            <span>Trống</span>
-            <b th:text="${row.vacantBeds}">0</b>
-        </div>
-        <div>
-            <i class="bi bi-tools is-peach"></i>
-            <span>Bảo trì</span>
-            <b th:text="${row.maintenanceBeds}">0</b>
-        </div>
-        <div>
-            <i class="bi bi-grid is-violet"></i>
-            <span>Sức chứa</span>
-            <b th:text="${row.capacity}">6</b>
-        </div>
-    </section>
+    </div>
 
-    <section class="ktx-card mb-3">
-        <div class="ktx-card__head">
-            <h2>Giường</h2>
-            <span class="text-muted small">OCCUPIED không đổi tại đây — nhả lúc checkout</span>
+    <!-- 4 Thẻ KPI thống kê nhanh -->
+    <div class="row row-cols-2 row-cols-lg-4 g-3 mb-4">
+        <div class="col">
+            <div class="card border-0 shadow-sm h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width: 48px; height: 48px; background: #DCFCE7; color: #15803D;">
+                        <i class="bi bi-person-check fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Đang ở</div>
+                        <div class="h3 mb-0 fw-bold text-dark" th:text="${row.occupiedBeds}">0</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="ktx-bed-grid" th:if="${!beds.empty}">
-            <article class="ktx-bed" th:each="bed : ${beds}"
-                     th:classappend="${T(com.ktx.service.BedService).statusClass(bed.status)}">
-                <div class="ktx-bed__code" th:text="${bed.bedCode}">G1</div>
-                <span class="ktx-status"
-                      th:classappend="${T(com.ktx.service.BedService).statusClass(bed.status)}"
-                      th:text="${T(com.ktx.service.BedService).statusLabel(bed.status)}">Trống</span>
-                <form th:if="${bed.status.name() == 'VACANT'}"
-                      th:action="@{/admin/rooms/{id}/beds/{bedId}/status(id=${room.id}, bedId=${bed.id})}"
-                      method="post" class="mt-2">
-                    <input type="hidden" name="status" value="MAINTENANCE"/>
-                    <input type="hidden" name="version" th:value="${bed.version}"/>
-                    <button type="submit" class="btn btn-sm btn-outline-warning">Bảo trì</button>
-                </form>
-                <form th:if="${bed.status.name() == 'MAINTENANCE'}"
-                      th:action="@{/admin/rooms/{id}/beds/{bedId}/status(id=${room.id}, bedId=${bed.id})}"
-                      method="post" class="mt-2">
-                    <input type="hidden" name="status" value="VACANT"/>
-                    <input type="hidden" name="version" th:value="${bed.version}"/>
-                    <button type="submit" class="btn btn-sm btn-outline-success">Sửa xong</button>
-                </form>
-                <p th:if="${bed.status.name() == 'OCCUPIED'}" class="form-text mb-0 mt-2">Đang chiếm chỗ</p>
-            </article>
+        <div class="col">
+            <div class="card border-0 shadow-sm h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width: 48px; height: 48px; background: #E0F2FE; color: #0284C7;">
+                        <i class="bi bi-door-open fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Còn trống</div>
+                        <div class="h3 mb-0 fw-bold text-dark" th:text="${row.vacantBeds}">4</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <p class="ktx-empty" th:if="${beds.empty}">Chưa có giường.</p>
-    </section>
+        <div class="col">
+            <div class="card border-0 shadow-sm h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width: 48px; height: 48px; background: #FFEDD5; color: #C2410C;">
+                        <i class="bi bi-tools fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Bảo trì</div>
+                        <div class="h3 mb-0 fw-bold text-dark" th:text="${row.maintenanceBeds}">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 shadow-sm h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width: 48px; height: 48px; background: #F3F0FF; color: #6D5EF5;">
+                        <i class="bi bi-grid fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Tổng sức chứa</div>
+                        <div class="h3 mb-0 fw-bold text-dark" th:text="${row.capacity}">4</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <section class="ktx-card mb-3" id="assets">
-        <div class="ktx-card__head">
-            <h2>Tài sản phòng</h2>
+    <!-- Danh sách giường trong phòng -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-grid-3x3-gap text-primary"></i>
+                    <span>Danh sách giường trong phòng</span>
+                    <span class="badge bg-secondary-subtle text-secondary" th:text="${#lists.size(beds)}">4</span>
+                </h5>
+                <small class="text-muted">Quản lý tình trạng chỗ ở và trạng thái bảo trì từng vị trí giường</small>
+            </div>
+            <span class="text-muted small fst-italic">
+                <i class="bi bi-info-circle me-1"></i>Trạng thái OCCUPIED tự động cập nhật khi check-in / check-out
+            </span>
         </div>
-        <div class="table-responsive" th:if="${!assets.empty}">
-            <table class="table table-hover align-middle mb-3 ktx-table">
-                <thead>
+        <div class="card-body pt-0">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-3" th:if="${!beds.empty}">
+                <div class="col" th:each="bed : ${beds}">
+                    <div class="card h-100 border rounded-3 p-3 position-relative d-flex flex-column justify-content-between shadow-none"
+                         style="background: #FAFBFD; transition: all 0.2s ease-in-out;"
+                         th:styleappend="${bed.status.name() == 'OCCUPIED' ? 'border-color: #FECDD3 !important; background: #FFF5F5;' : (bed.status.name() == 'MAINTENANCE' ? 'border-color: #FED7AA !important; background: #FFFBF5;' : 'border-color: #E2E8F0 !important; background: #FFFFFF;')}">
+                        
+                        <!-- Top: Bed Code + Status Pill -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-2 d-flex align-items-center justify-content-center fw-bold"
+                                     style="width: 36px; height: 36px; font-family: 'IBM Plex Mono', monospace; font-size: 0.95rem;"
+                                     th:classappend="${bed.status.name() == 'OCCUPIED' ? 'bg-danger-subtle text-danger' : (bed.status.name() == 'MAINTENANCE' ? 'bg-warning-subtle text-warning' : 'bg-primary-subtle text-primary')}"
+                                     th:text="${bed.bedCode}">G1</div>
+                                <span class="fw-bold text-dark font-monospace" th:text="'Giường ' + ${bed.bedCode}">Giường G1</span>
+                            </div>
+
+                            <!-- Status Badge -->
+                            <span th:if="${bed.status.name() == 'VACANT'}" class="badge bg-success-subtle text-success px-2 py-1">
+                                <i class="bi bi-check2 me-1"></i>Trống
+                            </span>
+                            <span th:if="${bed.status.name() == 'OCCUPIED'}" class="badge bg-danger-subtle text-danger px-2 py-1">
+                                <i class="bi bi-person-fill me-1"></i>Đang ở
+                            </span>
+                            <span th:if="${bed.status.name() == 'MAINTENANCE'}" class="badge bg-warning-subtle text-warning px-2 py-1">
+                                <i class="bi bi-tools me-1"></i>Bảo trì
+                            </span>
+                        </div>
+
+                        <!-- Middle: Occupant info or Empty state -->
+                        <div class="py-2 flex-grow-1">
+                            <!-- OCCUPIED: Show occupant info -->
+                            <div th:if="${bed.status.name() == 'OCCUPIED'}">
+                                <div th:if="${activeBedContracts != null && activeBedContracts.containsKey(bed.id)}" class="p-2 rounded-2 bg-white border border-danger-subtle shadow-sm">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center flex-shrink-0"
+                                             style="width: 28px; height: 28px; font-size: 0.75rem; font-weight: bold;">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-grow-1">
+                                            <div class="fw-bold text-dark text-truncate small" th:text="${activeBedContracts.get(bed.id).student.fullName}">Nguyễn Văn A</div>
+                                            <small class="text-muted font-monospace" th:text="${activeBedContracts.get(bed.id).student.studentCode}">SV001</small>
+                                        </div>
+                                    </div>
+                                    <div class="small text-muted border-top pt-1 mt-1" style="font-size: 0.75rem;">
+                                        <i class="bi bi-calendar3 me-1"></i>
+                                        <span th:text="${#temporals.format(activeBedContracts.get(bed.id).startDate, 'dd/MM/yy') + ' → ' + #temporals.format(activeBedContracts.get(bed.id).endDate, 'dd/MM/yy')}">01/09 → 31/01</span>
+                                    </div>
+                                </div>
+                                <div th:unless="${activeBedContracts != null && activeBedContracts.containsKey(bed.id)}" class="text-muted small text-center py-2">
+                                    <i class="bi bi-person-badge fs-5 d-block text-secondary mb-1"></i>
+                                    <span>Đang chiếm chỗ</span>
+                                </div>
+                            </div>
+
+                            <!-- VACANT -->
+                            <div th:if="${bed.status.name() == 'VACANT'}" class="text-center py-2 text-muted">
+                                <i class="bi bi-door-open fs-5 d-block text-success mb-1"></i>
+                                <small class="text-success fw-medium">Sẵn sàng phân bổ sinh viên</small>
+                            </div>
+
+                            <!-- MAINTENANCE -->
+                            <div th:if="${bed.status.name() == 'MAINTENANCE'}" class="text-center py-2 text-muted">
+                                <i class="bi bi-tools fs-5 d-block text-warning mb-1"></i>
+                                <small class="text-warning fw-medium">Đang bảo trì kỹ thuật</small>
+                            </div>
+                        </div>
+
+                        <!-- Bottom: Action Buttons -->
+                        <div class="d-flex align-items-center justify-content-between gap-2 border-top pt-2 mt-2">
+                            <div>
+                                <form th:if="${bed.status.name() == 'VACANT'}"
+                                      th:action="@{/admin/rooms/{id}/beds/{bedId}/status(id=${room.id}, bedId=${bed.id})}"
+                                      method="post" class="m-0">
+                                    <input type="hidden" name="status" value="MAINTENANCE"/>
+                                    <input type="hidden" name="version" th:value="${bed.version}"/>
+                                    <button type="submit" class="btn btn-outline-warning btn-sm py-0 px-2" style="font-size: 0.78rem;" title="Chuyển sang trạng thái bảo trì">
+                                        <i class="bi bi-tools me-1"></i>Báo hỏng
+                                    </button>
+                                </form>
+                                <form th:if="${bed.status.name() == 'MAINTENANCE'}"
+                                      th:action="@{/admin/rooms/{id}/beds/{bedId}/status(id=${room.id}, bedId=${bed.id})}"
+                                      method="post" class="m-0">
+                                    <input type="hidden" name="status" value="VACANT"/>
+                                    <input type="hidden" name="version" th:value="${bed.version}"/>
+                                    <button type="submit" class="btn btn-outline-success btn-sm py-0 px-2" style="font-size: 0.78rem;" title="Đã sửa chữa xong">
+                                        <i class="bi bi-check-circle me-1"></i>Sửa xong
+                                    </button>
+                                </form>
+                                <span th:if="${bed.status.name() == 'OCCUPIED'}" class="badge bg-light text-muted border" style="font-size: 0.72rem;">
+                                    Khóa chỗ
+                                </span>
+                            </div>
+
+                            <!-- History link -->
+                            <a th:href="@{/admin/rooms/{id}(id=${room.id}, bedId=${bed.id})} + '#rental-history'"
+                               class="btn btn-sm btn-outline-secondary py-0 px-2 d-inline-flex align-items-center gap-1"
+                               style="font-size: 0.78rem;" title="Xem lịch sử thuê giường này">
+                                <i class="bi bi-clock-history"></i>
+                                <span>Lịch sử</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center py-4 text-muted" th:if="${beds.empty}">
+                <i class="bi bi-inbox fs-2 d-block text-secondary mb-2"></i>
+                <p class="mb-0">Chưa có giường nào trong phòng này.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lịch sử thuê phòng & giường -->
+    <div class="card border-0 shadow-sm mb-4" id="rental-history">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-clock-history text-primary"></i>
+                    <span>Lịch sử thuê phòng &amp; giường</span>
+                    <span class="badge bg-secondary-subtle text-secondary" th:text="${#lists.size(rentalHistory)}">0</span>
+                </h5>
+                <small class="text-muted">Nhật ký các hợp đồng lưu trú đã và đang diễn ra tại phòng này</small>
+            </div>
+
+            <!-- Bộ lọc theo từng giường -->
+            <div class="d-flex align-items-center gap-1 flex-wrap" th:if="${beds != null && !beds.empty}">
+                <span class="text-muted small me-1 fw-semibold"><i class="bi bi-funnel me-1"></i>Giường:</span>
+                <a th:href="@{/admin/rooms/{id}(id=${room.id})} + '#rental-history'"
+                   class="btn btn-sm rounded-pill px-3"
+                   th:classappend="${selectedBedId == null} ? 'btn-primary' : 'btn-outline-secondary'">
+                    Tất cả
+                </a>
+                <a th:each="b : ${beds}"
+                   th:href="@{/admin/rooms/{id}(id=${room.id}, bedId=${b.id})} + '#rental-history'"
+                   class="btn btn-sm rounded-pill px-3"
+                   th:classappend="${selectedBedId == b.id} ? 'btn-primary' : 'btn-outline-secondary'"
+                   th:text="${b.bedCode}">
+                    G1
+                </a>
+            </div>
+        </div>
+
+        <div class="table-responsive" th:if="${rentalHistory != null && !rentalHistory.empty}">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
                 <tr>
-                    <th>Tên</th>
-                    <th>Loại</th>
-                    <th class="text-end">SL</th>
-                    <th>Tình trạng</th>
-                    <th>Serial</th>
-                    <th class="text-end">Thao tác</th>
+                    <th class="ps-3">Số HĐ</th>
+                    <th>Vị trí giường</th>
+                    <th>Sinh viên</th>
+                    <th>Thời hạn thuê</th>
+                    <th class="text-end">Tiền phòng</th>
+                    <th class="text-end">Tiền cọc</th>
+                    <th class="text-center">Trạng thái HĐ</th>
+                    <th class="text-end pe-3">Thao tác</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="a : ${assets}">
-                    <td th:text="${a.name}">Quạt</td>
-                    <td th:text="${T(com.ktx.service.AssetService).categoryLabel(a.category)}">Quạt</td>
-                    <td class="text-end" th:text="${a.quantity}">1</td>
-                    <td th:text="${T(com.ktx.service.AssetService).conditionLabel(a.condition)}">Tốt</td>
-                    <td th:text="${a.serialNumber != null} ? ${a.serialNumber} : '—'">—</td>
-                    <td class="text-end">
-                        <a class="btn btn-sm btn-outline-primary"
-                           th:href="@{/admin/rooms/{id}(id=${room.id}, assetId=${a.id})}">Sửa</a>
-                        <form th:action="@{/admin/rooms/{id}/assets/{assetId}/delete(id=${room.id}, assetId=${a.id})}"
-                              method="post" class="d-inline"
-                              data-confirm="Xóa tài sản này?"
-                              data-confirm-title="Xác nhận xóa tài sản"
-                              data-confirm-type="danger">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
-                        </form>
+                <tr th:each="c : ${rentalHistory}">
+                    <td class="ps-3 fw-bold">
+                        <a th:href="@{/admin/contracts/{id}(id=${c.id})}" th:text="${c.contractNo}" class="text-decoration-none text-primary">HD-2026-000001</a>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border font-monospace fw-bold" th:text="${c.bed != null ? c.bed.bedCode : '—'}">G1</span>
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-dark" th:text="${c.student != null ? c.student.fullName : '—'}">Nguyễn Văn A</div>
+                        <small class="text-muted font-monospace" th:text="${c.student != null ? (c.student.studentCode + (c.student.phone != null ? ' · ' + c.student.phone : '')) : '—'}">SV001 · 0912345678</small>
+                    </td>
+                    <td>
+                        <span class="small" th:text="${#temporals.format(c.startDate, 'dd/MM/yyyy') + ' → ' + #temporals.format(c.endDate, 'dd/MM/yyyy')}">01/09/2026 → 31/01/2027</span>
+                    </td>
+                    <td class="text-end font-monospace" th:text="${c.roomFee != null ? #numbers.formatInteger(c.roomFee, 1, 'POINT') + ' đ' : '0 đ'}">1.200.000 đ</td>
+                    <td class="text-end font-monospace" th:text="${c.depositAmount != null ? #numbers.formatInteger(c.depositAmount, 1, 'POINT') + ' đ' : '0 đ'}">600.000 đ</td>
+                    <td class="text-center">
+                        <span class="badge"
+                              th:classappend="${c.status != null ? (c.status.name() == 'ACTIVE' ? 'bg-success' : (c.status.name() == 'DRAFT' ? 'bg-warning text-dark' : (c.status.name() == 'TERMINATED' ? 'bg-danger' : (c.status.name() == 'EXPIRED' ? 'bg-secondary' : 'bg-dark')))) : 'bg-secondary'}"
+                              th:text="${c.status}">ACTIVE</span>
+                    </td>
+                    <td class="text-end pe-3">
+                        <a th:href="@{/admin/contracts/{id}(id=${c.id})}" class="btn btn-sm btn-outline-primary" title="Xem chi tiết hợp đồng">
+                            <i class="bi bi-eye me-1"></i>Chi tiết
+                        </a>
                     </td>
                 </tr>
                 </tbody>
             </table>
         </div>
-        <p class="ktx-empty mb-3" th:if="${assets.empty}">Chưa kê khai tài sản. Thêm quạt, tủ, công tơ điện/nước.</p>
 
-        <h3 class="h6 mb-3" th:text="${editingAsset} ? 'Sửa tài sản' : 'Thêm tài sản'">Thêm tài sản</h3>
-        <form th:action="${editingAsset} ? @{/admin/rooms/{id}/assets/{assetId}/edit(id=${room.id}, assetId=${editAssetId})} : @{/admin/rooms/{id}/assets(id=${room.id})}"
-              th:object="${assetForm}" method="post" class="ktx-asset-form">
-            <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}">
-                <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}">Lỗi</p>
+        <div class="text-center py-5 text-muted" th:if="${rentalHistory == null || rentalHistory.empty}">
+            <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+            <p class="mb-0" th:text="${selectedBedId != null ? 'Giường này chưa có hợp đồng lưu trú nào.' : 'Phòng này chưa có hợp đồng lưu trú nào.'}">
+                Chưa có hợp đồng lưu trú nào.
+            </p>
+        </div>
+    </div>
+
+    <!-- Tài sản & Thiết bị trong phòng -->
+    <div class="card border-0 shadow-sm mb-4" id="assets">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-box-seam text-primary"></i>
+                    <span>Tài sản &amp; Thiết bị trong phòng</span>
+                    <span class="badge bg-secondary-subtle text-secondary" th:text="${#lists.size(assets)}">0</span>
+                </h5>
+                <small class="text-muted">Kê khai quạt, tủ, đèn, công tơ điện và công tơ nước</small>
             </div>
-            <div class="ktx-field-row">
-                <div class="ktx-field">
-                    <label class="form-label" for="assetName">Tên <span class="req">*</span></label>
-                    <input class="form-control" id="assetName" th:field="*{name}"
-                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
-                           maxlength="120" placeholder="VD: Quạt trần"/>
-                    <div class="invalid-feedback" th:errors="*{name}"></div>
-                </div>
-                <div class="ktx-field">
-                    <label class="form-label" for="assetCategory">Loại <span class="req">*</span></label>
-                    <select class="form-select" id="assetCategory" th:field="*{category}"
-                            th:classappend="${#fields.hasErrors('category')} ? 'is-invalid'">
-                        <option th:each="c : ${assetCategories}" th:value="${c}"
-                                th:text="${T(com.ktx.service.AssetService).categoryLabel(c)}">Quạt</option>
-                    </select>
-                    <div class="invalid-feedback" th:errors="*{category}"></div>
-                </div>
+            <a href="#assetFormAnchor" class="btn btn-sm btn-outline-primary" th:if="${!editingAsset}">
+                <i class="bi bi-plus-lg me-1"></i>Thêm tài sản mới
+            </a>
+        </div>
+        <div class="card-body pt-0">
+            <div class="table-responsive" th:if="${!assets.empty}">
+                <table class="table table-hover align-middle mb-4">
+                    <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Tên tài sản</th>
+                        <th>Phân loại</th>
+                        <th class="text-end">Số lượng</th>
+                        <th>Tình trạng</th>
+                        <th>Số Serial</th>
+                        <th class="text-end pe-3">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="a : ${assets}">
+                        <td class="ps-3 fw-medium text-dark" th:text="${a.name}">Quạt</td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary" th:text="${T(com.ktx.service.AssetService).categoryLabel(a.category)}">Quạt</span>
+                        </td>
+                        <td class="text-end font-monospace" th:text="${a.quantity}">1</td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${a.condition.name() == 'GOOD' ? 'bg-success-subtle text-success' : (a.condition.name() == 'FAIR' ? 'bg-warning-subtle text-warning' : 'bg-danger-subtle text-danger')}"
+                                  th:text="${T(com.ktx.service.AssetService).conditionLabel(a.condition)}">Tốt</span>
+                        </td>
+                        <td class="font-monospace" th:text="${a.serialNumber != null && !a.serialNumber.isEmpty()} ? ${a.serialNumber} : '—'">—</td>
+                        <td class="text-end pe-3">
+                            <a class="btn btn-sm btn-outline-primary me-1"
+                               th:href="@{/admin/rooms/{id}(id=${room.id}, assetId=${a.id})} + '#assetFormAnchor'">
+                                <i class="bi bi-pencil me-1"></i>Sửa
+                            </a>
+                            <form th:action="@{/admin/rooms/{id}/assets/{assetId}/delete(id=${room.id}, assetId=${a.id})}"
+                                  method="post" class="d-inline"
+                                  data-confirm="Xóa tài sản này khỏi phòng?"
+                                  data-confirm-title="Xác nhận xóa tài sản"
+                                  data-confirm-type="danger">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash me-1"></i>Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
             </div>
-            <div class="ktx-field-row">
-                <div class="ktx-field">
-                    <label class="form-label" for="assetQty">Số lượng <span class="req">*</span></label>
-                    <input class="form-control" type="number" min="1" id="assetQty" th:field="*{quantity}"
-                           th:classappend="${#fields.hasErrors('quantity')} ? 'is-invalid'"/>
-                    <div class="invalid-feedback" th:errors="*{quantity}"></div>
-                </div>
-                <div class="ktx-field">
-                    <label class="form-label" for="assetCondition">Tình trạng <span class="req">*</span></label>
-                    <select class="form-select" id="assetCondition" th:field="*{condition}"
-                            th:classappend="${#fields.hasErrors('condition')} ? 'is-invalid'">
-                        <option th:each="c : ${assetConditions}" th:value="${c}"
-                                th:text="${T(com.ktx.service.AssetService).conditionLabel(c)}">Tốt</option>
-                    </select>
-                    <div class="invalid-feedback" th:errors="*{condition}"></div>
-                </div>
-                <div class="ktx-field">
-                    <label class="form-label" for="assetSerial">Số serial</label>
-                    <input class="form-control" id="assetSerial" th:field="*{serialNumber}"
-                           th:classappend="${#fields.hasErrors('serialNumber')} ? 'is-invalid'"
-                           maxlength="50" placeholder="Công tơ điện/nước"/>
-                    <div class="invalid-feedback" th:errors="*{serialNumber}"></div>
-                </div>
+            <div class="text-center py-4 text-muted border rounded-3 mb-4" th:if="${assets.empty}">
+                <i class="bi bi-box fs-2 d-block text-secondary mb-2"></i>
+                <p class="mb-0">Chưa kê khai tài sản nào cho phòng này.</p>
             </div>
-            <div class="ktx-field">
-                <label class="form-label" for="assetNote">Ghi chú</label>
-                <textarea class="form-control" id="assetNote" rows="2" th:field="*{note}"
-                          th:classappend="${#fields.hasErrors('note')} ? 'is-invalid'"
-                          maxlength="500"></textarea>
-                <div class="invalid-feedback" th:errors="*{note}"></div>
-                <div class="form-text">Mỗi phòng tối đa 1 công tơ điện và 1 công tơ nước.</div>
+
+            <!-- Form thêm / sửa tài sản -->
+            <div class="p-3 border rounded-3 bg-light" id="assetFormAnchor">
+                <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-tools text-primary" th:if="${editingAsset}"></i>
+                    <i class="bi bi-plus-circle text-primary" th:unless="${editingAsset}"></i>
+                    <span th:text="${editingAsset} ? 'Cập nhật tài sản: ' + ${assetForm.name} : 'Kê khai thêm tài sản'">Kê khai thêm tài sản</span>
+                </h6>
+                <form th:action="${editingAsset} ? @{/admin/rooms/{id}/assets/{assetId}/edit(id=${room.id}, assetId=${editAssetId})} : @{/admin/rooms/{id}/assets(id=${room.id})}"
+                      th:object="${assetForm}" method="post">
+                    <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}">
+                        <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}">Lỗi</p>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold" for="assetName">Tên tài sản <span class="text-danger">*</span></label>
+                            <input class="form-control form-control-sm" id="assetName" th:field="*{name}"
+                                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                                   maxlength="120" placeholder="VD: Quạt trần Vinawind"/>
+                            <div class="invalid-feedback" th:errors="*{name}"></div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold" for="assetCategory">Phân loại <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" id="assetCategory" th:field="*{category}"
+                                    th:classappend="${#fields.hasErrors('category')} ? 'is-invalid'">
+                                <option th:each="c : ${assetCategories}" th:value="${c}"
+                                        th:text="${T(com.ktx.service.AssetService).categoryLabel(c)}">Quạt</option>
+                            </select>
+                            <div class="invalid-feedback" th:errors="*{category}"></div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold" for="assetQty">Số lượng <span class="text-danger">*</span></label>
+                            <input class="form-control form-control-sm" type="number" min="1" id="assetQty" th:field="*{quantity}"
+                                   th:classappend="${#fields.hasErrors('quantity')} ? 'is-invalid'"/>
+                            <div class="invalid-feedback" th:errors="*{quantity}"></div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold" for="assetCondition">Tình trạng <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" id="assetCondition" th:field="*{condition}"
+                                    th:classappend="${#fields.hasErrors('condition')} ? 'is-invalid'">
+                                <option th:each="c : ${assetConditions}" th:value="${c}"
+                                        th:text="${T(com.ktx.service.AssetService).conditionLabel(c)}">Tốt</option>
+                            </select>
+                            <div class="invalid-feedback" th:errors="*{condition}"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold" for="assetSerial">Số serial / Mã thiết bị</label>
+                            <input class="form-control form-control-sm" id="assetSerial" th:field="*{serialNumber}"
+                                   th:classappend="${#fields.hasErrors('serialNumber')} ? 'is-invalid'"
+                                   maxlength="50" placeholder="VD: CTD-101-01"/>
+                            <div class="invalid-feedback" th:errors="*{serialNumber}"></div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold" for="assetNote">Ghi chú</label>
+                            <input class="form-control form-control-sm" id="assetNote" th:field="*{note}"
+                                   th:classappend="${#fields.hasErrors('note')} ? 'is-invalid'"
+                                   maxlength="500" placeholder="Ghi chú thêm về vị trí, hiện trạng..."/>
+                            <div class="invalid-feedback" th:errors="*{note}"></div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-sm btn-primary"
+                                th:text="${editingAsset} ? 'Lưu thay đổi' : 'Thêm tài sản'">Thêm tài sản</button>
+                        <a th:if="${editingAsset}" class="btn btn-sm btn-light border" th:href="@{/admin/rooms/{id}(id=${room.id})}">Hủy</a>
+                    </div>
+                </form>
             </div>
-            <div class="d-flex gap-2 mt-3">
-                <button type="submit" class="btn btn-primary"
-                        th:text="${editingAsset} ? 'Lưu tài sản' : 'Thêm tài sản'">Thêm tài sản</button>
-                <a th:if="${editingAsset}" class="btn btn-light" th:href="@{/admin/rooms/{id}(id=${room.id})}">Hủy</a>
-            </div>
-        </form>
-    </section>
+        </div>
+    </div>
 </main>
 </body>
 </html>

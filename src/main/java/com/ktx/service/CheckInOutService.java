@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.ktx.domain.CheckInOut;
 import com.ktx.domain.enums.AssetCondition;
+import com.ktx.domain.enums.CheckInOutType;
 import com.ktx.domain.enums.DepositStatus;
 
 public interface CheckInOutService {
@@ -30,4 +31,18 @@ public interface CheckInOutService {
      * Danh sách lịch sử check-in / check-out gần đây (có thể lọc theo tòa)
      */
     List<CheckInOut> findRecent(Long buildingId);
+
+    /**
+     * Danh sách lịch sử check-in / check-out có phân trang và bộ lọc tìm kiếm
+     */
+    org.springframework.data.domain.Page<CheckInOut> findPage(Long buildingId,
+                                                              CheckInOutType eventType,
+                                                              Boolean ok,
+                                                              String keyword,
+                                                              org.springframework.data.domain.Pageable pageable);
+
+    long countTotal();
+    long countCheckIns();
+    long countCheckOuts();
+    long countDamaged();
 }

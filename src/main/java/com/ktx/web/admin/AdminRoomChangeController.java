@@ -58,12 +58,15 @@ public class AdminRoomChangeController {
     public String list(@RequestParam(value = "kind", required = false) RoomChangeKind kind,
                        @RequestParam(value = "status", required = false) RoomChangeStatus status,
                        @RequestParam(value = "buildingId", required = false) Long buildingId,
+                       @RequestParam(value = "page", defaultValue = "0") int page,
                        Model model) {
-        List<RoomChangeRequest> requests = roomChangeService.searchRequests(kind, status, buildingId);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(Math.max(page, 0), 20);
+        org.springframework.data.domain.Page<RoomChangeRequest> requestPage = roomChangeService.searchRequests(kind, status, buildingId, pageable);
         List<Bed> vacantBeds = bedRepository.findVacantBedsWithDetails();
         List<Building> buildings = buildingRepository.findAll();
 
-        model.addAttribute("requests", requests);
+        model.addAttribute("requestPage", requestPage);
+        model.addAttribute("requests", requestPage.getContent());
         model.addAttribute("vacantBeds", vacantBeds);
         model.addAttribute("buildings", buildings);
         model.addAttribute("kinds", RoomChangeKind.values());
@@ -72,6 +75,7 @@ public class AdminRoomChangeController {
         model.addAttribute("selectedKind", kind);
         model.addAttribute("selectedStatus", status);
         model.addAttribute("selectedBuildingId", buildingId);
+        model.addAttribute("baseUri", base());
         model.addAttribute("pageTitle", "Quản lý Đổi / Trả phòng");
         model.addAttribute("pageSubtitle", "Xử lý nguyện vọng chuyển phòng và thủ tục trả phòng của sinh viên");
         model.addAttribute("activeMenu", "room-changes");

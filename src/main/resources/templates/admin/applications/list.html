@@ -119,6 +119,15 @@
                         </tr>
                     </tbody>
                 </table>
+                <nav class="d-flex justify-content-between align-items-center px-4 py-3 border-top" th:if="${applicationPage != null and applicationPage.totalPages > 1}">
+                    <span class="small text-muted" th:text="${applicationPage.totalElements} + ' đơn đăng ký · trang ' + (${applicationPage.number} + 1) + '/' + ${applicationPage.totalPages}"></span>
+                    <div class="btn-group btn-group-sm">
+                        <a class="btn btn-outline-secondary" th:if="${!applicationPage.first}"
+                           th:href="@{/admin/applications(periodId=${selectedPeriodId}, page=${applicationPage.number - 1})}">Trước</a>
+                        <a class="btn btn-outline-secondary" th:if="${!applicationPage.last}"
+                           th:href="@{/admin/applications(periodId=${selectedPeriodId}, page=${applicationPage.number + 1})}">Sau</a>
+                    </div>
+                </nav>
             </div>
         </div>
     </div>

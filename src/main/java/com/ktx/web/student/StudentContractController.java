@@ -92,6 +92,45 @@ public class StudentContractController {
         return "student/contract/detail";
     }
 
+    @GetMapping("/contract/print")
+    public String printContract(Principal principal, Model model) {
+        Student student = getStudent(principal);
+        List<Contract> contracts = contractRepository.findByStudentIdAndStatusInWithDetails(
+                student.getId(), OccupyingStatuses.OCCUPYING);
+        if (contracts.isEmpty()) {
+            return "redirect:/student/contract";
+        }
+        Contract contract = contractRepository.findByIdWithDetails(contracts.get(0).getId())
+                .orElse(contracts.get(0));
+        return populatePrintModel(contract, student, "/student/contract", model);
+    }
+
+    @GetMapping("/contract/{id}/print")
+    public String printContractById(@PathVariable("id") Long id, Principal principal, Model model) {
+        Student student = getStudent(principal);
+        Contract contract = contractRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new BusinessException("Hợp đồng không tồn tại"));
+        if (!contract.getStudent().getId().equals(student.getId())) {
+            throw new BusinessException("Bạn không có quyền xem hợp đồng này");
+        }
+        return populatePrintModel(contract, student, "/student/contract", model);
+    }
+
+    private String populatePrintModel(Contract contract, Student student, String backUrl, Model model) {
+        List<com.ktx.domain.RoomAsset> roomAssets = List.of();
+        if (contract.getBed() != null && contract.getBed().getRoom() != null) {
+            roomAssets = roomAssetRepository.findByRoomIdOrderByIdAsc(contract.getBed().getRoom().getId());
+        }
+        Student targetStudent = (student != null) ? student : contract.getStudent();
+        model.addAttribute("contract", contract);
+        model.addAttribute("student", targetStudent);
+        model.addAttribute("roomAssets", roomAssets);
+        model.addAttribute("backUrl", backUrl);
+        model.addAttribute("printDate", LocalDate.now());
+        model.addAttribute("pageTitle", "In hợp đồng " + contract.getContractNo());
+        return "contracts/print";
+    }
+
     @GetMapping("/renewals")
     public String renewals(Principal principal, Model model) {
         Student student = getStudent(principal);

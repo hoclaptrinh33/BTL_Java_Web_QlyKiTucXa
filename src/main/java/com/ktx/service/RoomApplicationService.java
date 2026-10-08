@@ -81,6 +81,11 @@ public class RoomApplicationService {
         return roomApplicationRepository.findByPeriodIdWithDetails(periodId);
     }
 
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<RoomApplication> pageByPeriod(Long periodId, org.springframework.data.domain.Pageable pageable) {
+        return roomApplicationRepository.findPageByPeriodId(periodId, pageable);
+    }
+
     @Transactional
     public RoomApplication submitApplication(Long studentId, Long periodId, Long preferredBuildingId, RoomType preferredRoomType, String note) {
         Student student = studentRepository.findById(studentId)

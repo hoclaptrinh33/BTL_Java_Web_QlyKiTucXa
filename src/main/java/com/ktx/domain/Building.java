@@ -1,5 +1,9 @@
 package com.ktx.domain;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -7,6 +11,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 import com.ktx.domain.enums.BuildingGenderPolicy;
@@ -32,7 +38,19 @@ public class Building {
     @Column(nullable = false)
     private Boolean active;
 
+    @OneToMany(mappedBy = "building", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("displayOrder ASC, id ASC")
+    private List<BuildingImage> images = new ArrayList<>();
+
     public Building() {
+    }
+
+    public List<BuildingImage> getImages() {
+        return images;
+    }
+
+    public void setImages(List<BuildingImage> images) {
+        this.images = images;
     }
 
     public Long getId() {

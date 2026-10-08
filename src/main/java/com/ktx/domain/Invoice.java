@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -55,7 +58,8 @@ public class Invoice {
     @Column(nullable = false, precision = 12, scale = 0)
     private BigDecimal lateFee;
 
-    @Column(nullable = false, precision = 12, scale = 0)
+    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @Column(nullable = false, insertable = false, updatable = false, precision = 12, scale = 0)
     private BigDecimal total;
 
     @Column(nullable = false)
@@ -147,6 +151,11 @@ public class Invoice {
     }
 
     public BigDecimal getTotal() {
+        if (subtotal != null || lateFee != null) {
+            BigDecimal base = subtotal == null ? BigDecimal.ZERO : subtotal;
+            BigDecimal fee = lateFee == null ? BigDecimal.ZERO : lateFee;
+            return base.add(fee);
+        }
         return total;
     }
 

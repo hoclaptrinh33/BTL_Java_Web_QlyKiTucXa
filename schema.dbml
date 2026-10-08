@@ -1,0 +1,1011 @@
+// ============================================================================
+// HỆ THỐNG QUẢN LÝ KÝ TÚC XÁ - BTL_Java_Web_QlyKiTucXa
+// Tài liệu cơ sở dữ liệu (dbdocs / dbdiagram.io / DBML)
+// Phiên bản dữ liệu: v1.6 (Bao gồm Migration V1 -> V6)
+// ============================================================================
+
+Project ktx_management {
+  database_type: 'MySQL'
+  Note: '''
+    # Hệ Thống Quản Lý Ký Túc Xá & Phân Bổ Chỗ Ở Sinh Viên
+    * **Dự án**: BTL_Java_Web_QlyKiTucXa
+    * **Stack công nghệ**: Java 25 LTS, Spring Boot 4.1, Hibernate 7, MySQL 8.4 LTS
+    * **Quy chuẩn chuẩn hóa**: Đạt chuẩn 3NF (V6 migration)
+    * **Bảo vệ toàn vẹn**: Ràng buộc OCCUPYING tập trung với Generated Unique Keys
+  '''
+}
+
+// ============================================================================
+// ĐỊNH NGHĨA CÁC ENUM (Tập giá trị chuẩn hóa)
+// ============================================================================
+
+Enum role_enum {
+  ADMIN [note: 'Quản trị viên cấp cao']
+  STAFF [note: 'Cán bộ quản lý tòa']
+  STUDENT [note: 'Sinh viên']
+}
+
+Enum account_kind_enum {
+  INTERNAL [note: 'Tài khoản cán bộ / quản trị nội bộ']
+  STUDENT [note: 'Tài khoản sinh viên ký túc xá']
+}
+
+Enum permission_plane_enum {
+  SYSTEM [note: 'Quyền quản trị hệ thống và cấu hình']
+  OPERATION [note: 'Quyền tác nghiệp vận hành thường ngày']
+}
+
+Enum role_scope_mode_enum {
+  ALL [note: 'Phạm vi toàn bộ ký túc xá']
+  BUILDINGS [note: 'Chỉ các tòa nhà được phân công']
+}
+
+Enum gender_enum {
+  MALE [note: 'Nam']
+  FEMALE [note: 'Nữ']
+}
+
+Enum building_gender_policy_enum {
+  MALE [note: 'Tòa nhà dành riêng cho Nam']
+  FEMALE [note: 'Tòa nhà dành riêng cho Nữ']
+}
+
+Enum room_type_enum {
+  STANDARD_4 [note: 'Phòng tiêu chuẩn 4 người']
+  STANDARD_6 [note: 'Phòng tiêu chuẩn 6 người']
+  STANDARD_8 [note: 'Phòng tiêu chuẩn 8 người']
+  VIP_AC [note: 'Phòng dịch vụ cao cấp có điều hòa (2 người)']
+}
+
+Enum room_status_enum {
+  ACTIVE [note: 'Đang hoạt động bình thường']
+  MAINTENANCE [note: 'Đang bảo trì / sửa chữa']
+  INACTIVE [note: 'Tạm ngưng sử dụng']
+}
+
+Enum bed_status_enum {
+  VACANT [note: 'Giường trống, sẵn sàng tiếp nhận']
+  OCCUPIED [note: 'Giường đã có người ở']
+  MAINTENANCE [note: 'Giường hỏng hóc, đang bảo trì']
+}
+
+Enum asset_category_enum {
+  FAN [note: 'Quạt điện']
+  BED_FRAME [note: 'Khung giường tầng']
+  CABINET [note: 'Tủ đồ']
+  DESK [note: 'Bàn học']
+  ELECTRIC_METER [note: 'Công tơ điện phòng']
+  WATER_METER [note: 'Công tơ nước phòng']
+  AC [note: 'Điều hòa nhiệt độ']
+  OTHER [note: 'Thiết bị khác']
+}
+
+Enum asset_condition_enum {
+  GOOD [note: 'Sử dụng tốt']
+  DAMAGED [note: 'Hư hỏng']
+  MAINTENANCE [note: 'Đang bảo dưỡng']
+}
+
+Enum period_type_enum {
+  FRESHMAN [note: 'Đợt đăng ký Tân sinh viên']
+  NEW_ACADEMIC_YEAR [note: 'Đợt đăng ký đầu năm học mới']
+  SUMMER [note: 'Đợt đăng ký kỳ hè']
+}
+
+Enum period_status_enum {
+  DRAFT [note: 'Bản nháp, chưa công bố']
+  OPEN [note: 'Đang mở nhận hồ sơ đăng ký']
+  CLOSED [note: 'Đã đóng tiếp nhận hồ sơ']
+  ALLOCATING [note: 'Đang trong quá trình xét duyệt phân bổ']
+  COMPLETED [note: 'Đã hoàn tất phân bổ và ra hợp đồng']
+}
+
+Enum priority_category_enum {
+  NONE [note: 'Không thuộc diện ưu tiên']
+  POLICY [note: 'Diện chính sách (con thương binh, hộ nghèo...)']
+  REMOTE_AREA [note: 'Vùng sâu, vùng xa, hải đảo']
+}
+
+Enum application_status_enum {
+  DRAFT [note: 'Bản nháp sinh viên đang soạn']
+  SUBMITTED [note: 'Đã nộp, chờ xét duyệt']
+  WITHDRAWN [note: 'Sinh viên chủ động rút đơn']
+  ALLOCATED [note: 'Được phân bổ giường thành công']
+  WAITLISTED [note: 'Trong danh sách chờ']
+  REJECTED [note: 'Bị từ chối hồ sơ']
+}
+
+Enum allocation_run_status_enum {
+  PENDING [note: 'Chờ chạy']
+  RUNNING [note: 'Đang chạy thuật toán']
+  COMPLETED [note: 'Chạy xong, chờ duyệt']
+  FAILED [note: 'Lỗi trong quá trình chạy']
+  COMMITTED [note: 'Đã chốt kết quả và sinh hợp đồng']
+  DISCARDED [note: 'Hủy bỏ kết quả đợt chạy preview']
+}
+
+Enum allocation_result_enum {
+  ASSIGNED [note: 'Được gán giường']
+  WAITLISTED [note: 'Chờ phân bổ đợt sau']
+  SKIPPED [note: 'Bị bỏ qua do không thỏa điều kiện']
+}
+
+Enum contract_status_enum {
+  DRAFT [note: 'Hợp đồng mới tạo, chưa ký/nhận phòng (OCCUPYING)']
+  ACTIVE [note: 'Đang hiệu lực, sinh viên đang ở (OCCUPYING)']
+  PENDING_RENEWAL [note: 'Chờ duyệt gia hạn (OCCUPYING)']
+  EXPIRED [note: 'Hết hạn chưa gia hạn/chưa bàn giao (OCCUPYING)']
+  TERMINATED [note: 'Bị chấm dứt trước hạn, chưa checkout (OCCUPYING)']
+  COMPLETED [note: 'Đã hoàn tất checkout hoặc hủy trước checkin (FREE)']
+}
+
+Enum completion_reason_enum {
+  NORMAL_CHECKOUT [note: 'Trả phòng đúng hạn bình thường']
+  CANCELLED_BEFORE_CHECKIN [note: 'Hủy hợp đồng trước khi làm thủ tục check-in']
+  FORCED_AFTER_CHECKOUT [note: 'Bị buộc rời phòng sau khi đã xử lý vi phạm']
+}
+
+Enum deposit_status_enum {
+  HELD [note: 'Đang giữ tiền cọc']
+  REFUNDED [note: 'Đã hoàn trả tiền cọc cho sinh viên']
+  FORFEITED [note: 'Tịch thu tiền cọc do vi phạm/hỏng tài sản']
+}
+
+Enum check_in_out_type_enum {
+  CHECK_IN [note: 'Thủ tục nhận phòng']
+  CHECK_OUT [note: 'Thủ tục trả phòng']
+}
+
+Enum room_change_kind_enum {
+  CHANGE [note: 'Yêu cầu chuyển sang phòng khác']
+  RETURN [note: 'Yêu cầu trả phòng sớm trước hạn']
+}
+
+Enum room_change_status_enum {
+  SUBMITTED [note: 'Đã gửi yêu cầu, chờ duyệt']
+  APPROVED [note: 'BQL đã phê duyệt']
+  REJECTED [note: 'BQL từ chối']
+  COMPLETED [note: 'Đã thực hiện thủ tục đổi phòng thành công']
+  CANCELLED [note: 'Sinh viên tự hủy yêu cầu']
+}
+
+Enum renewal_status_enum {
+  SUBMITTED [note: 'Đã gửi đơn xin gia hạn']
+  APPROVED [note: 'Đã được duyệt gia hạn hợp đồng']
+  REJECTED [note: 'Bị từ chối gia hạn']
+  CANCELLED [note: 'Đã hủy đơn gia hạn']
+}
+
+Enum invoice_type_enum {
+  ROOM_TERM [note: 'Tiền thuê phòng theo kỳ']
+  UTILITY [note: 'Tiền điện nước hàng tháng']
+  DEPOSIT [note: 'Tiền đặt cọc hợp đồng']
+  OTHER [note: 'Phí bồi thường, sửa chữa hoặc phát sinh khác']
+}
+
+Enum invoice_status_enum {
+  UNPAID [note: 'Chưa thanh toán']
+  PAID [note: 'Đã thanh toán đủ']
+  OVERDUE [note: 'Quá hạn thanh toán']
+  CANCELLED [note: 'Hóa đơn đã bị hủy']
+}
+
+Enum invoice_item_code_enum {
+  ELEC [note: 'Tiền điện tiêu thụ']
+  WATER [note: 'Tiền nước sinh hoạt']
+  SANITATION [note: 'Phí vệ sinh']
+  INTERNET [note: 'Cước mạng internet']
+  PARKING [note: 'Phí gửi xe']
+  ROOM [note: 'Tiền thuê phòng']
+  DEPOSIT [note: 'Khoản tiền đặt cọc']
+  LATE_FEE [note: 'Phí phạt trễ hạn']
+}
+
+Enum payment_method_enum {
+  CASH [note: 'Tiền mặt nộp tại văn phòng KTX']
+  BANK_TRANSFER [note: 'Chuyển khoản ngân hàng / Quét mã QR VietQR']
+}
+
+Enum ticket_priority_enum {
+  LOW [note: 'Mức độ thấp']
+  MEDIUM [note: 'Mức độ trung bình']
+  HIGH [note: 'Mức độ khẩn cấp']
+}
+
+Enum ticket_status_enum {
+  OPEN [note: 'Mới tạo, chờ tiếp nhận']
+  IN_PROGRESS [note: 'Kỹ thuật viên đang xử lý']
+  RESOLVED [note: 'Đã khắc phục xong']
+  CLOSED [note: 'Đã đóng phiếu sau xác nhận']
+  REJECTED [note: 'Từ chối xử lý']
+}
+
+Enum violation_type_enum {
+  LATE_RETURN [note: 'Về ký túc xá muộn giờ giới nghiêm']
+  ILLEGAL_COOKING [note: 'Nấu ăn sai quy định trong phòng']
+  DISTURBANCE [note: 'Gây mất trật tự, ồn ào']
+  DAMAGE [note: 'Làm hư hỏng tài sản công cộng']
+  OTHER [note: 'Vi phạm nội quy khác']
+}
+
+Enum violation_severity_enum {
+  MINOR [note: 'Nhẹ - nhắc nhở']
+  MAJOR [note: 'Nặng - trừ điểm rèn luyện']
+  SEVERE [note: 'Nghiêm trọng - kỷ luật / đuổi khỏi KTX']
+}
+
+Enum violation_action_enum {
+  WARNING [note: 'Cảnh cáo bằng văn bản']
+  POINT_DEDUCT [note: 'Trừ điểm rèn luyện ký túc xá']
+  TERMINATE [note: 'Chấm dứt hợp đồng, buộc rời KTX']
+}
+
+Enum notification_type_enum {
+  CONTRACT_EXPIRY [note: 'Thông báo sắp hết hạn hợp đồng']
+  INVOICE [note: 'Thông báo phát hành hóa đơn mới']
+  ALLOCATION [note: 'Thông báo kết quả xếp phòng']
+  TICKET [note: 'Cập nhật tiến độ báo hỏng tài sản']
+  GENERIC [note: 'Thông báo chung từ ban quản lý']
+}
+
+Enum config_value_type_enum {
+  STRING [note: 'Chuỗi ký tự']
+  INT [note: 'Số nguyên']
+  DECIMAL [note: 'Số thực thập phân']
+  JSON [note: 'Dữ liệu cấu trúc JSON']
+  BOOLEAN [note: 'Giá trị đúng/sai']
+}
+
+Enum audit_status_enum {
+  SUCCESS [note: 'Tác vụ thực hiện thành công']
+  FAILED [note: 'Tác vụ thất bại / bị từ chối']
+}
+
+// ============================================================================
+// PHÂN HỆ 1: TÀI KHOẢN, PHÂN QUYỀN & BẢO MẬT (RBAC)
+// ============================================================================
+
+Table users {
+  id bigint [pk, increment, note: 'Khóa chính tài khoản']
+  username varchar(50) [not null, unique, note: 'Tên đăng nhập (Sinh viên = MSSV; BQL = tên đăng nhập)']
+  email varchar(120) [not null, unique, note: 'Email liên hệ nhận thông báo']
+  password_hash varchar(100) [not null, note: 'Mật khẩu đã mã hóa BCrypt']
+  role varchar(20) [not null, note: 'Vai trò cấp cao: ADMIN, STAFF, STUDENT']
+  account_kind varchar(20) [not null, default: 'INTERNAL', note: 'Phân loại: INTERNAL hoặc STUDENT (RBAC V4)']
+  enabled boolean [not null, default: true, note: 'Trạng thái hoạt động của tài khoản']
+  last_login_at datetime [null, note: 'Thời điểm đăng nhập gần nhất']
+  created_at datetime [not null, default: `now()`, note: 'Thời gian tạo']
+  updated_at datetime [not null, default: `now()`, note: 'Thời gian cập nhật']
+
+  indexes {
+    username [unique, name: 'uk_users_username']
+    email [unique, name: 'uk_users_email']
+  }
+  Note: '''
+    **Bảng Tài Khoản Người Dùng (users)**:
+    Trung tâm xác thực của toàn bộ hệ thống KTX. Sinh viên có `username = student_code`.
+    Cán bộ có `account_kind = INTERNAL` và được phân quyền chi tiết qua hệ thống RBAC.
+  '''
+}
+
+Table students {
+  id bigint [pk, increment, note: 'Khóa chính sinh viên']
+  user_id bigint [not null, unique, note: 'Liên kết 1-1 với tài khoản users']
+  student_code varchar(20) [not null, unique, note: 'Mã số sinh viên (MSSV)']
+  full_name varchar(120) [not null, note: 'Họ và tên đầy đủ']
+  gender varchar(10) [not null, note: 'Giới tính (MALE, FEMALE) - Bắt buộc để phân tòa/phòng']
+  date_of_birth date [null, note: 'Ngày tháng năm sinh']
+  faculty_code varchar(30) [null, note: 'Mã khoa đào tạo (vd: CNTT, DTVT)']
+  class_code varchar(30) [null, note: 'Mã lớp sinh viên (vd: D22CQCN01)']
+  phone varchar(20) [null, note: 'Số điện thoại cá nhân']
+  emergency_name varchar(120) [null, note: 'Họ tên phụ huynh / người liên hệ khẩn cấp']
+  emergency_phone varchar(20) [null, note: 'Số điện thoại người liên hệ khẩn cấp']
+  hometown varchar(120) [null, note: 'Quê quán / Tỉnh thành']
+  priority_category varchar(30) [not null, default: 'NONE', note: 'Đối tượng ưu tiên (NONE, POLICY, REMOTE_AREA)']
+  previous_stay_good boolean [not null, default: false, note: 'Điểm cộng ở kỳ trước tốt (Admin phê duyệt thủ công)']
+  conduct_score int [not null, default: 100, note: 'Điểm rèn luyện KTX (Mặc định 100, min 0)']
+  blocked_from_housing boolean [not null, default: false, note: 'Cờ cấm đăng ký do vi phạm nghiêm trọng']
+
+  indexes {
+    user_id [unique, name: 'uk_students_user_id']
+    student_code [unique, name: 'uk_students_student_code']
+    (gender, faculty_code, class_code) [name: 'idx_students_gender_faculty_class']
+  }
+  Note: '''
+    **Bảng Sinh Viên (students)**:
+    Hồ sơ lý lịch sinh viên cư trú KTX. Phục vụ tính điểm ưu tiên và quản lý nề nếp.
+  '''
+}
+
+Table staff {
+  id bigint [pk, increment, note: 'Khóa chính nhân viên/cán bộ']
+  user_id bigint [not null, unique, note: 'Liên kết 1-1 với tài khoản users']
+  full_name varchar(120) [not null, note: 'Họ và tên cán bộ']
+  phone varchar(20) [null, note: 'Số điện thoại liên lạc']
+  assigned_building_id bigint [not null, note: 'Tòa nhà quản lý trực tiếp (bắt buộc với ROLE_STAFF)']
+
+  indexes {
+    user_id [unique, name: 'uk_staff_user_id']
+  }
+  Note: '''
+    **Bảng Cán Bộ Quản Lý Tòa (staff)**:
+    Lưu trữ thông tin cán bộ phụ trách từng tòa nhà ký túc xá.
+  '''
+}
+
+Table permissions {
+  code varchar(50) [pk, note: 'Mã định danh quyền, vd: room.read, ticket.handle']
+  plane varchar(20) [not null, note: 'Phân tầng quyền: SYSTEM hoặc OPERATION']
+
+  Note: '''
+    **Bảng Danh Mục Quyền (permissions)**:
+    Tập hợp các atomic permissions trong hệ thống KTX (RBAC V4/V5).
+  '''
+}
+
+Table roles {
+  id bigint [pk, increment, note: 'Khóa chính vai trò']
+  code varchar(50) [not null, unique, note: 'Mã vai trò: SYSTEM_ADMIN, QUAN_LY, CAN_BO']
+  name varchar(100) [not null, note: 'Tên hiển thị vai trò']
+  description varchar(255) [null, note: 'Mô tả phạm vi trách nhiệm']
+  system_locked boolean [not null, default: false, note: 'true = vai trò cốt lõi hệ thống, không được xóa']
+  scope_mode varchar(20) [not null, default: 'ALL', note: 'Phạm vi dữ liệu: ALL hoặc BUILDINGS']
+  created_at datetime [not null, default: `now()` ]
+  updated_at datetime [not null, default: `now()` ]
+
+  indexes {
+    code [unique, name: 'uk_roles_code']
+  }
+  Note: '''
+    **Bảng Vai Trò (roles)**:
+    Định nghĩa vai trò người dùng trong hệ thống RBAC động.
+  '''
+}
+
+Table role_permissions {
+  role_id bigint [not null, note: 'Mã vai trò']
+  permission_code varchar(50) [not null, note: 'Mã quyền gán cho vai trò']
+
+  indexes {
+    (role_id, permission_code) [pk]
+  }
+  Note: '''
+    **Bảng Gán Quyền Cho Vai Trò (role_permissions)**:
+    Quan hệ nhiều-nhiều giữa Roles và Permissions.
+  '''
+}
+
+Table user_roles {
+  user_id bigint [not null, note: 'Mã tài khoản người dùng']
+  role_id bigint [not null, note: 'Mã vai trò']
+
+  indexes {
+    (user_id, role_id) [pk]
+  }
+  Note: '''
+    **Bảng Gán Vai Trò Cho Người Dùng (user_roles)**:
+    Quan hệ nhiều-nhiều giữa Users và Roles.
+  '''
+}
+
+Table user_buildings {
+  user_id bigint [not null, note: 'Mã tài khoản cán bộ']
+  building_id bigint [not null, note: 'Mã tòa nhà được phân quyền phụ trách']
+
+  indexes {
+    (user_id, building_id) [pk]
+  }
+  Note: '''
+    **Bảng Phân Quyền Quản Lý Tòa (user_buildings)**:
+    Cho phép một cán bộ phụ trách nhiều tòa nhà (Data Scope Filtering).
+  '''
+}
+
+// ============================================================================
+// PHÂN HỆ 2: CƠ SỞ VẬT CHẤT & HẠ TẦNG KÝ TÚC XÁ
+// ============================================================================
+
+Table buildings {
+  id bigint [pk, increment, note: 'Khóa chính tòa nhà']
+  code varchar(10) [not null, unique, note: 'Mã tòa nhà (vd: A, B, C, D)']
+  name varchar(120) [not null, note: 'Tên đầy đủ (vd: Tòa A - KTX Nam)']
+  gender_policy varchar(10) [not null, note: 'Chính sách giới tính: MALE hoặc FEMALE']
+  active boolean [not null, default: true, note: 'Trạng thái hoạt động (soft disable)']
+
+  indexes {
+    code [unique, name: 'uk_buildings_code']
+  }
+  Note: '''
+    **Bảng Tòa Nhà (buildings)**:
+    Phân định tòa nam/nữ, quản lý danh mục tòa KTX.
+  '''
+}
+
+Table rooms {
+  id bigint [pk, increment, note: 'Khóa chính phòng ở']
+  building_id bigint [not null, note: 'Tòa nhà chứa phòng']
+  room_number varchar(10) [not null, note: 'Số phòng (vd: 101, 102, 201)']
+  floor int [not null, note: 'Tầng của phòng']
+  room_type varchar(20) [not null, note: 'Loại phòng: STANDARD_4, STANDARD_6, STANDARD_8, VIP_AC']
+  capacity int [not null, note: 'Số lượng giường tối đa']
+  price_per_term decimal(12, 0) [not null, note: 'Giá thuê phòng cho 1 kỳ học (VNĐ)']
+  status varchar(20) [not null, default: 'ACTIVE', note: 'Trạng thái: ACTIVE, MAINTENANCE, INACTIVE']
+
+  indexes {
+    (building_id, room_number) [unique, name: 'uk_rooms_building_number']
+    building_id [name: 'idx_rooms_building_id']
+    status [name: 'idx_rooms_status']
+  }
+  Note: '''
+    **Bảng Phòng Ở (rooms)**:
+    Quản lý thông tin chi tiết từng phòng, sức chứa, đơn giá thuê theo kỳ.
+  '''
+}
+
+Table beds {
+  id bigint [pk, increment, note: 'Khóa chính vị trí giường']
+  room_id bigint [not null, note: 'Phòng chứa giường']
+  bed_code varchar(10) [not null, note: 'Mã vị trí giường (vd: G1, G2, G3...)']
+  status varchar(20) [not null, default: 'VACANT', note: 'Trạng thái giường: VACANT, OCCUPIED, MAINTENANCE']
+  current_contract_id bigint [null, note: 'Cache hợp đồng đang chiếm chỗ (không FK cứng để tránh circular lock InnoDB)']
+  version bigint [not null, default: 0, note: 'Phiên bản khóa lạc quan (@Version) chống book trùng']
+
+  indexes {
+    (room_id, bed_code) [unique, name: 'uk_beds_room_code']
+    status [name: 'idx_beds_status']
+    (room_id, status) [name: 'idx_beds_room_status']
+  }
+  Note: '''
+    **Bảng Giường (beds)**:
+    Đơn vị vật lý nhỏ nhất được phân bổ cho sinh viên cư trú.
+    Nguồn sự thật chỗ ở tối thượng dựa trên hợp đồng trạng thái OCCUPYING.
+  '''
+}
+
+Table room_assets {
+  id bigint [pk, increment, note: 'Khóa chính tài sản phòng']
+  room_id bigint [not null, note: 'Phòng trang bị tài sản']
+  name varchar(120) [not null, note: 'Tên trang thiết bị']
+  category varchar(30) [not null, note: 'Danh mục: FAN, BED_FRAME, CABINET, DESK, ELECTRIC_METER, WATER_METER, AC, OTHER']
+  quantity int [not null, default: 1, note: 'Số lượng trang bị']
+  condition varchar(20) [not null, default: 'GOOD', note: 'Tình trạng: GOOD, DAMAGED, MAINTENANCE']
+  note varchar(500) [null, note: 'Ghi chú hiện trạng']
+  serial_number varchar(50) [null, note: 'Số serial hoặc mã hiệu công tơ']
+
+  indexes {
+    room_id [name: 'idx_room_assets_room_id']
+  }
+  Note: '''
+    **Bảng Tài Sản Trong Phòng (room_assets)**:
+    Kiểm kê trang thiết bị, bàn giao tài sản khi nhận/trả phòng.
+  '''
+}
+
+// ============================================================================
+// PHÂN HỆ 3: ĐĂNG KÝ PHÒNG & THUẬT TOÁN PHÂN BỔ TỰ ĐỘNG
+// ============================================================================
+
+Table registration_periods {
+  id bigint [pk, increment, note: 'Khóa chính đợt đăng ký']
+  name varchar(120) [not null, note: 'Tên đợt mở đăng ký (vd: Đợt tân sinh viên K22)']
+  period_type varchar(30) [not null, note: 'Loại đợt: FRESHMAN, NEW_ACADEMIC_YEAR, SUMMER']
+  academic_year varchar(20) [not null, note: 'Năm học áp dụng (vd: 2026-2027)']
+  open_at datetime [not null, note: 'Thời điểm bắt đầu mở nhận đơn']
+  close_at datetime [not null, note: 'Thời điểm hết hạn nộp đơn']
+  term_start date [not null, note: 'Ngày bắt đầu hợp đồng mặc định']
+  term_end date [not null, note: 'Ngày kết thúc hợp đồng mặc định']
+  status varchar(20) [not null, default: 'DRAFT', note: 'Trạng thái: DRAFT, OPEN, CLOSED, ALLOCATING, COMPLETED']
+  created_by bigint [not null, note: 'Người tạo đợt đăng ký']
+
+  indexes {
+    (status, period_type) [name: 'idx_registration_periods_status_type']
+  }
+  Note: '''
+    **Bảng Đợt Đăng Ký Chỗ Ở (registration_periods)**:
+    Khung thời gian cho phép sinh viên đăng ký nguyện vọng ký túc xá.
+  '''
+}
+
+Table room_applications {
+  id bigint [pk, increment, note: 'Khóa chính đơn đăng ký']
+  period_id bigint [not null, note: 'Đợt đăng ký tham gia']
+  student_id bigint [not null, note: 'Sinh viên nộp đơn']
+  preferred_building_id bigint [null, note: 'Nguyện vọng tòa nhà ưu tiên']
+  preferred_room_type varchar(20) [null, note: 'Nguyện vọng loại phòng (null = chấp nhận mọi loại)']
+  priority_snapshot varchar(30) [not null, note: 'Snapshot đối tượng ưu tiên tại thời điểm nộp đơn']
+  previous_stay_good_snapshot boolean [not null, default: false, note: 'Snapshot lịch sử ở tốt tại thời điểm nộp']
+  status varchar(20) [not null, default: 'DRAFT', note: 'Trạng thái: DRAFT, SUBMITTED, WITHDRAWN, ALLOCATED, WAITLISTED, REJECTED']
+  submitted_at datetime [null, note: 'Thời điểm nộp hồ sơ chính thức']
+  computed_score int [null, note: 'Điểm ưu tiên tính toán theo công thức cấu hình']
+  note varchar(500) [null, note: 'Ghi chú của sinh viên']
+
+  indexes {
+    (period_id, student_id) [unique, name: 'uk_room_applications_period_student']
+  }
+  Note: '''
+    **Bảng Đơn Đăng Ký Chỗ Ở (room_applications)**:
+    Lưu nguyện vọng của sinh viên cùng snapshot tiêu chí ưu tiên phục vụ chấm điểm.
+  '''
+}
+
+Table allocation_runs {
+  id bigint [pk, increment, note: 'Khóa chính đợt chạy phân bổ']
+  period_id bigint [not null, note: 'Đợt đăng ký được phân bổ']
+  dry_run boolean [not null, default: true, note: 'true: chạy thử nghiệm xem trước (Preview); false: chốt chính thức (Commit)']
+  status varchar(20) [not null, default: 'PENDING', note: 'Trạng thái: PENDING, RUNNING, COMPLETED, FAILED, COMMITTED, DISCARDED']
+  started_at datetime [null, note: 'Thời điểm bắt đầu chạy']
+  finished_at datetime [null, note: 'Thời điểm kết thúc chạy']
+  run_by bigint [null, note: 'Cán bộ thực hiện']
+  summary_json text [null, note: 'Tóm tắt kết quả phân bổ (số lượng đỗ, trượt, chờ) dạng JSON']
+  seed_note varchar(255) [null, note: 'Ghi chú của phiên chạy phân bổ']
+  weights_json text [null, note: 'Audit trọng số tính điểm tại thời điểm plan()']
+
+  indexes {
+    period_id [name: 'idx_allocation_runs_period']
+  }
+  Note: '''
+    **Bảng Phiên Chạy Thuật Toán Phân Bổ (allocation_runs)**:
+    Theo dõi lịch sử chạy thuật toán xếp chỗ tự động (Hỗ trợ Preview và Commit).
+  '''
+}
+
+Table allocation_items {
+  id bigint [pk, increment, note: 'Khóa chính dòng phân bổ chi tiết']
+  run_id bigint [not null, note: 'Phiên phân bổ']
+  application_id bigint [not null, note: 'Đơn đăng ký được xếp chỗ (chuẩn hóa 3NF V6, student_id suy ra từ application)']
+  bed_id bigint [null, note: 'Giường được gán nếu thành công (null nếu trượt)']
+  rank_no int [not null, note: 'Thứ hạng xét duyệt theo điểm số']
+  score int [not null, note: 'Tổng điểm ưu tiên đạt được']
+  result varchar(20) [not null, note: 'Kết quả: ASSIGNED, WAITLISTED, SKIPPED']
+  reason varchar(40) [null, note: 'Lý do: NO_VACANT_BED, NO_TYPE_MATCH, SKIPPED_ALREADY_HOUSED...']
+
+  indexes {
+    run_id [name: 'idx_allocation_items_run']
+    application_id [name: 'idx_allocation_items_application']
+  }
+  Note: '''
+    **Bảng Chi Tiết Kết Quả Phân Bổ (allocation_items)**:
+    Ghi nhận kết quả gán giường cho từng đơn đăng ký trong phiên chạy.
+  '''
+}
+
+// ============================================================================
+// PHÂN HỆ 4: HỢP ĐỒNG & HỒ SƠ LƯU TRÚ KÝ TÚC XÁ
+// ============================================================================
+
+Table contracts {
+  id bigint [pk, increment, note: 'Khóa chính hợp đồng']
+  contract_no varchar(30) [not null, unique, note: 'Số hiệu hợp đồng: HD-2026-000123']
+  student_id bigint [not null, note: 'Sinh viên ký hợp đồng']
+  bed_id bigint [not null, note: 'Giường sinh viên được phân bổ']
+  application_id bigint [null, note: 'Đơn đăng ký gốc (nếu có, null nếu ký trực tiếp)']
+  start_date date [not null, note: 'Ngày bắt đầu ở']
+  end_date date [not null, note: 'Ngày kết thúc hợp đồng']
+  room_fee decimal(12, 0) [not null, note: 'Tiền phòng theo kỳ (Snapshot từ giá phòng lúc ký)']
+  deposit_amount decimal(12, 0) [not null, note: 'Tiền đặt cọc phòng']
+  deposit_status varchar(20) [not null, default: 'HELD', note: 'Trạng thái cọc: HELD, REFUNDED, FORFEITED']
+  status varchar(20) [not null, note: 'Trạng thái HĐ: DRAFT, ACTIVE, PENDING_RENEWAL, EXPIRED, TERMINATED, COMPLETED']
+  completion_reason varchar(40) [null, note: 'Lý do hoàn tất: NORMAL_CHECKOUT, CANCELLED_BEFORE_CHECKIN, FORCED_AFTER_CHECKOUT']
+  terms_version varchar(20) [null, note: 'Phiên bản điều khoản nội quy KTX']
+  signed_at datetime [null, note: 'Thời điểm sinh viên ký thỏa thuận']
+  active_bed_key bigint [null, note: 'Cột sinh MySQL 8.4: bed_id nếu OCCUPYING, null nếu COMPLETED']
+  active_student_key bigint [null, note: 'Cột sinh MySQL 8.4: student_id nếu OCCUPYING, null nếu COMPLETED']
+
+  indexes {
+    contract_no [unique, name: 'uk_contracts_contract_no']
+    active_bed_key [unique, name: 'uk_contract_active_bed']
+    active_student_key [unique, name: 'uk_contract_active_student']
+    (student_id, status) [name: 'idx_contracts_student_status']
+    (bed_id, status) [name: 'idx_contracts_bed_status']
+    end_date [name: 'idx_contracts_end_date']
+  }
+  Note: '''
+    **Bảng Hợp Đồng Lưu Trú (contracts)**:
+    Trọng tâm quản lý cư trú KTX.
+    *Tập OCCUPYING:* DRAFT, ACTIVE, PENDING_RENEWAL, EXPIRED, TERMINATED.
+    Hai cột sinh `active_bed_key` và `active_student_key` bảo đảm tuyệt đối:
+    1 sinh viên chỉ giữ tối đa 1 chỗ ở, 1 giường chỉ gán cho tối đa 1 người tại mọi thời điểm.
+  '''
+}
+
+Table check_in_outs {
+  id bigint [pk, increment, note: 'Khóa chính lượt nhận/trả phòng']
+  contract_id bigint [not null, note: 'Hợp đồng liên quan']
+  event_type varchar(20) [not null, note: 'Loại sự kiện: CHECK_IN hoặc CHECK_OUT']
+  performed_at datetime [not null, note: 'Thời điểm thực hiện thủ tục']
+  performed_by bigint [not null, note: 'Cán bộ KTX trực tiếp tiếp nhận']
+  asset_note text [null, note: 'Biên bản ghi nhận hiện trạng trang thiết bị bàn giao']
+  ok boolean [not null, default: true, note: 'Đạt yêu cầu bàn giao phòng']
+
+  indexes {
+    contract_id [name: 'idx_check_in_outs_contract']
+  }
+  Note: '''
+    **Bảng Lịch Sử Check-in / Check-out (check_in_outs)**:
+    Theo dõi thời điểm sinh viên chính thức nhận phòng và trả phòng.
+  '''
+}
+
+Table room_change_requests {
+  id bigint [pk, increment, note: 'Khóa chính yêu cầu đổi/trả phòng']
+  contract_id bigint [not null, note: 'Hợp đồng hiện tại (chuẩn hóa 3NF V6, sinh viên suy ra từ contract)']
+  request_kind varchar(20) [not null, default: 'CHANGE', note: 'Phân loại: CHANGE (chuyển phòng) hoặc RETURN (trả phòng sớm)']
+  current_bed_id bigint [not null, note: 'Vị trí giường hiện tại']
+  requested_building_id bigint [null, note: 'Tòa nhà mong muốn chuyển đến']
+  requested_room_type varchar(20) [null, note: 'Loại phòng mong muốn chuyển']
+  reason varchar(500) [null, note: 'Lý do xin chuyển / trả phòng']
+  target_bed_id bigint [null, note: 'Giường đích do BQL gán khi duyệt']
+  status varchar(20) [not null, default: 'SUBMITTED', note: 'Trạng thái: SUBMITTED, APPROVED, REJECTED, COMPLETED, CANCELLED']
+  admin_note varchar(500) [null, note: 'Ghi chú phản hồi của ban quản lý']
+
+  indexes {
+    contract_id [name: 'idx_room_change_requests_contract']
+  }
+  Note: '''
+    **Bảng Đơn Xin Đổi / Trả Phòng (room_change_requests)**:
+    Xử lý nguyện vọng chuyển đổi phòng hoặc trả phòng trước thời hạn hợp đồng.
+  '''
+}
+
+Table renewal_requests {
+  id bigint [pk, increment, note: 'Khóa chính đơn xin gia hạn']
+  contract_id bigint [not null, note: 'Hợp đồng cần gia hạn (chuẩn hóa 3NF V6, sinh viên suy ra từ contract)']
+  requested_end date [not null, note: 'Ngày kết thúc mới mong muốn gia hạn đến']
+  status varchar(20) [not null, default: 'SUBMITTED', note: 'Trạng thái: SUBMITTED, APPROVED, REJECTED, CANCELLED']
+  admin_note varchar(500) [null, note: 'Ý kiến phê duyệt của cán bộ']
+  created_at datetime [not null, default: `now()`, note: 'Thời điểm nộp đơn']
+  decided_at datetime [null, note: 'Thời điểm ban quản lý ra quyết định']
+
+  indexes {
+    contract_id [name: 'idx_renewal_requests_contract']
+  }
+  Note: '''
+    **Bảng Yêu Cầu Gia Hạn Hợp Đồng (renewal_requests)**:
+    Sinh viên gửi đơn gia hạn lưu trú sang kỳ tiếp theo mà không cần nộp hồ sơ mới.
+  '''
+}
+
+// ============================================================================
+// PHÂN HỆ 5: ĐIỆN NƯỚC, HÓA ĐƠN & THANH TOÁN
+// ============================================================================
+
+Table utility_readings {
+  id bigint [pk, increment, note: 'Khóa chính chỉ số điện nước']
+  room_id bigint [not null, note: 'Phòng được ghi chỉ số']
+  billing_month date [not null, note: 'Ngày 1 của tháng tính cước (yyyy-MM-01)']
+  elec_prev int [not null, note: 'Chỉ số điện kỳ trước']
+  elec_curr int [not null, note: 'Chỉ số điện kỳ này']
+  water_prev int [not null, note: 'Chỉ số nước kỳ trước']
+  water_curr int [not null, note: 'Chỉ số nước kỳ này']
+  elec_replaced boolean [not null, default: false, note: 'true = đã thay công tơ điện trong tháng']
+  water_replaced boolean [not null, default: false, note: 'true = đã thay công tơ nước trong tháng']
+  elec_old_final int [null, note: 'Chỉ số chốt công tơ điện cũ']
+  elec_new_start int [null, note: 'Chỉ số xuất phát công tơ điện mới']
+  water_old_final int [null, note: 'Chỉ số chốt công tơ nước cũ']
+  water_new_start int [null, note: 'Chỉ số xuất phát công tơ nước mới']
+  new_building_meter boolean [not null, default: false, note: 'true = công tơ mới đưa vào đo đạc lần đầu']
+  recorded_by bigint [not null, note: 'Cán bộ trực tiếp ghi số']
+  recorded_at datetime [not null, default: `now()`, note: 'Thời điểm chốt chỉ số']
+
+  indexes {
+    (room_id, billing_month) [unique, name: 'uk_utility_readings_room_month']
+  }
+  Note: '''
+    **Bảng Chỉ Số Tiêu Thụ Điện Nước (utility_readings)**:
+    Lưu chỉ số điện nước theo từng phòng mỗi tháng, hỗ trợ ghi nhận đổi công tơ độc lập.
+  '''
+}
+
+Table invoices {
+  id bigint [pk, increment, note: 'Khóa chính hóa đơn']
+  invoice_no varchar(30) [not null, unique, note: 'Số hiệu hóa đơn: INV-2026-000123']
+  student_id bigint [not null, note: 'Sinh viên phải thanh toán']
+  room_id bigint [null, note: 'Phòng phát sinh chi phí']
+  contract_id bigint [null, note: 'Hợp đồng liên quan']
+  invoice_type varchar(20) [not null, note: 'Phân loại: ROOM_TERM, UTILITY, DEPOSIT, OTHER']
+  billing_month date [null, note: 'Tháng thu tiền (yyyy-MM-01) nếu là hóa đơn điện nước']
+  subtotal decimal(12, 0) [not null, note: 'Tiền cước gốc chưa cộng phạt']
+  late_fee decimal(12, 0) [not null, default: 0, note: 'Phí phạt quá hạn']
+  total decimal(12, 0) [not null, note: 'Cột sinh MySQL 8.4 STORED: (subtotal + late_fee) theo chuẩn 3NF V6']
+  due_date date [not null, note: 'Hạn cuối phải thanh toán']
+  status varchar(20) [not null, default: 'UNPAID', note: 'Trạng thái: UNPAID, PAID, OVERDUE, CANCELLED']
+  paid_at datetime [null, note: 'Thời điểm thanh toán đầy đủ']
+  idempotency_key varchar(80) [not null, unique, note: 'Khóa định danh chống phát trùng hóa đơn']
+
+  indexes {
+    invoice_no [unique, name: 'uk_invoices_invoice_no']
+    idempotency_key [unique, name: 'uk_invoices_idempotency_key']
+    (student_id, status) [name: 'idx_invoices_student_status']
+  }
+  Note: '''
+    **Bảng Hóa Đơn (invoices)**:
+    Quản lý các khoản tiền sinh viên phải nộp (tiền phòng, điện nước chia phòng, cọc).
+    Có idempotency_key để đảm bảo không bị tạo trùng lặp.
+  '''
+}
+
+Table invoice_items {
+  id bigint [pk, increment, note: 'Khóa chính dòng mục hóa đơn']
+  invoice_id bigint [not null, note: 'Thuộc hóa đơn']
+  description varchar(255) [not null, note: 'Nội dung chi tiết khoản thu']
+  qty decimal(12, 3) [not null, default: 1, note: 'Số lượng tiêu thụ']
+  unit_price decimal(12, 0) [not null, note: 'Đơn giá định mức']
+  amount decimal(12, 0) [not null, note: 'Thành tiền thực tế dòng (hỗ trợ điện bậc thang và chia dư phòng)']
+  item_code varchar(20) [not null, note: 'Mã hạng mục: ELEC, WATER, SANITATION, INTERNET, PARKING, ROOM, DEPOSIT, LATE_FEE']
+
+  indexes {
+    invoice_id [name: 'idx_invoice_items_invoice']
+  }
+  Note: '''
+    **Bảng Chi Tiết Dòng Hóa Đơn (invoice_items)**:
+    Chi tiết từng khoản cấu thành hóa đơn (Điện lũy tiến, nước, phí vệ sinh...).
+  '''
+}
+
+Table payments {
+  id bigint [pk, increment, note: 'Khóa chính giao dịch thanh toán']
+  invoice_id bigint [not null, note: 'Hóa đơn được thanh toán']
+  amount decimal(12, 0) [not null, note: 'Số tiền thực nộp trong giao dịch']
+  method varchar(20) [not null, note: 'Phương thức thanh toán: CASH hoặc BANK_TRANSFER']
+  paid_at datetime [not null, note: 'Thời điểm nộp tiền']
+  recorded_by bigint [not null, note: 'Cán bộ ghi nhận thanh toán']
+  reference_no varchar(50) [null, note: 'Số biên lai hoặc mã giao dịch ngân hàng']
+
+  indexes {
+    invoice_id [name: 'idx_payments_invoice']
+  }
+  Note: '''
+    **Bảng Giao Dịch Thanh Toán (payments)**:
+    Lịch sử các lần đóng tiền. Tổng payments >= invoice.total sẽ chuyển trạng thái PAID.
+  '''
+}
+
+// ============================================================================
+// PHÂN HỆ 6: VẬN HÀNH, BÁO SỰ CỐ, VI PHẠM & THÔNG BÁO
+// ============================================================================
+
+Table tickets {
+  id bigint [pk, increment, note: 'Khóa chính phiếu báo hỏng']
+  student_id bigint [not null, note: 'Sinh viên báo sự cố']
+  room_id bigint [not null, note: 'Phòng gặp sự cố']
+  title varchar(200) [not null, note: 'Tiêu đề tóm tắt sự cố']
+  description text [not null, note: 'Mô tả chi tiết hiện tượng hư hỏng']
+  priority varchar(10) [not null, default: 'MEDIUM', note: 'Độ ưu tiên: LOW, MEDIUM, HIGH']
+  status varchar(20) [not null, default: 'OPEN', note: 'Trạng thái: OPEN, IN_PROGRESS, RESOLVED, CLOSED, REJECTED']
+  created_at datetime [not null, default: `now()`, note: 'Thời điểm gửi yêu cầu']
+  updated_at datetime [not null, default: `now()`, note: 'Thời điểm cập nhật xử lý']
+  resolved_at datetime [null, note: 'Thời điểm hoàn thành sửa chữa (hệ thống tự đóng sau 7 ngày)']
+
+  indexes {
+    student_id [name: 'idx_tickets_student']
+    room_id [name: 'idx_tickets_room']
+    (status, resolved_at) [name: 'idx_tickets_status_resolved']
+  }
+  Note: '''
+    **Bảng Báo Sự Cố & Sửa Chữa (tickets)**:
+    Tiếp nhận phản ánh hỏng hóc cơ sở vật chất từ sinh viên và điều phối kỹ thuật.
+  '''
+}
+
+Table violations {
+  id bigint [pk, increment, note: 'Khóa chính biên bản vi phạm']
+  student_id bigint [not null, note: 'Sinh viên vi phạm nội quy']
+  recorded_by bigint [not null, note: 'Cán bộ lập biên bản']
+  violation_type varchar(30) [not null, note: 'Hành vi: LATE_RETURN, ILLEGAL_COOKING, DISTURBANCE, DAMAGE, OTHER']
+  severity varchar(10) [not null, note: 'Mức độ: MINOR, MAJOR, SEVERE']
+  points_deducted int [not null, default: 0, note: 'Số điểm rèn luyện bị trừ']
+  description text [null, note: 'Mô tả chi tiết vi phạm']
+  occurred_at datetime [not null, note: 'Thời điểm xảy ra hành vi']
+  action varchar(20) [not null, note: 'Hình thức xử lý: WARNING, POINT_DEDUCT, TERMINATE']
+
+  indexes {
+    student_id [name: 'idx_violations_student']
+  }
+  Note: '''
+    **Bảng Biên Bản Vi Phạm Nội Quy (violations)**:
+    Theo dõi vi phạm, trừ điểm rèn luyện và làm căn cứ chấm dứt lưu trú nếu nghiêm trọng.
+  '''
+}
+
+Table notifications {
+  id bigint [pk, increment, note: 'Khóa chính thông báo']
+  user_id bigint [not null, note: 'Người dùng nhận thông báo']
+  title varchar(200) [not null, note: 'Tiêu đề thông báo']
+  body text [not null, note: 'Nội dung chi tiết thông báo']
+  type varchar(30) [not null, default: 'GENERIC', note: 'Loại: CONTRACT_EXPIRY, INVOICE, ALLOCATION, TICKET, GENERIC']
+  read_flag boolean [not null, default: false, note: 'Trạng thái đã đọc hay chưa']
+  created_at datetime [not null, default: `now()`, note: 'Thời điểm gửi']
+  email_sent boolean [not null, default: false, note: 'Đã gửi qua email hay chưa']
+
+  indexes {
+    (user_id, read_flag) [name: 'idx_notifications_user_read']
+  }
+  Note: '''
+    **Bảng Thông Báo Hệ Thống (notifications)**:
+    Gửi thông báo trên giao diện web và đồng bộ email cho sinh viên/cán bộ.
+  '''
+}
+
+// ============================================================================
+// PHÂN HỆ 7: CẤU HÌNH, KHÓA HỆ THỐNG & AUDIT LOGS
+// ============================================================================
+
+Table system_configs {
+  config_key varchar(80) [pk, note: 'Mã khóa cấu hình (vd: elec.tier1.kwh, deposit.ratio)']
+  config_value text [not null, note: 'Giá trị tham số cấu hình']
+  value_type varchar(20) [not null, note: 'Kiểu dữ liệu: STRING, INT, DECIMAL, JSON, BOOLEAN']
+  description varchar(255) [null, note: 'Mô tả ý nghĩa của tham số cấu hình']
+
+  Note: '''
+    **Bảng Cấu Hình Tham Số Hệ Thống (system_configs)**:
+    Lưu 19 tham số vận hành ký túc xá (biểu giá điện nước, tỷ lệ cọc, điểm ưu tiên...).
+  '''
+}
+
+Table document_sequences {
+  kind varchar(20) [note: 'Loại văn bản: CONTRACT_NO hoặc INVOICE_NO']
+  year int [note: 'Năm cấp số văn bản (vd: 2026)']
+  last_value int [not null, default: 0, note: 'Số thứ tự cuối cùng đã cấp trong năm']
+
+  indexes {
+    (kind, year) [pk]
+  }
+  Note: '''
+    **Bảng Cấp Số Văn Bản Tự Động (document_sequences)**:
+    Sinh số hợp đồng và hóa đơn liên tục không trùng lặp bằng SELECT FOR UPDATE.
+  '''
+}
+
+Table system_locks {
+  lock_name varchar(40) [pk, note: 'Tên khóa tài nguyên (vd: ALLOCATION)']
+
+  Note: '''
+    **Bảng Khóa Bi Quan Hệ Thống (system_locks)**:
+    Khóa phân tán dùng SELECT FOR UPDATE khi gán phòng thủ công giữa kỳ.
+  '''
+}
+
+Table audit_logs {
+  id bigint [pk, increment, note: 'Khóa chính nhật ký']
+  user_id bigint [null, note: 'Mã người dùng thực hiện (null nếu tác vụ hệ thống)']
+  username varchar(50) [not null, note: 'Tên đăng nhập của người thao tác']
+  user_role varchar(50) [null, note: 'Vai trò tại thời điểm thực hiện']
+  action varchar(100) [not null, note: 'Mã hành động: SYSTEM_INIT, CONFIG_CHECK, USER_LOGIN...']
+  target_type varchar(50) [null, note: 'Đối tượng bị tác động (vd: SYSTEM_CONFIG, CONTRACT, ROOM)']
+  target_id varchar(100) [null, note: 'Định danh đối tượng bị tác động']
+  description varchar(500) [not null, note: 'Mô tả chi tiết hành động audit']
+  ip_address varchar(45) [null, note: 'Địa chỉ IP nguồn']
+  status varchar(20) [not null, default: 'SUCCESS', note: 'Kết quả: SUCCESS hoặc FAILED']
+  created_at datetime [not null, default: `now()`, note: 'Thời điểm ghi log']
+
+  indexes {
+    created_at [name: 'idx_audit_created_at']
+    username [name: 'idx_audit_username']
+    action [name: 'idx_audit_action']
+    target_type [name: 'idx_audit_target_type']
+  }
+  Note: '''
+    **Bảng Nhật Ký Hoạt Động (audit_logs - V5)**:
+    Ghi nhận dấu vết kiểm toán các thao tác quan trọng trên hệ thống.
+  '''
+}
+
+// ============================================================================
+// KHAI BÁO CÁC MỐI QUAN HỆ KHÓA NGOẠI (Foreign Key Relationships)
+// ============================================================================
+
+// Phân hệ Tài khoản & RBAC
+Ref: students.user_id - users.id
+Ref: staff.user_id - users.id
+Ref: staff.assigned_building_id > buildings.id
+Ref: role_permissions.role_id > roles.id
+Ref: role_permissions.permission_code > permissions.code
+Ref: user_roles.user_id > users.id
+Ref: user_roles.role_id > roles.id
+Ref: user_buildings.user_id > users.id
+Ref: user_buildings.building_id > buildings.id
+
+// Phân hệ Cơ sở vật chất
+Ref: rooms.building_id > buildings.id
+Ref: beds.room_id > rooms.id
+Ref: room_assets.room_id > rooms.id
+
+// Phân hệ Đăng ký & Phân bổ
+Ref: registration_periods.created_by > users.id
+Ref: room_applications.period_id > registration_periods.id
+Ref: room_applications.student_id > students.id
+Ref: room_applications.preferred_building_id > buildings.id
+Ref: allocation_runs.period_id > registration_periods.id
+Ref: allocation_runs.run_by > users.id
+Ref: allocation_items.run_id > allocation_runs.id
+Ref: allocation_items.application_id > room_applications.id
+Ref: allocation_items.bed_id > beds.id
+
+// Phân hệ Hợp đồng & Lưu trú
+Ref: contracts.student_id > students.id
+Ref: contracts.bed_id > beds.id
+Ref: contracts.application_id > room_applications.id
+Ref: check_in_outs.contract_id > contracts.id
+Ref: check_in_outs.performed_by > users.id
+Ref: room_change_requests.contract_id > contracts.id
+Ref: room_change_requests.current_bed_id > beds.id
+Ref: room_change_requests.requested_building_id > buildings.id
+Ref: room_change_requests.target_bed_id > beds.id
+Ref: renewal_requests.contract_id > contracts.id
+
+// Phân hệ Điện nước, Hóa đơn & Thanh toán
+Ref: utility_readings.room_id > rooms.id
+Ref: utility_readings.recorded_by > users.id
+Ref: invoices.student_id > students.id
+Ref: invoices.room_id > rooms.id
+Ref: invoices.contract_id > contracts.id
+Ref: invoice_items.invoice_id > invoices.id
+Ref: payments.invoice_id > invoices.id
+Ref: payments.recorded_by > users.id
+
+// Phân hệ Vận hành, Hỗ trợ, Vi phạm & Audit
+Ref: tickets.student_id > students.id
+Ref: tickets.room_id > rooms.id
+Ref: violations.student_id > students.id
+Ref: violations.recorded_by > users.id
+Ref: notifications.user_id > users.id
+Ref: audit_logs.user_id > users.id
+
+// Quan hệ cache tối ưu (không tạo FK cứng ở InnoDB để chống deadlock vòng)
+Ref: beds.current_contract_id > contracts.id
+
+// ============================================================================
+// NHÓM BẢNG THEO PHÂN HỆ NGHIỆP VỤ (TableGroups for dbdocs / dbdiagram UI)
+// ============================================================================
+
+TableGroup TaiKhoan_PhanQuyen_RBAC {
+  users
+  students
+  staff
+  roles
+  permissions
+  role_permissions
+  user_roles
+  user_buildings
+}
+
+TableGroup CoSoVatChat_HaTang {
+  buildings
+  rooms
+  beds
+  room_assets
+}
+
+TableGroup DangKy_PhanBoPhong {
+  registration_periods
+  room_applications
+  allocation_runs
+  allocation_items
+}
+
+TableGroup HopDong_LuuTru {
+  contracts
+  check_in_outs
+  room_change_requests
+  renewal_requests
+}
+
+TableGroup DienNuoc_HoaDon_ThanhToan {
+  utility_readings
+  invoices
+  invoice_items
+  payments
+}
+
+TableGroup VanHanh_HoTro_ViPham {
+  tickets
+  violations
+  notifications
+}
+
+TableGroup HeThong_CauHinh_NhatKy {
+  system_configs
+  document_sequences
+  system_locks
+  audit_logs
+}

@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -502,7 +501,7 @@ class BillingEngineTest {
         inv.setLateFee(BigDecimal.ZERO);
         inv.setTotal(new BigDecimal("105418"));
 
-        when(invoiceRepository.findByStatusInAndDueDateBefore(
+        when(invoiceRepository.findNeedingLateFee(
                 List.of(InvoiceStatus.UNPAID, InvoiceStatus.OVERDUE), today))
                 .thenReturn(List.of(inv));
 
@@ -536,7 +535,7 @@ class BillingEngineTest {
         inv.setLateFee(new BigDecimal("5271")); // Đã tính phí trước đó
         inv.setTotal(new BigDecimal("110689"));
 
-        when(invoiceRepository.findByStatusInAndDueDateBefore(
+        when(invoiceRepository.findNeedingLateFee(
                 List.of(InvoiceStatus.UNPAID, InvoiceStatus.OVERDUE), today))
                 .thenReturn(List.of(inv));
 

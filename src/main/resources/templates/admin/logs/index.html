@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="container-fluid py-4">
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <h2 class="h4 fw-bold text-dark mb-0">Nhật ký hoạt động hệ thống</h2>
+                <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 fw-semibold fs-7">
+                    <i class="bi bi-clock-history me-1"></i>Audit Logs
+                </span>
+            </div>
+            <p class="text-secondary small mb-0">Theo dõi toàn diện lịch sử đăng nhập, thay đổi cấu hình và thao tác quản trị</p>
+        </div>
+        <div>
+            <a th:href="@{/admin/logs}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-clockwise me-1"></i> Làm mới
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 Summary Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm p-3 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small fw-semibold">Thao tác hôm nay</span>
+                    <span class="d-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary" style="width:36px;height:36px;">
+                        <i class="bi bi-activity fs-5"></i>
+                    </span>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <strong class="fs-4 text-dark" th:text="${summary.todayTotal}">0</strong>
+                    <small class="text-muted">bản ghi</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm p-3 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small fw-semibold">Đăng nhập thành công</span>
+                    <span class="d-flex align-items-center justify-content-center rounded-3 bg-success bg-opacity-10 text-success" style="width:36px;height:36px;">
+                        <i class="bi bi-box-arrow-in-right fs-5"></i>
+                    </span>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <strong class="fs-4 text-success" th:text="${summary.todayLogins}">0</strong>
+                    <small class="text-muted">lượt</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm p-3 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small fw-semibold">Thay đổi cấu hình</span>
+                    <span class="d-flex align-items-center justify-content-center rounded-3 bg-info bg-opacity-10 text-info" style="width:36px;height:36px;">
+                        <i class="bi bi-sliders fs-5"></i>
+                    </span>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <strong class="fs-4 text-info" th:text="${summary.todayConfigChanges}">0</strong>
+                    <small class="text-muted">lần lưu</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm p-3 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small fw-semibold">Thất bại / Cảnh báo</span>
+                    <span class="d-flex align-items-center justify-content-center rounded-3 bg-danger bg-opacity-10 text-danger" style="width:36px;height:36px;">
+                        <i class="bi bi-shield-exclamation fs-5"></i>
+                    </span>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <strong class="fs-4 text-danger" th:text="${summary.todayFailures}">0</strong>
+                    <small class="text-muted">lượt</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Card -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form th:action="@{/admin/logs}" method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-secondary">Tìm kiếm từ khóa</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" th:value="${q}" class="form-control border-start-0" placeholder="Tài khoản, IP, mô tả..." />
+                    </div>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold text-secondary">Hành động</label>
+                    <select name="action" class="form-select">
+                        <option value="">-- Tất cả --</option>
+                        <option th:each="act : ${actionsList}" th:value="${act}" th:text="${act}" th:selected="${act == selectedAction}">LOGIN_SUCCESS</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold text-secondary">Phân loại đối tượng</label>
+                    <select name="targetType" class="form-select">
+                        <option value="">-- Tất cả --</option>
+                        <option th:each="tgt : ${targetTypesList}" th:value="${tgt}" th:text="${tgt}" th:selected="${tgt == selectedTargetType}">AUTH</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold text-secondary">Trạng thái</label>
+                    <select name="status" class="form-select">
+                        <option value="">-- Tất cả --</option>
+                        <option value="SUCCESS" th:selected="${selectedStatus == 'SUCCESS'}">Thành công</option>
+                        <option value="FAILURE" th:selected="${selectedStatus == 'FAILURE'}">Thất bại</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-secondary">Khoảng ngày</label>
+                    <div class="d-flex gap-1 align-items-center">
+                        <input type="date" name="from" th:value="${fromDate}" class="form-control form-control-sm" />
+                        <span class="text-muted small">-</span>
+                        <input type="date" name="to" th:value="${toDate}" class="form-control form-control-sm" />
+                    </div>
+                </div>
+
+                <div class="col-12 d-flex justify-content-end gap-2 pt-2 border-top">
+                    <a th:href="@{/admin/logs}" class="btn btn-light btn-sm">Xóa bộ lọc</a>
+                    <button type="submit" class="btn btn-primary btn-sm px-3">
+                        <i class="bi bi-funnel me-1"></i> Áp dụng bộ lọc
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Logs Table Card -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th scope="col" style="width: 170px;">Thời gian</th>
+                    <th scope="col" style="width: 180px;">Tài khoản</th>
+                    <th scope="col" style="width: 150px;">Hành động</th>
+                    <th scope="col" style="width: 130px;">Đối tượng</th>
+                    <th scope="col">Chi tiết mô tả</th>
+                    <th scope="col" style="width: 130px;">Địa chỉ IP</th>
+                    <th scope="col" style="width: 100px;" class="text-center">Trạng thái</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${logPage.empty}">
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-journal-x fs-1 d-block mb-2 text-secondary"></i>
+                        Không tìm thấy bản ghi nhật ký nào phù hợp với bộ lọc.
+                    </td>
+                </tr>
+                <tr th:each="log : ${logPage.content}">
+                    <!-- Timestamp -->
+                    <td class="small">
+                        <div class="fw-semibold text-dark" th:text="${#temporals.format(log.createdAt, 'dd/MM/yyyy HH:mm:ss')}">22/09/2026 20:00:00</div>
+                    </td>
+
+                    <!-- Actor Account -->
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="d-flex align-items-center justify-content-center rounded-circle bg-secondary bg-opacity-10 text-secondary fw-bold" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                <span th:text="${#strings.substring(log.username, 0, 1).toUpperCase()}">A</span>
+                            </span>
+                            <div>
+                                <strong class="text-dark d-block small" th:text="${log.username}">admin</strong>
+                                <span class="badge bg-light text-secondary border px-1.5 py-0" style="font-size: 0.65rem;" th:text="${log.userRole != null ? log.userRole : 'USER'}">ADMIN</span>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Action badge -->
+                    <td>
+                        <span th:if="${log.action == 'LOGIN_SUCCESS'}" class="badge bg-success-subtle text-success border border-success-subtle">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập
+                        </span>
+                        <span th:if="${log.action == 'LOGIN_FAILED'}" class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                            <i class="bi bi-shield-x me-1"></i>Đăng nhập lỗi
+                        </span>
+                        <span th:if="${log.action == 'CONFIG_UPDATE'}" class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                            <i class="bi bi-sliders me-1"></i>Đổi cấu hình
+                        </span>
+                        <span th:if="${log.action.startsWith('ADMIN_')}" class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                            <i class="bi bi-shield-lock me-1"></i>
+                            <span th:text="${log.action == 'ADMIN_CREATE' ? 'Tạo Admin' : (log.action == 'ADMIN_TOGGLE_STATUS' ? 'Khóa/Mở Admin' : (log.action == 'ADMIN_DELETE' ? 'Xóa Admin' : (log.action == 'ADMIN_RESET_PASSWORD' ? 'Mật khẩu Admin' : 'Quản trị')))}">Quản trị</span>
+                        </span>
+                        <span th:if="${log.action.startsWith('ROLE_')}" class="badge bg-info-subtle text-info border border-info-subtle">
+                            <i class="bi bi-person-badge me-1"></i>
+                            <span th:text="${log.action == 'ROLE_CREATE' ? 'Thêm Vai trò' : (log.action == 'ROLE_UPDATE' ? 'Sửa Vai trò' : (log.action == 'ROLE_DELETE' ? 'Xóa Vai trò' : (log.action == 'ROLE_ASSIGN' ? 'Gán Vai trò' : 'Vai trò')))}">Vai trò</span>
+                        </span>
+                        <span th:if="${log.action.startsWith('USER_')}" class="badge bg-secondary-subtle text-dark border">
+                            <i class="bi bi-person me-1"></i>
+                            <span th:text="${log.action == 'USER_CREATE' ? 'Thêm Người dùng' : (log.action == 'USER_UPDATE' ? 'Sửa Người dùng' : (log.action == 'USER_TOGGLE_STATUS' ? 'Đổi trạng thái' : (log.action == 'USER_RESET_PASSWORD' ? 'Đổi mật khẩu' : 'Người dùng')))}">Người dùng</span>
+                        </span>
+                        <span th:if="${log.action != 'LOGIN_SUCCESS' and log.action != 'LOGIN_FAILED' and log.action != 'CONFIG_UPDATE' and !log.action.startsWith('ADMIN_') and !log.action.startsWith('ROLE_') and !log.action.startsWith('USER_')}" class="badge bg-secondary-subtle text-secondary border">
+                            <span th:text="${log.action}">ACTION</span>
+                        </span>
+                    </td>
+
+                    <!-- Target Type & ID -->
+                    <td class="small">
+                        <span class="text-muted font-monospace" th:text="${log.targetType != null ? log.targetType : '-'}">AUTH</span>
+                        <small th:if="${log.targetId != null}" class="d-block text-truncate text-secondary font-monospace" style="max-width: 120px;" th:text="${log.targetId}" th:title="${log.targetId}">id</small>
+                    </td>
+
+                    <!-- Description -->
+                    <td class="small">
+                        <span class="text-dark" th:text="${log.description}">Mô tả chi tiết</span>
+                    </td>
+
+                    <!-- IP Address -->
+                    <td>
+                        <span class="font-monospace small text-muted" th:text="${log.ipAddress != null ? log.ipAddress : '-'}">127.0.0.1</span>
+                    </td>
+
+                    <!-- Status -->
+                    <td class="text-center">
+                        <span th:if="${log.status == 'SUCCESS'}" class="badge rounded-pill bg-success px-2 py-1" style="font-size: 0.72rem;">Thành công</span>
+                        <span th:if="${log.status != 'SUCCESS'}" class="badge rounded-pill bg-danger px-2 py-1" style="font-size: 0.72rem;">Thất bại</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div th:if="${logPage.totalPages > 1}" class="card-footer bg-white py-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 border-top">
+            <div class="small text-muted">
+                Hiển thị <strong th:text="${logPage.number * logPage.size + 1}">1</strong> -
+                <strong th:text="${logPage.number * logPage.size + logPage.numberOfElements}">20</strong>
+                trong tổng số <strong th:text="${logPage.totalElements}">100</strong> bản ghi
+            </div>
+            <nav aria-label="Phân trang nhật ký">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" th:classappend="${logPage.first} ? 'disabled'">
+                        <a class="page-link" th:href="@{/admin/logs(q=${q}, action=${selectedAction}, targetType=${selectedTargetType}, status=${selectedStatus}, from=${fromDate}, to=${toDate}, page=${logPage.number - 1})}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item" th:each="pageNum : ${#numbers.sequence(0, logPage.totalPages - 1)}"
+                        th:if="${pageNum >= logPage.number - 2 and pageNum <= logPage.number + 2}"
+                        th:classappend="${pageNum == logPage.number} ? 'active'">
+                        <a class="page-link" th:text="${pageNum + 1}"
+                           th:href="@{/admin/logs(q=${q}, action=${selectedAction}, targetType=${selectedTargetType}, status=${selectedStatus}, from=${fromDate}, to=${toDate}, page=${pageNum})}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${logPage.last} ? 'disabled'">
+                        <a class="page-link" th:href="@{/admin/logs(q=${q}, action=${selectedAction}, targetType=${selectedTargetType}, status=${selectedStatus}, from=${fromDate}, to=${toDate}, page=${logPage.number + 1})}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>

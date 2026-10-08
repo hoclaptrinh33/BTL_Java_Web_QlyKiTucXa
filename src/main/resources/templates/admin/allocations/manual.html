@@ -4,7 +4,7 @@
 <main th:fragment="content" class="container-fluid py-4">
 
     <!-- Thanh điều hướng breadcrumb -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-1">
@@ -12,95 +12,333 @@
                     <li class="breadcrumb-item active" aria-current="page">Gán chỗ thủ công</li>
                 </ol>
             </nav>
-            <h4 class="fw-bold mb-0 text-dark">Gán chỗ thủ công (Manual Assign)</h4>
-            <small class="text-muted">Gán sinh viên ngoại lệ vào giường chỉ định với cơ chế khóa bi quan chống xung đột</small>
+            <h4 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-person-fill-gear text-primary"></i>Gán chỗ thủ công (Manual Assignment Console)
+            </h4>
+            <small class="text-muted">Phân bổ sinh viên ngoại lệ vào giường KTX chỉ định với kiểm soát an toàn thời gian thực</small>
         </div>
         <div>
             <a th:href="@{/admin/allocations}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
+                <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách đợt
             </a>
         </div>
     </div>
 
+    <!-- Thông báo lỗi hoặc cảnh báo nếu có -->
+    <div th:if="${errorMessage != null}" class="alert alert-danger alert-dismissible fade show border-0 shadow-xs mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${errorMessage}">Nội dung lỗi</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${successMessage != null}" class="alert alert-success alert-dismissible fade show border-0 shadow-xs mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i><span th:text="${successMessage}">Thao tác thành công</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
     <div class="row g-4">
-        <!-- Cột Form Gán chỗ -->
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 border-bottom">
+        <!-- Cột Form Gán chỗ & Bộ điều khiển thông minh -->
+        <div class="col-xl-8">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
-                        <i class="bi bi-person-plus text-primary"></i>Thông tin phân bổ giường
+                        <i class="bi bi-sliders2 text-primary"></i>Bảng điều khiển phân bổ giường
                     </h5>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">Khóa hàng bi quan</span>
                 </div>
                 <div class="card-body p-4">
-                    <form th:action="@{/admin/allocations/manual}" th:object="${form}" method="post" novalidate>
+                    <form id="manualAssignForm" th:action="@{/admin/allocations/manual}" th:object="${form}" method="post" novalidate>
                         
-                        <!-- Chọn Đợt đăng ký -->
-                        <div class="mb-3">
-                            <label for="periodId" class="form-label fw-semibold">Đợt đăng ký <small class="text-muted fw-normal">(Tùy chọn)</small></label>
+                        <!-- Ẩn các ID được chọn để submit form chuẩn xác -->
+                        <input type="hidden" id="studentId" th:field="*{studentId}"/>
+                        <input type="hidden" id="bedId" th:field="*{bedId}"/>
+
+                        <!-- BƯỚC 1: Chọn Đợt đăng ký -->
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <label for="periodId" class="form-label fw-bold text-dark d-flex align-items-center justify-content-between mb-1">
+                                <span><i class="bi bi-calendar3 me-1 text-primary"></i>1. Chọn đợt phân bổ</span>
+                                <small class="text-muted fw-normal">Đợt áp dụng thời hạn hợp đồng</small>
+                            </label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
-                                <select id="periodId" th:field="*{periodId}" class="form-select">
-                                    <option value="">-- Gán giữa kỳ / Ngoài đợt (Khóa system_locks.ALLOCATION) --</option>
+                                <span class="input-group-text bg-white"><i class="bi bi-calendar-event text-secondary"></i></span>
+                                <select id="periodId" th:field="*{periodId}" class="form-select fw-semibold" onchange="updatePeriodInfo(this)">
+                                    <option value="" data-start="" data-end="">-- Gán giữa kỳ / Ngoài đợt (Khóa system_locks.ALLOCATION) --</option>
                                     <option th:each="p : ${periods}"
                                             th:value="${p.id}"
-                                            th:text="${p.name + ' (' + p.academicYear + ') - [' + p.status + ']'}">
+                                            th:data-start="${p.termStart != null ? #temporals.format(p.termStart, 'dd/MM/yyyy') : ''}"
+                                            th:data-end="${p.termEnd != null ? #temporals.format(p.termEnd, 'dd/MM/yyyy') : ''}"
+                                            th:text="${p.name + (!#strings.contains(p.name, p.academicYear) ? ' (' + p.academicYear + ')' : '') + ' — [' + p.status + ']'}">
                                         Đợt tân SV
                                     </option>
                                 </select>
                             </div>
-                            <div class="form-text">
-                                Nếu chọn đợt, thời hạn hợp đồng lấy theo đợt và hệ thống khóa dòng period đó. Nếu không chọn, hệ thống khóa <code>system_locks.ALLOCATION</code>.
+                            <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-1">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>Hợp đồng sẽ kế thừa thời hạn lưu trú của đợt này.
+                                </small>
+                                <span id="periodTermBadge" class="badge bg-secondary-subtle text-secondary border">Thời hạn: Ngoài đợt (5 tháng)</span>
                             </div>
                         </div>
 
-                        <!-- Chọn Sinh viên -->
-                        <div class="mb-3">
-                            <label for="studentId" class="form-label fw-semibold">Sinh viên <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
-                                <select id="studentId" th:field="*{studentId}" class="form-select"
-                                        th:classappend="${#fields.hasErrors('studentId')} ? 'is-invalid'">
-                                    <option value="">-- Chọn sinh viên cần xếp chỗ --</option>
-                                    <option th:each="s : ${students}"
-                                            th:value="${s.id}"
-                                            th:text="${s.studentCode + ' - ' + s.fullName + ' (' + (s.gender != null ? (s.gender.name() == 'MALE' ? 'Nam' : 'Nữ') : '') + ') - ĐRL: ' + s.conductScore + (s.blockedFromHousing ? ' [BỊ CẤM]' : '')}">
-                                        SV001 - Nguyễn Văn A (Nam)
-                                    </option>
-                                </select>
+                        <!-- BƯỚC 2: Chọn Sinh viên (Smart Student Picker) -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-person-badge me-1 text-primary"></i>2. Chọn sinh viên cần xếp chỗ <span class="text-danger">*</span>
+                                </label>
+                                <span class="badge bg-light text-secondary border" id="studentCountBadge">0 sinh viên</span>
+                            </div>
+
+                            <!-- Thẻ sinh viên đã chọn (Selected Student Banner) -->
+                            <div id="selectedStudentCard" class="card border-primary bg-primary-subtle p-3 mb-3 d-none rounded-3">
+                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center"
+                                             style="width: 48px; height: 48px; font-size: 1.2rem;" id="selectedStudentAvatar">SV</div>
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <h6 class="mb-0 fw-bold text-dark" id="selectedStudentName">Nguyễn Văn A</h6>
+                                                <span class="badge" id="selectedStudentGenderBadge">Nam</span>
+                                            </div>
+                                            <div class="small text-secondary mt-1">
+                                                Mã SV: <strong class="font-monospace text-dark" id="selectedStudentCode">SV001</strong>
+                                                <span class="mx-1">·</span>
+                                                Lớp: <span id="selectedStudentClass">CNTT1</span>
+                                                <span class="mx-1">·</span>
+                                                ĐRL: <strong class="text-primary" id="selectedStudentScore">85</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearSelectedStudent()">
+                                        <i class="bi bi-x-circle me-1"></i>Đổi sinh viên
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Khung tìm kiếm và danh sách sinh viên -->
+                            <div id="studentPickerContainer">
+                                <div class="row g-2 mb-2">
+                                    <div class="col-md-7">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                                            <input type="text" id="studentSearchInput" class="form-control"
+                                                   placeholder="Tìm theo Mã SV, Họ tên, Lớp, SĐT..."
+                                                   oninput="filterStudents()">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('studentSearchInput').value=''; filterStudents();">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-5 d-flex gap-1">
+                                        <button type="button" class="btn btn-sm btn-light border flex-grow-1 active filter-gender-btn" data-gender="ALL" onclick="setGenderFilter('ALL', this)">Tất cả</button>
+                                        <button type="button" class="btn btn-sm btn-light border flex-grow-1 filter-gender-btn" data-gender="MALE" onclick="setGenderFilter('MALE', this)">Nam</button>
+                                        <button type="button" class="btn btn-sm btn-light border flex-grow-1 filter-gender-btn" data-gender="FEMALE" onclick="setGenderFilter('FEMALE', this)">Nữ</button>
+                                    </div>
+                                </div>
+
+                                <!-- Danh sách cuộn chọn sinh viên -->
+                                <div class="border rounded-3 p-2 bg-light-subtle" style="max-height: 240px; overflow-y: auto;" id="studentListContainer">
+                                    <div class="list-group list-group-flush" id="studentList">
+                                        <div th:each="s : ${students}"
+                                             class="list-group-item list-group-item-action p-2 rounded-2 mb-1 border-0 student-item"
+                                             th:data-id="${s.id}"
+                                             th:data-code="${s.studentCode}"
+                                             th:data-name="${s.fullName}"
+                                             th:data-gender="${s.gender != null ? s.gender.name() : ''}"
+                                             th:data-class="${s.classCode != null ? s.classCode : ''}"
+                                             th:data-faculty="${s.facultyCode != null ? s.facultyCode : ''}"
+                                             th:data-score="${s.conductScore != null ? s.conductScore : 0}"
+                                             th:data-phone="${s.phone != null ? s.phone : ''}"
+                                             th:data-blocked="${s.blockedFromHousing}"
+                                             onclick="selectStudent(this)"
+                                             style="cursor: pointer;">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white small fw-bold"
+                                                         th:classappend="${s.gender != null and s.gender.name() == 'FEMALE' ? 'bg-danger' : 'bg-primary'}"
+                                                         style="width: 32px; height: 32px; font-size: 0.75rem;"
+                                                         th:text="${#strings.substring(s.fullName != null ? s.fullName : 'SV', 0, 1)}">A</div>
+                                                    <div>
+                                                        <div class="fw-bold text-dark small">
+                                                            <span th:text="${s.fullName}">Nguyễn Văn A</span>
+                                                            <span class="badge ms-1"
+                                                                  th:classappend="${s.gender != null and s.gender.name() == 'FEMALE' ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary'}"
+                                                                  th:text="${s.gender != null and s.gender.name() == 'FEMALE' ? 'Nữ' : 'Nam'}">Nam</span>
+                                                        </div>
+                                                        <div class="text-secondary" style="font-size: 0.75rem;">
+                                                            Mã: <span class="font-monospace fw-semibold" th:text="${s.studentCode}">SV001</span>
+                                                            <span class="mx-1">·</span>
+                                                            Lớp: <span th:text="${s.classCode != null ? s.classCode : '-'}">CNTT</span>
+                                                            <span class="mx-1">·</span>
+                                                            ĐRL: <span class="fw-bold" th:text="${s.conductScore}">80</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <span th:if="${s.blockedFromHousing}" class="badge bg-danger-subtle text-danger border border-danger-subtle">Bị cấm</span>
+                                                    <span th:if="${!s.blockedFromHousing and s.conductScore <= 0}" class="badge bg-warning-subtle text-warning border border-warning-subtle">ĐRL = 0</span>
+                                                    <span th:if="${!s.blockedFromHousing and s.conductScore > 0}" class="badge bg-success-subtle text-success border border-success-subtle">Đủ điều kiện</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="noStudentMatch" class="text-center py-4 text-muted d-none">
+                                        <i class="bi bi-search fs-3 d-block mb-1 text-secondary opacity-50"></i>
+                                        <small>Không tìm thấy sinh viên phù hợp với từ khóa</small>
+                                    </div>
+                                </div>
                             </div>
                             <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('studentId')}" th:errors="*{studentId}"></div>
-                            <div class="form-text">Chỉ áp dụng cho sinh viên không bị cấm ở KTX, điểm rèn luyện &gt; 0 và chưa có hợp đồng hiệu lực.</div>
                         </div>
 
-                        <!-- Chọn Giường -->
-                        <div class="mb-3">
-                            <label for="bedId" class="form-label fw-semibold">Giường ký túc xá <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="bi bi-door-closed"></i></span>
-                                <select id="bedId" th:field="*{bedId}" class="form-select"
-                                        th:classappend="${#fields.hasErrors('bedId')} ? 'is-invalid'">
-                                    <option value="">-- Chọn giường --</option>
-                                    <option th:each="b : ${beds}"
-                                            th:value="${b.id}"
-                                            th:text="${(b.room != null && b.room.building != null ? b.room.building.name + ' - P.' + b.room.roomNumber + ' - ' : '') + b.bedCode + ' (' + (b.room != null && b.room.building != null && b.room.building.genderPolicy != null ? (b.room.building.genderPolicy.name() == 'MALE' ? 'Tòa Nam' : 'Tòa Nữ') : '') + ') - [' + b.status + ']'}">
-                                        Tòa A - P.101 - G1 (Tòa Nam) - [VACANT]
-                                    </option>
-                                </select>
+                        <!-- BƯỚC 3: Chọn Giường KTX (Smart Bed Selector) -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-door-closed me-1 text-primary"></i>3. Chọn giường ký túc xá <span class="text-danger">*</span>
+                                </label>
+                                <span class="badge bg-light text-secondary border" id="bedCountBadge">0 giường khả dụng</span>
+                            </div>
+
+                            <!-- Thẻ giường đã chọn (Selected Bed Banner) -->
+                            <div id="selectedBedCard" class="card border-success bg-success-subtle p-3 mb-3 d-none rounded-3">
+                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle bg-success text-white fw-bold d-flex align-items-center justify-content-center"
+                                             style="width: 48px; height: 48px; font-size: 1.2rem;">
+                                            <i class="bi bi-check-lg"></i>
+                                        </div>
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <h6 class="mb-0 fw-bold text-dark" id="selectedBedTitle">Tòa A - Phòng 101 - Giường G1</h6>
+                                                <span class="badge bg-success text-white">TRỐNG</span>
+                                            </div>
+                                            <div class="small text-secondary mt-1">
+                                                Tòa: <strong class="text-dark" id="selectedBedBuilding">Tòa A</strong>
+                                                <span class="mx-1">·</span>
+                                                Loại: <span id="selectedBedRoomType">4 Giường</span>
+                                                <span class="mx-1">·</span>
+                                                Giá: <strong class="text-success" id="selectedBedPrice">500.000đ/kỳ</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearSelectedBed()">
+                                        <i class="bi bi-x-circle me-1"></i>Đổi giường
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Bộ lọc phân cấp giường KTX -->
+                            <div id="bedPickerContainer">
+                                <div class="p-3 bg-light rounded-3 border mb-2">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold text-secondary mb-1">Tòa nhà</label>
+                                            <select id="bedBuildingFilter" class="form-select form-select-sm" onchange="filterBeds()">
+                                                <option value="ALL">-- Tất cả các tòa --</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold text-secondary mb-1">Loại phòng</label>
+                                            <select id="bedRoomTypeFilter" class="form-select form-select-sm" onchange="filterBeds()">
+                                                <option value="ALL">-- Tất cả loại --</option>
+                                                <option value="STANDARD_4">4 giường</option>
+                                                <option value="STANDARD_6">6 giường</option>
+                                                <option value="STANDARD_8">8 giường</option>
+                                                <option value="VIP">VIP</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold text-secondary mb-1">Số phòng / Giường</label>
+                                            <input type="text" id="bedSearchInput" class="form-control form-control-sm"
+                                                   placeholder="Gõ số phòng vd: 101..." oninput="filterBeds()">
+                                        </div>
+                                        <div class="col-md-2 d-flex align-items-end">
+                                            <div class="form-check form-switch mt-md-3">
+                                                <input class="form-check-input" type="checkbox" id="onlyVacantCheck" checked onchange="filterBeds()">
+                                                <label class="form-check-label small fw-semibold" for="onlyVacantCheck">Chỉ giường trống</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Danh sách giường hiển thị trực quan -->
+                                <div class="border rounded-3 p-2 bg-light-subtle" style="max-height: 280px; overflow-y: auto;" id="bedListContainer">
+                                    <div class="list-group list-group-flush" id="bedList">
+                                        <div th:each="b : ${beds}"
+                                             class="list-group-item list-group-item-action p-2 rounded-2 mb-1 border-0 bed-item"
+                                             th:data-id="${b.id}"
+                                             th:data-code="${b.bedCode}"
+                                             th:data-status="${b.status != null ? b.status.name() : ''}"
+                                             th:data-building-id="${b.room != null && b.room.building != null ? b.room.building.id : ''}"
+                                             th:data-building-name="${b.room != null && b.room.building != null ? b.room.building.name : ''}"
+                                             th:data-gender-policy="${b.room != null && b.room.building != null && b.room.building.genderPolicy != null ? b.room.building.genderPolicy.name() : ''}"
+                                             th:data-room-number="${b.room != null ? b.room.roomNumber : ''}"
+                                             th:data-floor="${b.room != null ? b.room.floor : ''}"
+                                             th:data-room-type="${b.room != null && b.room.roomType != null ? b.room.roomType.name() : ''}"
+                                             th:data-price="${b.room != null && b.room.pricePerTerm != null ? #numbers.formatDecimal(b.room.pricePerTerm, 0, 'COMMA', 0, 'POINT') + 'đ' : ''}"
+                                             onclick="selectBed(this)"
+                                             style="cursor: pointer;">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="rounded-3 px-2 py-1 text-white small fw-bold font-monospace"
+                                                         th:classappend="${b.status != null && b.status.name() == 'VACANT' ? 'bg-success' : (b.status != null && b.status.name() == 'MAINTENANCE' ? 'bg-secondary' : 'bg-danger')}"
+                                                         style="font-size: 0.8rem;"
+                                                         th:text="${b.bedCode}">G1</div>
+                                                    <div>
+                                                        <div class="fw-bold text-dark small">
+                                                            <span th:text="${b.room != null && b.room.building != null ? b.room.building.name : ''}">Tòa A</span> - 
+                                                            Phòng <span class="text-primary" th:text="${b.room != null ? b.room.roomNumber : ''}">101</span>
+                                                            <span class="badge ms-1"
+                                                                  th:classappend="${b.room != null && b.room.building != null && b.room.building.genderPolicy != null && b.room.building.genderPolicy.name() == 'FEMALE' ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary'}"
+                                                                  th:text="${b.room != null && b.room.building != null && b.room.building.genderPolicy != null ? (b.room.building.genderPolicy.name() == 'FEMALE' ? 'Tòa Nữ' : 'Tòa Nam') : ''}">Tòa Nam</span>
+                                                        </div>
+                                                        <div class="text-secondary" style="font-size: 0.75rem;">
+                                                            Tầng <span th:text="${b.room != null ? b.room.floor : 1}">1</span>
+                                                            <span class="mx-1">·</span>
+                                                            Loại: <span th:text="${b.room != null && b.room.roomType != null ? b.room.roomType.name() : '-'}">4 giường</span>
+                                                            <span class="mx-1">·</span>
+                                                            Giá: <span class="fw-semibold text-dark" th:text="${b.room != null && b.room.pricePerTerm != null ? #numbers.formatDecimal(b.room.pricePerTerm, 0, 'COMMA', 0, 'POINT') + 'đ/kỳ' : '-'}">500.000đ</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <span th:if="${b.status != null && b.status.name() == 'VACANT'}" class="badge bg-success-subtle text-success border border-success-subtle">Trống</span>
+                                                    <span th:if="${b.status != null && b.status.name() == 'OCCUPIED'}" class="badge bg-danger-subtle text-danger border border-danger-subtle">Đã có người</span>
+                                                    <span th:if="${b.status != null && b.status.name() == 'MAINTENANCE'}" class="badge bg-secondary-subtle text-secondary border">Bảo trì</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="noBedMatch" class="text-center py-4 text-muted d-none">
+                                        <i class="bi bi-door-closed fs-3 d-block mb-1 text-secondary opacity-50"></i>
+                                        <small>Không tìm thấy giường phù hợp theo bộ lọc</small>
+                                    </div>
+                                </div>
                             </div>
                             <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('bedId')}" th:errors="*{bedId}"></div>
-                            <div class="form-text">Chỉ được chọn giường đang trống (VACANT). Giường đang bảo trì (MAINTENANCE) hoặc đã có người ở sẽ bị từ chối.</div>
                         </div>
 
-                        <!-- Ghi chú -->
+                        <!-- BƯỚC 4: Ghi chú phân bổ -->
                         <div class="mb-4">
-                            <label for="note" class="form-label fw-semibold">Ghi chú phân bổ</label>
-                            <textarea id="note" th:field="*{note}" class="form-control" rows="3"
-                                      placeholder="Lý do gán ngoại lệ, diện ưu tiên bổ sung, số quyết định phê duyệt..."></textarea>
+                            <label for="note" class="form-label fw-bold text-dark d-flex justify-content-between align-items-center mb-1">
+                                <span><i class="bi bi-card-text me-1 text-primary"></i>4. Ghi chú phân bổ</span>
+                                <small class="text-muted fw-normal">Lý do gán ngoại lệ</small>
+                            </label>
+                            <textarea id="note" th:field="*{note}" class="form-control" rows="2"
+                                      placeholder="Nhập lý do phân bổ ngoại lệ, căn cứ phê duyệt, số quyết định..."></textarea>
+                            
+                            <!-- Thẻ gợi ý bấm nhanh -->
+                            <div class="d-flex flex-wrap gap-1 mt-2 align-items-center">
+                                <small class="text-muted me-1">Gợi ý nhanh:</small>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="appendNote('Ưu tiên chính sách')">+ Ưu tiên chính sách</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="appendNote('Cán bộ Đoàn / Hội SV')">+ Cán bộ Đoàn / Hội</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="appendNote('Hỗ trợ sức khỏe / Y tế')">+ Hỗ trợ y tế</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" onclick="appendNote('Tiếp nhận bổ sung giữa kỳ')">+ Tiếp nhận giữa kỳ</button>
+                            </div>
                         </div>
 
-                        <!-- Nút Submit -->
-                        <div class="d-flex align-items-center gap-2">
-                            <button type="submit" class="btn btn-primary px-4">
+                        <!-- BƯỚC 5: Nút Gán giường -->
+                        <div class="pt-3 border-top d-flex align-items-center gap-2">
+                            <button type="button" id="submitAssignBtn" class="btn btn-primary px-4 shadow-sm" onclick="validateAndSubmit()">
                                 <i class="bi bi-check2-circle me-1"></i>Xác nhận gán giường
                             </button>
                             <a th:href="@{/admin/allocations}" class="btn btn-outline-secondary">Hủy bỏ</a>
@@ -110,55 +348,513 @@
             </div>
         </div>
 
-        <!-- Cột Hướng dẫn & Quy tắc kiểm tra -->
-        <div class="col-lg-4">
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white py-3 border-bottom">
+        <!-- Cột Bảng Đối soát & Hướng dẫn nghiệp vụ (§6.3.6) -->
+        <div class="col-xl-4">
+            <!-- Thẻ tóm tắt đối soát trực tiếp (Live Verification Summary) -->
+            <div class="card shadow-sm border-0 mb-4 rounded-3">
+                <div class="card-header bg-white py-3 px-4 border-bottom">
+                    <h6 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-clipboard2-check text-primary"></i>Đối soát trước khi gán
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column gap-3">
+                        <!-- Sinh viên tóm tắt -->
+                        <div class="p-3 bg-light rounded-3 border">
+                            <small class="text-secondary text-uppercase fw-bold d-block mb-1" style="font-size: 0.72rem;">Sinh viên</small>
+                            <div id="summaryStudent" class="fw-bold text-dark">
+                                <span class="text-muted fst-italic">— Chưa chọn sinh viên —</span>
+                            </div>
+                        </div>
+
+                        <!-- Giường tóm tắt -->
+                        <div class="p-3 bg-light rounded-3 border">
+                            <small class="text-secondary text-uppercase fw-bold d-block mb-1" style="font-size: 0.72rem;">Giường chỉ định</small>
+                            <div id="summaryBed" class="fw-bold text-dark">
+                                <span class="text-muted fst-italic">— Chưa chọn giường —</span>
+                            </div>
+                        </div>
+
+                        <!-- Kỳ hạn tóm tắt -->
+                        <div class="p-3 bg-light rounded-3 border">
+                            <small class="text-secondary text-uppercase fw-bold d-block mb-1" style="font-size: 0.72rem;">Thời hạn lưu trú</small>
+                            <div id="summaryTerm" class="fw-bold text-dark">
+                                <span>Ngoài đợt (Khóa system_locks.ALLOCATION)</span>
+                            </div>
+                        </div>
+
+                        <!-- Danh mục kiểm tra an toàn §6.3.6 -->
+                        <div class="pt-2">
+                            <small class="text-secondary text-uppercase fw-bold d-block mb-2" style="font-size: 0.72rem;">Kiểm tra an toàn tự động</small>
+                            <ul class="list-unstyled mb-0 d-flex flex-column gap-2 small">
+                                <li class="d-flex align-items-center gap-2" id="chkGender">
+                                    <i class="bi bi-circle text-muted"></i>
+                                    <span>Khớp giới tính sinh viên &amp; Tòa nhà</span>
+                                </li>
+                                <li class="d-flex align-items-center gap-2" id="chkBedVacant">
+                                    <i class="bi bi-circle text-muted"></i>
+                                    <span>Giường ở trạng thái trống (VACANT)</span>
+                                </li>
+                                <li class="d-flex align-items-center gap-2" id="chkEligible">
+                                    <i class="bi bi-circle text-muted"></i>
+                                    <span>Sinh viên hợp lệ (không bị cấm, ĐRL &gt; 0)</span>
+                                </li>
+                                <li class="d-flex align-items-center gap-2 text-success">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <span>Khóa hàng chống race condition PESSIMISTIC_WRITE</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ràng buộc nghiệp vụ theo §6.3.6 -->
+            <div class="card shadow-sm border-0 mb-4 rounded-3">
+                <div class="card-header bg-white py-3 px-4 border-bottom">
                     <h6 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
                         <i class="bi bi-shield-check text-success"></i>Ràng buộc nghiệp vụ (§6.3.6)
                     </h6>
                 </div>
-                <div class="card-body">
-                    <ul class="list-unstyled mb-0 d-flex flex-column gap-3 small">
+                <div class="card-body p-4">
+                    <ul class="list-unstyled mb-0 d-flex flex-column gap-3 small text-secondary">
                         <li class="d-flex gap-2">
                             <i class="bi bi-gender-ambiguous text-primary fs-6"></i>
                             <div>
-                                <strong>Chính sách giới tính cứng:</strong> Giới tính của sinh viên bắt buộc phải khớp với <code>gender_policy</code> của tòa nhà. Tuyệt đối không nới quy tắc này.
+                                <strong class="text-dark">Chính sách giới tính cứng:</strong> Giới tính của SV bắt buộc phải khớp <code>gender_policy</code> của tòa. Tuyệt đối không nới lỏng.
                             </div>
                         </li>
                         <li class="d-flex gap-2">
                             <i class="bi bi-slash-circle text-danger fs-6"></i>
                             <div>
-                                <strong>Chặn giường bảo trì:</strong> Không thể gán vào giường có trạng thái <code>MAINTENANCE</code> hoặc giường không còn <code>VACANT</code>.
+                                <strong class="text-dark">Chặn giường bảo trì:</strong> Không thể gán vào giường có trạng thái <code>MAINTENANCE</code> hoặc giường đã có người ở.
                             </div>
                         </li>
                         <li class="d-flex gap-2">
-                            <i class="bi bi-person-x text-warning text-dark fs-6"></i>
+                            <i class="bi bi-person-x text-warning fs-6"></i>
                             <div>
-                                <strong>Không double-booking:</strong> Sinh viên đang có hợp đồng <code>OCCUPYING</code> (DRAFT, ACTIVE, EXPIRED, TERMINATED chưa checkout) không thể nhận thêm giường mới.
-                            </div>
-                        </li>
-                        <li class="d-flex gap-2">
-                            <i class="bi bi-lock text-info fs-6"></i>
-                            <div>
-                                <strong>Khóa hàng bi quan:</strong> Giao dịch thực hiện <code>SELECT ... FOR UPDATE</code> trên giường và đợt (hoặc <code>system_locks.ALLOCATION</code>) để chống race condition.
+                                <strong class="text-dark">Không double-booking:</strong> Sinh viên đang có hợp đồng <code>OCCUPYING</code> không thể nhận thêm giường mới.
                             </div>
                         </li>
                     </ul>
                 </div>
             </div>
 
-            <div class="card shadow-sm border-0 bg-primary-subtle text-primary-emphasis">
+            <!-- Thông tin Hợp đồng DRAFT tự động -->
+            <div class="card shadow-sm border-0 rounded-3 bg-primary-subtle text-primary-emphasis">
                 <div class="card-body p-3">
-                    <h6 class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i>Hợp đồng DRAFT</h6>
+                    <h6 class="fw-bold mb-1 d-flex align-items-center gap-1">
+                        <i class="bi bi-file-earmark-text-fill"></i>Tự động sinh Hợp đồng DRAFT
+                    </h6>
                     <p class="small mb-0">
-                        Sau khi gán thành công, hệ thống sẽ tự động sinh số hợp đồng và tạo hợp đồng ở trạng thái <strong>DRAFT</strong>. Giường sẽ chuyển sang <strong>OCCUPIED</strong>.
+                        Sau khi gán thành công, hệ thống tự động sinh số hợp đồng dạng <code>HD-YYYY-XXXXXX</code> và khóa giường sang <strong>OCCUPIED</strong>.
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- SCRIPT ĐIỀU KHIỂN GÁN CHỖ THỦ CÔNG THÔNG MINH -->
+    <script>
+let currentStudentGender = null;
+let selectedStudentData = null;
+let selectedBedData = null;
+
+// Khởi tạo danh sách tòa nhà vào bộ lọc
+document.addEventListener('DOMContentLoaded', function() {
+    initBuildingOptions();
+    filterStudents();
+    filterBeds();
+
+    // Kiểm tra nếu đã có studentId hoặc bedId sẵn từ request param
+    const existingStudentId = document.getElementById('studentId').value;
+    if (existingStudentId) {
+        const item = document.querySelector(`.student-item[data-id="${existingStudentId}"]`);
+        if (item) selectStudent(item);
+    }
+
+    const existingBedId = document.getElementById('bedId').value;
+    if (existingBedId) {
+        const item = document.querySelector(`.bed-item[data-id="${existingBedId}"]`);
+        if (item) selectBed(item);
+    }
+});
+
+function initBuildingOptions() {
+    const buildingSelect = document.getElementById('bedBuildingFilter');
+    const buildings = new Map();
+    document.querySelectorAll('.bed-item').forEach(item => {
+        const id = item.getAttribute('data-building-id');
+        const name = item.getAttribute('data-building-name');
+        const gender = item.getAttribute('data-gender-policy');
+        if (id && !buildings.has(id)) {
+            buildings.set(id, { name, gender });
+        }
+    });
+
+    buildings.forEach((info, id) => {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.text = `${info.name} (${info.gender === 'FEMALE' ? 'Tòa Nữ' : 'Tòa Nam'})`;
+        opt.setAttribute('data-gender', info.gender);
+        buildingSelect.appendChild(opt);
+    });
+}
+
+function updatePeriodInfo(select) {
+    const opt = select.options[select.selectedIndex];
+    const start = opt.getAttribute('data-start');
+    const end = opt.getAttribute('data-end');
+    const badge = document.getElementById('periodTermBadge');
+    const summaryTerm = document.getElementById('summaryTerm');
+
+    if (start && end) {
+        badge.textContent = `Thời hạn: ${start} – ${end}`;
+        badge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle';
+        summaryTerm.innerHTML = `<span class="text-primary">${start} – ${end}</span> <small class="text-muted d-block">${opt.text.split('—')[0]}</small>`;
+    } else {
+        badge.textContent = 'Thời hạn: Ngoài đợt (5 tháng)';
+        badge.className = 'badge bg-secondary-subtle text-secondary border';
+        summaryTerm.innerHTML = '<span>Ngoài đợt (5 tháng từ hôm nay)</span>';
+    }
+}
+
+// Lọc sinh viên theo từ khóa và giới tính
+let activeStudentGenderFilter = 'ALL';
+function setGenderFilter(gender, btn) {
+    activeStudentGenderFilter = gender;
+    document.querySelectorAll('.filter-gender-btn').forEach(b => b.classList.remove('active', 'btn-primary', 'text-white'));
+    btn.classList.add('active', 'btn-primary', 'text-white');
+    filterStudents();
+}
+
+function filterStudents() {
+    const query = (document.getElementById('studentSearchInput').value || '').toLowerCase().trim();
+    const items = document.querySelectorAll('.student-item');
+    let visibleCount = 0;
+
+    items.forEach(item => {
+        const code = (item.getAttribute('data-code') || '').toLowerCase();
+        const name = (item.getAttribute('data-name') || '').toLowerCase();
+        const cls = (item.getAttribute('data-class') || '').toLowerCase();
+        const phone = (item.getAttribute('data-phone') || '').toLowerCase();
+        const gender = item.getAttribute('data-gender');
+
+        const matchesQuery = !query || code.includes(query) || name.includes(query) || cls.includes(query) || phone.includes(query);
+        const matchesGender = (activeStudentGenderFilter === 'ALL') || (gender === activeStudentGenderFilter);
+
+        if (matchesQuery && matchesGender) {
+            item.classList.remove('d-none');
+            visibleCount++;
+        } else {
+            item.classList.add('d-none');
+        }
+    });
+
+    document.getElementById('studentCountBadge').textContent = `${visibleCount} sinh viên`;
+    const noMatch = document.getElementById('noStudentMatch');
+    if (visibleCount === 0) {
+        noMatch.classList.remove('d-none');
+    } else {
+        noMatch.classList.add('d-none');
+    }
+}
+
+function selectStudent(item) {
+    const isBlocked = item.getAttribute('data-blocked') === 'true';
+    const score = parseInt(item.getAttribute('data-score') || '0', 10);
+    if (isBlocked) {
+        alert('Sinh viên này đã bị cấm đăng ký ký túc xá!');
+        return;
+    }
+    if (score <= 0) {
+        alert('Sinh viên có điểm rèn luyện bằng 0, không được phép xếp phòng!');
+        return;
+    }
+
+    selectedStudentData = {
+        id: item.getAttribute('data-id'),
+        code: item.getAttribute('data-code'),
+        name: item.getAttribute('data-name'),
+        gender: item.getAttribute('data-gender'),
+        class: item.getAttribute('data-class'),
+        score: item.getAttribute('data-score'),
+        phone: item.getAttribute('data-phone')
+    };
+
+    document.getElementById('studentId').value = selectedStudentData.id;
+    currentStudentGender = selectedStudentData.gender;
+
+    // Cập nhật card hiển thị
+    document.getElementById('selectedStudentAvatar').textContent = selectedStudentData.name.charAt(0);
+    document.getElementById('selectedStudentName').textContent = selectedStudentData.name;
+    document.getElementById('selectedStudentCode').textContent = selectedStudentData.code;
+    document.getElementById('selectedStudentClass').textContent = selectedStudentData.class || '-';
+    document.getElementById('selectedStudentScore').textContent = selectedStudentData.score;
+    
+    const genderBadge = document.getElementById('selectedStudentGenderBadge');
+    genderBadge.textContent = selectedStudentData.gender === 'FEMALE' ? 'Nữ' : 'Nam';
+    genderBadge.className = selectedStudentData.gender === 'FEMALE' ? 'badge bg-danger text-white' : 'badge bg-primary text-white';
+
+    document.getElementById('studentPickerContainer').classList.add('d-none');
+    document.getElementById('selectedStudentCard').classList.remove('d-none');
+
+    // Cập nhật thẻ đối soát
+    document.getElementById('summaryStudent').innerHTML = `
+        <div class="text-primary fw-bold">${selectedStudentData.name}</div>
+        <small class="text-secondary font-monospace">${selectedStudentData.code}</small>
+        <span class="badge ${selectedStudentData.gender === 'FEMALE' ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary'} ms-1">
+            ${selectedStudentData.gender === 'FEMALE' ? 'Nữ' : 'Nam'}
+        </span>
+    `;
+
+    document.getElementById('chkEligible').innerHTML = `
+        <i class="bi bi-check-circle-fill text-success"></i>
+        <span class="text-success">Sinh viên hợp lệ: ${selectedStudentData.name} (ĐRL: ${selectedStudentData.score})</span>
+    `;
+
+    // Tự động lọc giường theo giới tính sinh viên
+    autoSyncBedGender(currentStudentGender);
+    checkValidationRules();
+}
+
+function clearSelectedStudent() {
+    selectedStudentData = null;
+    currentStudentGender = null;
+    document.getElementById('studentId').value = '';
+    document.getElementById('selectedStudentCard').classList.add('d-none');
+    document.getElementById('studentPickerContainer').classList.remove('d-none');
+    document.getElementById('summaryStudent').innerHTML = '<span class="text-muted fst-italic">— Chưa chọn sinh viên —</span>';
+    
+    document.getElementById('chkEligible').innerHTML = `
+        <i class="bi bi-circle text-muted"></i>
+        <span>Sinh viên hợp lệ (không bị cấm, ĐRL &gt; 0)</span>
+    `;
+
+    // Reset lọc tòa nhà
+    document.getElementById('bedBuildingFilter').value = 'ALL';
+    filterBeds();
+    checkValidationRules();
+}
+
+function autoSyncBedGender(gender) {
+    const buildingSelect = document.getElementById('bedBuildingFilter');
+    // Nếu giường đã chọn trước đó không khớp giới tính sinh viên thì reset giường
+    if (selectedBedData && selectedBedData.genderPolicy !== gender) {
+        clearSelectedBed();
+    }
+
+    // Lọc options của buildingSelect để chỉ hiện tòa phù hợp
+    Array.from(buildingSelect.options).forEach(opt => {
+        if (opt.value === 'ALL') return;
+        const optGender = opt.getAttribute('data-gender');
+        if (gender && optGender !== gender) {
+            opt.disabled = true;
+            opt.style.display = 'none';
+        } else {
+            opt.disabled = false;
+            opt.style.display = 'block';
+        }
+    });
+
+    buildingSelect.value = 'ALL';
+    filterBeds();
+}
+
+// Lọc danh sách giường
+function filterBeds() {
+    const buildingVal = document.getElementById('bedBuildingFilter').value;
+    const roomTypeVal = document.getElementById('bedRoomTypeFilter').value;
+    const query = (document.getElementById('bedSearchInput').value || '').toLowerCase().trim();
+    const onlyVacant = document.getElementById('onlyVacantCheck').checked;
+
+    const items = document.querySelectorAll('.bed-item');
+    let visibleCount = 0;
+    let vacantCount = 0;
+
+    items.forEach(item => {
+        const bId = item.getAttribute('data-building-id');
+        const rType = item.getAttribute('data-room-type');
+        const status = item.getAttribute('data-status');
+        const roomNum = (item.getAttribute('data-room-number') || '').toLowerCase();
+        const bedCode = (item.getAttribute('data-code') || '').toLowerCase();
+        const genderPolicy = item.getAttribute('data-gender-policy');
+
+        let matches = true;
+
+        // Giới tính sinh viên cứng
+        if (currentStudentGender && genderPolicy !== currentStudentGender) {
+            matches = false;
+        }
+
+        if (buildingVal !== 'ALL' && bId !== buildingVal) {
+            matches = false;
+        }
+
+        if (roomTypeVal !== 'ALL' && rType !== roomTypeVal) {
+            matches = false;
+        }
+
+        if (onlyVacant && status !== 'VACANT') {
+            matches = false;
+        }
+
+        if (query && !roomNum.includes(query) && !bedCode.includes(query)) {
+            matches = false;
+        }
+
+        if (matches) {
+            item.classList.remove('d-none');
+            visibleCount++;
+            if (status === 'VACANT') vacantCount++;
+        } else {
+            item.classList.add('d-none');
+        }
+    });
+
+    document.getElementById('bedCountBadge').textContent = `${visibleCount} giường (${vacantCount} trống)`;
+    const noMatch = document.getElementById('noBedMatch');
+    if (visibleCount === 0) {
+        noMatch.classList.remove('d-none');
+    } else {
+        noMatch.classList.add('d-none');
+    }
+}
+
+function selectBed(item) {
+    const status = item.getAttribute('data-status');
+    const genderPolicy = item.getAttribute('data-gender-policy');
+
+    if (status === 'MAINTENANCE') {
+        alert('Giường đang bảo trì, không thể phân bổ!');
+        return;
+    }
+    if (status !== 'VACANT') {
+        alert('Giường này đã có người ở (OCCUPIED)! Vui lòng chọn giường trống.');
+        return;
+    }
+
+    if (currentStudentGender && genderPolicy !== currentStudentGender) {
+        alert(`Không thể chọn giường này! Sinh viên là ${currentStudentGender === 'FEMALE' ? 'Nữ' : 'Nam'} nhưng tòa nhà là dành cho ${genderPolicy === 'FEMALE' ? 'Nữ' : 'Nam'}.`);
+        return;
+    }
+
+    selectedBedData = {
+        id: item.getAttribute('data-id'),
+        code: item.getAttribute('data-code'),
+        roomNumber: item.getAttribute('data-room-number'),
+        buildingName: item.getAttribute('data-building-name'),
+        genderPolicy: genderPolicy,
+        roomType: item.getAttribute('data-room-type'),
+        price: item.getAttribute('data-price')
+    };
+
+    document.getElementById('bedId').value = selectedBedData.id;
+
+    // Cập nhật card hiển thị
+    document.getElementById('selectedBedTitle').textContent = `${selectedBedData.buildingName} - P.${selectedBedData.roomNumber} - Giường ${selectedBedData.code}`;
+    document.getElementById('selectedBedBuilding').textContent = selectedBedData.buildingName;
+    document.getElementById('selectedBedRoomType').textContent = selectedBedData.roomType;
+    document.getElementById('selectedBedPrice').textContent = selectedBedData.price || 'Tiêu chuẩn';
+
+    document.getElementById('bedPickerContainer').classList.add('d-none');
+    document.getElementById('selectedBedCard').classList.remove('d-none');
+
+    // Cập nhật thẻ đối soát
+    document.getElementById('summaryBed').innerHTML = `
+        <div class="text-success fw-bold">${selectedBedData.buildingName} - P.${selectedBedData.roomNumber} - Giường ${selectedBedData.code}</div>
+        <small class="text-secondary">Loại: ${selectedBedData.roomType} · Giá: ${selectedBedData.price || '-'}</small>
+    `;
+
+    document.getElementById('chkBedVacant').innerHTML = `
+        <i class="bi bi-check-circle-fill text-success"></i>
+        <span class="text-success">Giường hợp lệ: Trống (VACANT)</span>
+    `;
+
+    checkValidationRules();
+}
+
+function clearSelectedBed() {
+    selectedBedData = null;
+    document.getElementById('bedId').value = '';
+    document.getElementById('selectedBedCard').classList.add('d-none');
+    document.getElementById('bedPickerContainer').classList.remove('d-none');
+    document.getElementById('summaryBed').innerHTML = '<span class="text-muted fst-italic">— Chưa chọn giường —</span>';
+    
+    document.getElementById('chkBedVacant').innerHTML = `
+        <i class="bi bi-circle text-muted"></i>
+        <span>Giường ở trạng thái trống (VACANT)</span>
+    `;
+
+    checkValidationRules();
+}
+
+function checkValidationRules() {
+    const chkGender = document.getElementById('chkGender');
+    if (selectedStudentData && selectedBedData) {
+        if (selectedStudentData.gender === selectedBedData.genderPolicy) {
+            chkGender.innerHTML = `
+                <i class="bi bi-check-circle-fill text-success"></i>
+                <span class="text-success">Khớp giới tính: ${selectedStudentData.gender === 'FEMALE' ? 'Nữ → Tòa Nữ' : 'Nam → Tòa Nam'}</span>
+            `;
+        } else {
+            chkGender.innerHTML = `
+                <i class="bi bi-x-circle-fill text-danger"></i>
+                <span class="text-danger fw-bold">LỖI: Giới tính SV (${selectedStudentData.gender}) không khớp tòa (${selectedBedData.genderPolicy})!</span>
+            `;
+        }
+    } else {
+        chkGender.innerHTML = `
+            <i class="bi bi-circle text-muted"></i>
+            <span>Khớp giới tính sinh viên &amp; Tòa nhà</span>
+        `;
+    }
+}
+
+function appendNote(tag) {
+    const textarea = document.getElementById('note');
+    if (textarea.value.trim() === '') {
+        textarea.value = tag;
+    } else if (!textarea.value.includes(tag)) {
+        textarea.value += ' · ' + tag;
+    }
+    textarea.focus();
+}
+
+function validateAndSubmit() {
+    const studentId = document.getElementById('studentId').value;
+    const bedId = document.getElementById('bedId').value;
+
+    if (!studentId) {
+        alert('Vui lòng chọn sinh viên cần xếp chỗ trước khi gán giường!');
+        document.getElementById('studentSearchInput').focus();
+        return;
+    }
+
+    if (!bedId) {
+        alert('Vui lòng chọn giường ký túc xá cho sinh viên!');
+        document.getElementById('bedSearchInput').focus();
+        return;
+    }
+
+    if (selectedStudentData && selectedBedData && selectedStudentData.gender !== selectedBedData.genderPolicy) {
+        alert(`Ràng buộc giới tính vi phạm! Sinh viên là ${selectedStudentData.gender === 'FEMALE' ? 'Nữ' : 'Nam'} không thể xếp vào ${selectedBedData.genderPolicy === 'FEMALE' ? 'Tòa Nữ' : 'Tòa Nam'}.`);
+        return;
+    }
+
+    const confirmMsg = `XÁC NHẬN GÁN GIƯỜNG THỦ CÔNG:\n\n` +
+        `• Sinh viên: ${selectedStudentData.name} (${selectedStudentData.code})\n` +
+        `• Giường: ${selectedBedData.buildingName} - P.${selectedBedData.roomNumber} - Giường ${selectedBedData.code}\n\n` +
+        `Hệ thống sẽ thực hiện khóa bi quan và tạo Hợp đồng DRAFT. Bạn có chắc chắn muốn tiến hành?`;
+
+    if (confirm(confirmMsg)) {
+        const btn = document.getElementById('submitAssignBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang xử lý khóa & gán giường...';
+        document.getElementById('manualAssignForm').submit();
+    }
+}
+</script>
 </main>
 </body>
 </html>

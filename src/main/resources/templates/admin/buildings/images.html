@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <a th:href="@{/admin/buildings}" class="btn btn-link link-secondary p-0 mb-1 text-decoration-none">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách tòa nhà
+            </a>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="bi bi-images me-2 text-primary"></i>Album ảnh: Tòa <span th:text="${building.name}">Tòa A</span>
+            </h1>
+            <p class="text-muted small mb-0">
+                Mã tòa: <strong th:text="${building.code}">A</strong> | 
+                Dành cho: <span class="badge bg-secondary" th:text="${building.genderPolicy.name() == 'MALE' ? 'Nam' : 'Nữ'}">Nam</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-1"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="row g-4">
+        <!-- Cột trái: Form Upload ảnh mới -->
+        <div class="col-lg-4">
+            <div class="ktx-card">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h5 mb-0"><i class="bi bi-cloud-arrow-up me-2 text-primary"></i>Tải lên ảnh mới</h2>
+                </div>
+                <div>
+                    <form th:action="@{/admin/buildings/{id}/images/upload(id=${building.id})}" 
+                          method="post" enctype="multipart/form-data">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Chọn file ảnh <span class="text-danger">*</span></label>
+                            <input type="file" name="files" class="form-control" multiple accept="image/png, image/jpeg, image/webp" required>
+                            <div class="form-text">Có thể chọn nhiều ảnh cùng lúc. Định dạng: JPG, PNG, WEBP (< 10MB).</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Ghi chú / Chú thích ảnh</label>
+                            <input type="text" name="caption" class="form-control" placeholder="VD: Mặt tiền cổng chính, Khu nhà xe...">
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" name="isPrimary" id="isPrimary" value="true">
+                            <label class="form-check-label" for="isPrimary">
+                                Đặt làm ảnh đại diện chính của tòa
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            <i class="bi bi-upload me-1"></i> Bắt đầu tải lên
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="ktx-card mt-3 bg-light-subtle border-0">
+                <h6 class="fw-bold mb-2 text-secondary"><i class="bi bi-info-circle me-1"></i> Hướng dẫn</h6>
+                <ul class="small text-muted ps-3 mb-0">
+                    <li class="mb-1">Ảnh đại diện (có huy hiệu vàng) sẽ được hiển thị trên danh sách đợt đăng ký của sinh viên.</li>
+                    <li class="mb-1">Nên chụp ảnh góc rộng, đủ ánh sáng về cổng tòa, sảnh lễ tân và khuôn viên để sinh viên dễ nhận diện.</li>
+                    <li>Có thể bấm nút ngôi sao trên từng ảnh để đổi ảnh đại diện bất kỳ lúc nào.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Cột phải: Danh sách ảnh hiện tại -->
+        <div class="col-lg-8">
+            <div class="ktx-card">
+                <div class="ktx-card__head mb-3 d-flex justify-content-between align-items-center">
+                    <h2 class="h5 mb-0">
+                        <i class="bi bi-grid-3x3 me-2"></i>Thư viện ảnh (<span th:text="${images.size()}">0</span>)
+                    </h2>
+                </div>
+                <div>
+                    <!-- Nếu chưa có ảnh -->
+                    <div th:if="${#lists.isEmpty(images)}" class="text-center py-5 text-muted">
+                        <i class="bi bi-images fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                        <p class="mb-1">Tòa nhà này chưa có ảnh nào trong album.</p>
+                        <small class="text-secondary">Hãy sử dụng form bên trái để tải lên những hình ảnh đầu tiên.</small>
+                    </div>
+
+                    <!-- Lưới danh sách ảnh -->
+                    <div th:if="${!#lists.isEmpty(images)}" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                        <div class="col" th:each="img : ${images}">
+                            <div class="card h-100 shadow-sm border-0 position-relative overflow-hidden group-hover-box" style="border-radius: 10px;">
+                                <!-- Huy hiệu ảnh đại diện -->
+                                <span th:if="${img.primary}" 
+                                      class="badge bg-warning text-dark position-absolute top-0 start-0 m-2 shadow-sm" style="z-index: 2;">
+                                    <i class="bi bi-star-fill me-1"></i> Ảnh đại diện
+                                </span>
+
+                                <!-- Ảnh thumbnail -->
+                                <div style="height: 180px; background-color: #f1f5f9; overflow: hidden;" class="position-relative">
+                                    <img th:src="${img.imageUrl}" alt="Ảnh tòa nhà"
+                                         class="w-100 h-100 object-fit-cover"
+                                         onerror="this.src='/images/buildings/building-1.jpg'">
+                                </div>
+
+                                <!-- Nội dung & Chú thích -->
+                                <div class="card-body p-2 d-flex flex-column justify-content-between">
+                                    <p class="card-text small mb-2 text-truncate" 
+                                       th:text="${img.caption != null && !img.caption.isBlank() ? img.caption : 'Chưa có chú thích'}"
+                                       th:title="${img.caption}">
+                                        Mặt tiền tòa nhà
+                                    </p>
+
+                                    <!-- Nút hành động -->
+                                    <div class="d-flex justify-content-between align-items-center pt-2 border-top gap-1">
+                                        <form th:if="${!img.primary}" 
+                                              th:action="@{/admin/buildings/{bId}/images/{imgId}/primary(bId=${building.id}, imgId=${img.id})}" 
+                                              method="post">
+                                            <button type="submit" class="btn btn-xs btn-outline-warning text-dark" title="Đặt làm ảnh bìa">
+                                                <i class="bi bi-star"></i> Chọn làm bìa
+                                            </button>
+                                        </form>
+                                        <span th:if="${img.primary}" class="text-success small fw-semibold">
+                                            <i class="bi bi-check2"></i> Đang là bìa
+                                        </span>
+
+                                        <form th:action="@{/admin/buildings/{bId}/images/{imgId}/delete(bId=${building.id}, imgId=${img.id})}" 
+                                              method="post" onsubmit="return confirm('Bạn có chắc muốn xóa ảnh này không?');">
+                                            <button type="submit" class="btn btn-xs btn-outline-danger" title="Xóa ảnh">
+                                                <i class="bi bi-trash"></i> Xóa
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

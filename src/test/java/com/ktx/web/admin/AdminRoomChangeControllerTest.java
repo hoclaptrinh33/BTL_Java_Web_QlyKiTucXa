@@ -116,11 +116,10 @@ class AdminRoomChangeControllerTest {
         req.setId(100L);
         req.setRequestKind(RoomChangeKind.CHANGE);
         req.setStatus(RoomChangeStatus.SUBMITTED);
-        req.setStudent(student);
         req.setContract(contract);
         req.setCurrentBed(bed);
 
-        when(roomChangeService.searchRequests(any(), any(), any())).thenReturn(List.of(req));
+        when(roomChangeService.searchRequests(any(), any(), any(), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(req)));
         when(bedRepository.findVacantBedsWithDetails()).thenReturn(List.of(bed));
         when(buildingRepository.findAll()).thenReturn(List.of(building));
 

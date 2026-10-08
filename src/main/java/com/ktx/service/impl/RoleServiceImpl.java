@@ -3,7 +3,6 @@ package com.ktx.service.impl;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,7 +24,8 @@ public class RoleServiceImpl implements RoleService {
     public static final Set<String> SYSTEM_PERMISSIONS = Set.of(
             "config.read",
             "config.write",
-            "admin_account.manage"
+            "admin_account.manage",
+            "log.read"
     );
 
     public static final Set<String> OPERATION_PERMISSIONS = Set.of(
@@ -53,9 +53,16 @@ public class RoleServiceImpl implements RoleService {
     private final Map<Long, List<String>> userRoles = new ConcurrentHashMap<>();
     private final Map<Long, String> userScopes = new ConcurrentHashMap<>();
     private final Map<Long, List<Long>> userBuildings = new ConcurrentHashMap<>();
+    private final com.ktx.repository.UserRepository userRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public RoleServiceImpl(@org.springframework.beans.factory.annotation.Autowired(required = false) com.ktx.repository.UserRepository userRepository) {
+        this.userRepository = userRepository;
+        initDefaultRoles();
+    }
 
     public RoleServiceImpl() {
-        initDefaultRoles();
+        this(null);
     }
 
     private void initDefaultRoles() {
@@ -96,9 +103,17 @@ public class RoleServiceImpl implements RoleService {
         List<RoleDto> list = new ArrayList<>(roleStore.values());
         for (RoleDto r : list) {
             int count = 0;
-            for (List<String> roles : userRoles.values()) {
-                if (roles.contains(r.getCode())) {
-                    count++;
+            if (userRepository != null) {
+                try {
+                    count = (int) userRepository.countByRoles_Code(r.getCode());
+                } catch (Exception ignored) {
+                }
+            }
+            if (count == 0) {
+                for (List<String> roles : userRoles.values()) {
+                    if (roles.contains(r.getCode())) {
+                        count++;
+                    }
                 }
             }
             r.setUserCount(count);
@@ -114,9 +129,17 @@ public class RoleServiceImpl implements RoleService {
         RoleDto role = roleStore.get(code.toUpperCase());
         if (role != null) {
             int count = 0;
-            for (List<String> roles : userRoles.values()) {
-                if (roles.contains(role.getCode())) {
-                    count++;
+            if (userRepository != null) {
+                try {
+                    count = (int) userRepository.countByRoles_Code(role.getCode());
+                } catch (Exception ignored) {
+                }
+            }
+            if (count == 0) {
+                for (List<String> roles : userRoles.values()) {
+                    if (roles.contains(role.getCode())) {
+                        count++;
+                    }
                 }
             }
             role.setUserCount(count);
@@ -164,6 +187,7 @@ public class RoleServiceImpl implements RoleService {
         list.add(new PermissionDto("config.read", "Xem cấu hình hệ thống", "Hệ thống", true));
         list.add(new PermissionDto("config.write", "Chỉnh sửa cấu hình hệ thống", "Hệ thống", true));
         list.add(new PermissionDto("admin_account.manage", "Quản lý tài khoản Admin hệ thống", "Hệ thống", true));
+        list.add(new PermissionDto("log.read", "Xem nhật ký thao tác hệ thống", "Hệ thống", true));
         list.addAll(getOperationPermissions());
         return list;
     }
@@ -251,6 +275,9 @@ public class RoleServiceImpl implements RoleService {
                 }
             }
             boolean isSuper = authStrings.contains("ROLE_ADMIN")
+                    || authStrings.contains("ROLE_SYSTEM_ADMIN")
+                    || authStrings.contains("SYSTEM_ADMIN")
+                    || authStrings.contains("admin_account.manage")
                     || authStrings.contains("ROLE_QUAN_LY")
                     || authStrings.contains("QUAN_LY");
 

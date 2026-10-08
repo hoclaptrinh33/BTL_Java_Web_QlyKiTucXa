@@ -28,6 +28,8 @@ public interface ConductService {
 
     List<Violation> getViolationsForAdmin(Long buildingId);
 
+    org.springframework.data.domain.Page<Violation> getViolationsForAdmin(Long buildingId, org.springframework.data.domain.Pageable pageable);
+
     void resetAllConductScores();
 
     void resetConductScoreForStudent(Long studentId);

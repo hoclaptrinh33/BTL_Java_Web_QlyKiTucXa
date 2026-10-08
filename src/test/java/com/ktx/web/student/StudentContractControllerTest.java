@@ -26,7 +26,6 @@ import com.ktx.domain.Bed;
 import com.ktx.domain.Building;
 import com.ktx.domain.Contract;
 import com.ktx.domain.Room;
-import com.ktx.domain.RoomChangeRequest;
 import com.ktx.domain.Student;
 import com.ktx.domain.User;
 import com.ktx.domain.enums.BedStatus;
@@ -34,9 +33,7 @@ import com.ktx.domain.enums.ContractStatus;
 import com.ktx.domain.enums.Gender;
 import com.ktx.domain.enums.Role;
 import com.ktx.domain.enums.RoomChangeKind;
-import com.ktx.domain.enums.RoomChangeStatus;
 import com.ktx.domain.enums.RoomType;
-import com.ktx.repository.BedRepository;
 import com.ktx.repository.BuildingRepository;
 import com.ktx.repository.CheckInOutRepository;
 import com.ktx.repository.ContractRepository;
@@ -277,5 +274,23 @@ class StudentContractControllerTest {
                 .andExpect(redirectedUrl("/student/renewals"));
 
         verify(renewalService).cancelRenewal(eq(10L), eq(5L));
+    }
+
+    @Test
+    void studentViewsPrintContractSuccessfully() throws Exception {
+        Student s = mockStudent();
+        Contract c = mockContract(s);
+        when(studentRepository.findByUserUsername("sv001")).thenReturn(Optional.of(s));
+        when(contractRepository.findByStudentIdAndStatusInWithDetails(eq(5L), any())).thenReturn(List.of(c));
+        when(contractRepository.findByIdWithDetails(any())).thenReturn(Optional.of(c));
+        when(roomAssetRepository.findByRoomIdOrderByIdAsc(any())).thenReturn(List.of());
+
+        mockMvc.perform(get("/student/contract/print").with(user(studentUser())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("HỢP ĐỒNG THUÊ CHỖ Ở KÝ TÚC XÁ")));
+
+        mockMvc.perform(get("/student/contract/1/print").with(user(studentUser())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("HỢP ĐỒNG THUÊ CHỖ Ở KÝ TÚC XÁ")));
     }
 }

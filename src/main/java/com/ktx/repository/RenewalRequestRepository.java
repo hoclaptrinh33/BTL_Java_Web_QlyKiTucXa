@@ -15,8 +15,8 @@ public interface RenewalRequestRepository extends JpaRepository<RenewalRequest, 
 
     @Query("""
             SELECT r FROM RenewalRequest r
-            JOIN FETCH r.student s
             JOIN FETCH r.contract c
+            JOIN FETCH c.student s
             LEFT JOIN FETCH c.bed b
             LEFT JOIN FETCH b.room rm
             LEFT JOIN FETCH rm.building bd
@@ -26,20 +26,20 @@ public interface RenewalRequestRepository extends JpaRepository<RenewalRequest, 
 
     @Query("""
             SELECT r FROM RenewalRequest r
-            JOIN FETCH r.student s
             JOIN FETCH r.contract c
+            JOIN FETCH c.student s
             LEFT JOIN FETCH c.bed b
             LEFT JOIN FETCH b.room rm
             LEFT JOIN FETCH rm.building bd
-            WHERE r.student.id = :studentId
+            WHERE s.id = :studentId
             ORDER BY r.id DESC
             """)
     List<RenewalRequest> findByStudentIdWithDetails(@Param("studentId") Long studentId);
 
     @Query("""
             SELECT r FROM RenewalRequest r
-            JOIN FETCH r.student s
             JOIN FETCH r.contract c
+            JOIN FETCH c.student s
             LEFT JOIN FETCH c.bed b
             LEFT JOIN FETCH b.room rm
             LEFT JOIN FETCH rm.building bd
@@ -50,14 +50,21 @@ public interface RenewalRequestRepository extends JpaRepository<RenewalRequest, 
 
     List<RenewalRequest> findByContractIdAndStatus(Long contractId, RenewalStatus status);
 
-    boolean existsByStudentIdAndStatus(Long studentId, RenewalStatus status);
+    @Query("""
+            SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END
+            FROM RenewalRequest r
+            WHERE r.contract.student.id = :studentId
+              AND r.status = :status
+            """)
+    boolean existsByStudentIdAndStatus(@Param("studentId") Long studentId,
+                                      @Param("status") RenewalStatus status);
 
     boolean existsByContractIdAndStatus(Long contractId, RenewalStatus status);
 
     @Query("""
             SELECT r FROM RenewalRequest r
-            JOIN FETCH r.student s
             JOIN FETCH r.contract c
+            JOIN FETCH c.student s
             LEFT JOIN FETCH c.bed b
             LEFT JOIN FETCH b.room rm
             LEFT JOIN FETCH rm.building bd
@@ -67,6 +74,30 @@ public interface RenewalRequestRepository extends JpaRepository<RenewalRequest, 
             """)
     List<RenewalRequest> searchRequests(@Param("status") RenewalStatus status,
                                        @Param("buildingId") Long buildingId);
+
+    @Query(value = """
+            SELECT r FROM RenewalRequest r
+            JOIN FETCH r.contract c
+            JOIN FETCH c.student s
+            LEFT JOIN FETCH c.bed b
+            LEFT JOIN FETCH b.room rm
+            LEFT JOIN FETCH rm.building bd
+            WHERE (:status IS NULL OR r.status = :status)
+              AND (:buildingId IS NULL OR bd.id = :buildingId)
+            ORDER BY r.id DESC
+            """,
+           countQuery = """
+            SELECT COUNT(r) FROM RenewalRequest r
+            LEFT JOIN r.contract c
+            LEFT JOIN c.bed b
+            LEFT JOIN b.room rm
+            LEFT JOIN rm.building bd
+            WHERE (:status IS NULL OR r.status = :status)
+              AND (:buildingId IS NULL OR bd.id = :buildingId)
+            """)
+    org.springframework.data.domain.Page<RenewalRequest> searchRequests(@Param("status") RenewalStatus status,
+                                                                       @Param("buildingId") Long buildingId,
+                                                                       org.springframework.data.domain.Pageable pageable);
 
     @Query("""
             SELECT r FROM RenewalRequest r

@@ -68,7 +68,7 @@
                         Lưu ý: Sau khi được BQL phê duyệt, bạn có tối đa <strong>48 giờ</strong> để hoàn tất việc dọn dẹp và bàn giao giường cũ sang giường mới.
                     </div>
 
-                    <button type="submit" class="btn btn-warning rounded-pill px-4 mt-2 text-dark fw-semibold">
+                    <button type="submit" class="btn btn-warning rounded-pill px-4 mt-2 text-dark fw-semibold w-100 py-2">
                         <i class="bi bi-send me-1"></i>Gửi đơn xin chuyển
                     </button>
                 </form>
@@ -87,57 +87,97 @@
                     <p class="mb-0">Bạn chưa có yêu cầu chuyển phòng nào.</p>
                 </div>
 
-                <div th:if="${!#lists.isEmpty(requests)}" class="table-responsive">
-                    <table class="table table-hover align-middle ktx-table mb-0">
-                        <thead>
-                            <tr>
-                                <th>Mã đơn</th>
-                                <th>Nguyện vọng</th>
-                                <th>Lý do</th>
-                                <th>Kết quả / Giường mới</th>
-                                <th>Trạng thái</th>
-                                <th>Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr th:each="req : ${requests}">
-                                <td>
-                                    <span class="badge bg-light text-dark border">#<span th:text="${req.id}"></span></span>
-                                </td>
-                                <td>
-                                    <div class="fw-semibold text-dark" th:text="${req.requestedBuilding != null ? req.requestedBuilding.name : 'Cùng tòa'}"></div>
-                                    <small class="text-muted" th:text="${req.requestedRoomType != null ? req.requestedRoomType : 'Bất kỳ'}"></small>
-                                </td>
-                                <td>
-                                    <span class="small text-muted" th:text="${req.reason}"></span>
-                                </td>
-                                <td>
-                                    <span th:if="${req.targetBed != null}" class="badge bg-success-subtle text-success">
-                                        <i class="bi bi-check-circle me-1"></i>
-                                        <span th:text="${req.targetBed.room.building.name + '-' + req.targetBed.room.roomNumber + ' (G' + req.targetBed.bedCode + ')'}"></span>
-                                    </span>
-                                    <span th:if="${req.targetBed == null and req.adminNote != null}" class="small text-secondary" th:text="${req.adminNote}"></span>
-                                    <span th:if="${req.targetBed == null and req.adminNote == null}" class="text-muted">—</span>
-                                </td>
-                                <td>
-                                    <span th:if="${req.status.name() == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning-emphasis">Chờ duyệt</span>
-                                    <span th:if="${req.status.name() == 'COMPLETED'}" class="badge bg-success-subtle text-success">Đã duyệt</span>
-                                    <span th:if="${req.status.name() == 'REJECTED'}" class="badge bg-danger-subtle text-danger">Từ chối</span>
-                                    <span th:if="${req.status.name() == 'CANCELLED'}" class="badge bg-secondary-subtle text-secondary">Đã hủy</span>
-                                </td>
-                                <td>
-                                    <form th:if="${req.status.name() == 'SUBMITTED'}"
-                                          th:action="@{/student/room-change/{id}/cancel(id=${req.id})}" method="post"
-                                          onsubmit="return confirm('Bạn có chắc muốn hủy đơn xin chuyển phòng này?');">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0">
-                                            Hủy đơn
-                                        </button>
-                                    </form>
-                                    <span th:if="${req.status.name() != 'SUBMITTED'}" class="text-muted small">—</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div th:if="${!#lists.isEmpty(requests)}">
+                    <!-- 1. Desktop Table -->
+                    <div class="table-responsive d-none d-md-block">
+                        <table class="table table-hover align-middle ktx-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Mã đơn</th>
+                                    <th>Nguyện vọng</th>
+                                    <th>Lý do</th>
+                                    <th>Kết quả / Giường mới</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="req : ${requests}">
+                                    <td>
+                                        <span class="badge bg-light text-dark border">#<span th:text="${req.id}"></span></span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark" th:text="${req.requestedBuilding != null ? req.requestedBuilding.name : 'Cùng tòa'}"></div>
+                                        <small class="text-muted" th:text="${req.requestedRoomType != null ? req.requestedRoomType : 'Bất kỳ'}"></small>
+                                    </td>
+                                    <td>
+                                        <span class="small text-muted" th:text="${req.reason}"></span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${req.targetBed != null}" class="badge bg-success-subtle text-success">
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            <span th:text="${req.targetBed.room.building.name + '-' + req.targetBed.room.roomNumber + ' (G' + req.targetBed.bedCode + ')'}"></span>
+                                        </span>
+                                        <span th:if="${req.targetBed == null and req.adminNote != null}" class="small text-secondary" th:text="${req.adminNote}"></span>
+                                        <span th:if="${req.targetBed == null and req.adminNote == null}" class="text-muted">—</span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${req.status.name() == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning-emphasis">Chờ duyệt</span>
+                                        <span th:if="${req.status.name() == 'COMPLETED'}" class="badge bg-success-subtle text-success">Đã duyệt</span>
+                                        <span th:if="${req.status.name() == 'REJECTED'}" class="badge bg-danger-subtle text-danger">Từ chối</span>
+                                        <span th:if="${req.status.name() == 'CANCELLED'}" class="badge bg-secondary-subtle text-secondary">Đã hủy</span>
+                                    </td>
+                                    <td>
+                                        <form th:if="${req.status.name() == 'SUBMITTED'}"
+                                              th:action="@{/student/room-change/{id}/cancel(id=${req.id})}" method="post"
+                                              onsubmit="return confirm('Bạn có chắc muốn hủy đơn xin chuyển phòng này?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0">
+                                                Hủy đơn
+                                            </button>
+                                        </form>
+                                        <span th:if="${req.status.name() != 'SUBMITTED'}" class="text-muted small">—</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 2. Mobile Cards -->
+                    <div class="d-md-none">
+                        <div th:each="req : ${requests}" class="student-mobile-card mb-2">
+                            <div class="student-mobile-card__header">
+                                <span class="badge bg-light text-dark border font-monospace">#<span th:text="${req.id}"></span></span>
+                                <span th:if="${req.status.name() == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning-emphasis">Chờ duyệt</span>
+                                <span th:if="${req.status.name() == 'COMPLETED'}" class="badge bg-success-subtle text-success">Đã duyệt</span>
+                                <span th:if="${req.status.name() == 'REJECTED'}" class="badge bg-danger-subtle text-danger">Từ chối</span>
+                                <span th:if="${req.status.name() == 'CANCELLED'}" class="badge bg-secondary-subtle text-secondary">Đã hủy</span>
+                            </div>
+
+                            <div class="student-mobile-card__row">
+                                <span class="student-mobile-card__label"><i class="bi bi-door-open me-1"></i>Nguyện vọng:</span>
+                                <span class="student-mobile-card__value text-dark" th:text="${(req.requestedBuilding != null ? req.requestedBuilding.name : 'Cùng tòa') + ' · ' + (req.requestedRoomType != null ? req.requestedRoomType : 'Bất kỳ')}">Tòa B</span>
+                            </div>
+
+                            <div class="student-mobile-card__row" th:if="${req.reason != null}">
+                                <span class="student-mobile-card__label">Lý do:</span>
+                                <span class="student-mobile-card__value text-muted" th:text="${req.reason}">Lý do</span>
+                            </div>
+
+                            <div class="student-mobile-card__row" th:if="${req.targetBed != null}">
+                                <span class="student-mobile-card__label text-success"><i class="bi bi-check-circle me-1"></i>Giường mới:</span>
+                                <span class="student-mobile-card__value text-success" th:text="${req.targetBed.room.building.name + '-' + req.targetBed.room.roomNumber + ' (G' + req.targetBed.bedCode + ')'}">Tòa B-201</span>
+                            </div>
+
+                            <div class="student-mobile-card__action" th:if="${req.status.name() == 'SUBMITTED'}">
+                                <form th:action="@{/student/room-change/{id}/cancel(id=${req.id})}" method="post"
+                                      onsubmit="return confirm('Bạn có chắc muốn hủy đơn xin chuyển phòng này?');">
+                                    <button type="submit" class="btn btn-outline-danger rounded-pill w-100">
+                                        <i class="bi bi-x-circle me-1"></i> Hủy yêu cầu chuyển phòng
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="text-muted small mt-3 p-2 bg-light rounded text-center">
                     Nếu có thắc mắc về quá trình điều chuyển phòng, vui lòng liên hệ BQL tại phòng thường trực.

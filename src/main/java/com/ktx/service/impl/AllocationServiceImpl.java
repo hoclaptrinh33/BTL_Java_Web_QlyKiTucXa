@@ -161,7 +161,8 @@ public class AllocationServiceImpl implements AllocationService {
     @Override
     @Transactional(readOnly = true)
     public AllocationRun getRun(Long runId) {
-        return allocationRunRepository.findById(runId)
+        return allocationRunRepository.findByIdWithDetails(runId)
+                .or(() -> allocationRunRepository.findById(runId))
                 .orElseThrow(() -> new BusinessException("Không tìm thấy lượt phân bổ"));
     }
 
@@ -185,7 +186,7 @@ public class AllocationServiceImpl implements AllocationService {
     @Override
     @Transactional(readOnly = true)
     public List<AllocationRun> getRunsByPeriod(Long periodId) {
-        return allocationRunRepository.findByPeriodIdOrderByIdDesc(periodId);
+        return allocationRunRepository.findByPeriodIdWithDetailsOrderByIdDesc(periodId);
     }
 
     @Override

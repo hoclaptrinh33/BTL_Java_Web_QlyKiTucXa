@@ -1,7 +1,12 @@
 package com.ktx.service;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.ktx.domain.Invoice;
 import com.ktx.domain.InvoiceItem;
@@ -21,6 +26,12 @@ public interface InvoiceService {
     List<Invoice> getInvoicesByStudent(long studentId);
 
     List<Invoice> searchInvoices(InvoiceStatus status, InvoiceType type, String keyword);
+
+    Page<Invoice> searchInvoices(InvoiceStatus status, InvoiceType type, String keyword, Pageable pageable);
+
+    List<Object[]> summarizeByStatus();
+
+    Map<Long, BigDecimal> paidAmounts(Collection<Long> invoiceIds);
 
     BigDecimal getTotalPaid(long invoiceId);
 

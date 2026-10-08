@@ -7,7 +7,7 @@
             <header class="ktx-dialog__head border-bottom pb-3">
                 <div>
                     <h2 id="periodDialogTitle" class="fw-bold" th:text="${periodId != null} ? 'Sửa đợt đăng ký' : 'Thêm đợt đăng ký mới'">Thêm đợt đăng ký mới</h2>
-                    <p class="text-muted mb-0">Cấu hình đầy đủ thông tin đợt nộp đơn, thời gian nhận hồ sơ, đối tượng áp dụng và chính sách xét duyệt.</p>
+                    <p class="text-muted mb-0">Cấu hình đầy đủ thông tin đợt nộp đơn, thời gian kỳ học, đối tượng áp dụng và chính sách xét duyệt.</p>
                 </div>
                 <a class="ktx-dialog__close" th:href="@{/admin/periods}" aria-label="Đóng">
                     <i class="bi bi-x-lg"></i>
@@ -25,7 +25,7 @@
                 <!-- PHẦN 1: THÔNG TIN CƠ BẢN & THỜI GIAN NHẬN ĐƠN -->
                 <div class="mb-4">
                     <h5 class="fw-bold text-primary mb-3 d-flex align-items-center">
-                        <i class="bi bi-info-circle-fill me-2"></i> 1. Thông tin cơ bản & Thời gian nhận đơn
+                        <i class="bi bi-info-circle-fill me-2"></i> 1. Thông tin cơ bản & Thời gian kỳ học
                     </h5>
                     
                     <div class="row g-3">
@@ -123,9 +123,38 @@
                             </div>
                         </div>
 
-                        <!-- Lưu termStart và termEnd dạng ẩn (hệ thống tự động tính ngầm nếu chưa có) -->
-                        <input type="hidden" th:field="*{termStart}"/>
-                        <input type="hidden" th:field="*{termEnd}"/>
+                        <!-- Khoảng thời gian kỳ học -->
+                        <div class="col-12">
+                            <div class="card p-3 bg-light border">
+                                <h6 class="fw-bold mb-3 text-primary">
+                                    <i class="bi bi-calendar3 me-1"></i> Khoảng thời gian kỳ học
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="ktx-field mb-0">
+                                            <label class="form-label fw-semibold" for="termStart">Ngày bắt đầu kỳ học <span class="req text-danger">*</span></label>
+                                            <div class="ktx-field__control">
+                                                <i class="bi bi-calendar-range"></i>
+                                                <input class="form-control" type="date" id="termStart" th:field="*{termStart}"
+                                                       th:classappend="${#fields.hasErrors('termStart')} ? 'is-invalid'"/>
+                                            </div>
+                                            <div class="invalid-feedback" th:errors="*{termStart}"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="ktx-field mb-0">
+                                            <label class="form-label fw-semibold" for="termEnd">Ngày kết thúc kỳ học <span class="req text-danger">*</span></label>
+                                            <div class="ktx-field__control">
+                                                <i class="bi bi-calendar-range-fill"></i>
+                                                <input class="form-control" type="date" id="termEnd" th:field="*{termEnd}"
+                                                       th:classappend="${#fields.hasErrors('termEnd')} ? 'is-invalid'"/>
+                                            </div>
+                                            <div class="invalid-feedback" th:errors="*{termEnd}"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

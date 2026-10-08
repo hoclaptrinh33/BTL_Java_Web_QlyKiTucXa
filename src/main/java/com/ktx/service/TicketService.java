@@ -22,6 +22,8 @@ public interface TicketService {
 
     List<MaintenanceTicket> getTicketsForAdmin(Long buildingId, TicketStatus status);
 
+    org.springframework.data.domain.Page<MaintenanceTicket> getTicketsForAdmin(Long buildingId, TicketStatus status, org.springframework.data.domain.Pageable pageable);
+
     int autoCloseResolvedTickets(int days);
 
     MaintenanceTicket getById(Long ticketId);

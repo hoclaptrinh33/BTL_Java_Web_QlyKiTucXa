@@ -16,5 +16,9 @@ public interface PaymentService {
 
     List<Payment> searchPayments(String keyword);
 
+    org.springframework.data.domain.Page<Payment> searchPayments(String keyword, org.springframework.data.domain.Pageable pageable);
+
+    java.math.BigDecimal sumPayments(String keyword);
+
     List<Payment> getPaymentsByInvoice(Long invoiceId);
 }
