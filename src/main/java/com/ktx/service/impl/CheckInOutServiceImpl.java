@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ktx.common.exception.BusinessException;
 import com.ktx.domain.CheckInOut;
 import com.ktx.domain.Contract;
-import com.ktx.domain.RoomAsset;
 import com.ktx.domain.User;
 import com.ktx.domain.enums.AssetCondition;
 import com.ktx.domain.enums.BuildingGenderPolicy;
@@ -203,6 +202,41 @@ public class CheckInOutServiceImpl implements CheckInOutService {
     @Override
     @Transactional(readOnly = true)
     public List<CheckInOut> findRecent(Long buildingId) {
-        return checkInOutRepository.findRecentWithDetails(buildingId);
+        return checkInOutRepository.findRecentWithLimit(buildingId, org.springframework.data.domain.PageRequest.of(0, 50));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<CheckInOut> findPage(Long buildingId,
+                                                                     CheckInOutType eventType,
+                                                                     Boolean ok,
+                                                                     String keyword,
+                                                                     org.springframework.data.domain.Pageable pageable) {
+        String trimmed = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        return checkInOutRepository.findPageWithDetails(buildingId, eventType, ok, trimmed, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countTotal() {
+        return checkInOutRepository.count();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countCheckIns() {
+        return checkInOutRepository.countByEventType(CheckInOutType.CHECK_IN);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countCheckOuts() {
+        return checkInOutRepository.countByEventType(CheckInOutType.CHECK_OUT);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countDamaged() {
+        return checkInOutRepository.countByOk(false);
     }
 }

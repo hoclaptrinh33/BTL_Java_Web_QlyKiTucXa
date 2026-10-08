@@ -29,10 +29,18 @@ public class AdminAccountController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.ktx.service.AuditLogService auditLogService;
 
-    public AdminAccountController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public AdminAccountController(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                                  @org.springframework.beans.factory.annotation.Autowired(required = false) com.ktx.service.AuditLogService auditLogService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditLogService = auditLogService;
+    }
+
+    public AdminAccountController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this(userRepository, passwordEncoder, null);
     }
 
     @GetMapping
@@ -92,9 +100,18 @@ public class AdminAccountController {
             user.setUpdatedAt(now);
             userRepository.save(user);
 
+            if (auditLogService != null) {
+                auditLogService.logCurrent("ADMIN_CREATE", "ADMIN_ACCOUNT", user.getUsername(),
+                        "Tạo tài khoản quản trị viên mới: " + user.getUsername(), "SUCCESS");
+            }
+
             redirectAttributes.addFlashAttribute("successMessage", "Tạo tài khoản quản trị viên thành công!");
             return "redirect:/admin/accounts";
         } catch (Exception ex) {
+            if (auditLogService != null) {
+                auditLogService.logCurrent("ADMIN_CREATE", "ADMIN_ACCOUNT", form.getUsername(),
+                        "Lỗi tạo tài khoản quản trị: " + ex.getMessage(), "FAILURE");
+            }
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("pageTitle", "Tạo tài khoản quản trị");
             model.addAttribute("pageSubtitle", "Thêm tài khoản quản trị viên hệ thống mới");
@@ -104,7 +121,7 @@ public class AdminAccountController {
     }
 
     @PostMapping("/{id}/toggle-status")
-    public String toggleStatus(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String toggleStatus(@PathVariable("id") Long id, RedirectAttributes redirectAttributes) {
         try {
             User user = userRepository.findById(id)
                     .orElseThrow(() -> new BusinessException("Không tìm thấy tài khoản quản trị"));
@@ -127,6 +144,10 @@ public class AdminAccountController {
             userRepository.save(user);
 
             String statusStr = Boolean.TRUE.equals(user.getEnabled()) ? "Kích hoạt" : "Khóa";
+            if (auditLogService != null) {
+                auditLogService.logCurrent("ADMIN_TOGGLE_STATUS", "ADMIN_ACCOUNT", user.getUsername(),
+                        statusStr + " tài khoản quản trị viên: " + user.getUsername(), "SUCCESS");
+            }
             redirectAttributes.addFlashAttribute("successMessage", statusStr + " tài khoản quản trị thành công!");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
@@ -135,7 +156,7 @@ public class AdminAccountController {
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String delete(@PathVariable("id") Long id, RedirectAttributes redirectAttributes) {
         try {
             User user = userRepository.findById(id)
                     .orElseThrow(() -> new BusinessException("Không tìm thấy tài khoản"));
@@ -151,7 +172,12 @@ public class AdminAccountController {
                 throw new BusinessException("Không thể xóa tài khoản quản trị viên hệ thống cuối cùng");
             }
 
+            String targetUsername = user.getUsername();
             userRepository.delete(user);
+            if (auditLogService != null) {
+                auditLogService.logCurrent("ADMIN_DELETE", "ADMIN_ACCOUNT", targetUsername,
+                        "Xóa tài khoản quản trị viên: " + targetUsername, "SUCCESS");
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Đã xóa tài khoản quản trị viên!");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
@@ -160,7 +186,7 @@ public class AdminAccountController {
     }
 
     @PostMapping("/{id}/reset-password")
-    public String resetPassword(@PathVariable Long id,
+    public String resetPassword(@PathVariable("id") Long id,
                                 @RequestParam("newPassword") String newPassword,
                                 RedirectAttributes redirectAttributes) {
         try {
@@ -172,6 +198,10 @@ public class AdminAccountController {
             user.setPasswordHash(passwordEncoder.encode(newPassword.trim()));
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
+            if (auditLogService != null) {
+                auditLogService.logCurrent("ADMIN_RESET_PASSWORD", "ADMIN_ACCOUNT", user.getUsername(),
+                        "Đặt lại mật khẩu tài khoản quản trị: " + user.getUsername(), "SUCCESS");
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Đặt lại mật khẩu thành công!");
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());

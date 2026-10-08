@@ -56,6 +56,15 @@
                 </tr>
                 </tbody>
             </table>
+            <nav class="d-flex justify-content-between align-items-center px-4 py-3 border-top" th:if="${studentPage != null and studentPage.totalPages > 1}">
+                <span class="small text-muted" th:text="${studentPage.totalElements} + ' sinh viên · trang ' + (${studentPage.number} + 1) + '/' + ${studentPage.totalPages}"></span>
+                <div class="btn-group btn-group-sm">
+                    <a class="btn btn-outline-secondary" th:if="${!studentPage.first}"
+                       th:href="@{/admin/students(stay=${stay}, page=${studentPage.number - 1})}">Trước</a>
+                    <a class="btn btn-outline-secondary" th:if="${!studentPage.last}"
+                       th:href="@{/admin/students(stay=${stay}, page=${studentPage.number + 1})}">Sau</a>
+                </div>
+            </nav>
         </div>
     </section>
 </main>

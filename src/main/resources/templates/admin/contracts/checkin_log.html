@@ -1,98 +1,308 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
 <body>
-<main th:fragment="content" class="container-fluid py-4">
+<main th:fragment="content" class="container-fluid py-4"
+      th:with="curUrl=${checkinBase != null ? checkinBase : '/manage/check-in-out'},
+               cBase=${contractBase != null ? contractBase : '/manage/contracts'}">
 
-    <!-- Bộ lọc theo Tòa nhà -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            <form method="get" th:action="@{/admin/check-in-out}" class="row g-3 align-items-end">
-                <div class="col-md-5">
-                    <label for="buildingSelect" class="form-label fw-semibold text-secondary small">Lọc theo Tòa nhà</label>
+    <!-- Hero / Header Card -->
+    <div class="ktx-hero-header mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 position-relative" style="z-index: 1;">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge rounded-pill bg-primary-subtle text-primary px-3 py-1 fw-semibold">
+                        <i class="bi bi-door-open me-1"></i>Vận hành Ký túc xá
+                    </span>
+                    <span class="badge rounded-pill bg-light text-secondary border">Nhật ký tiếp nhận &amp; bàn giao</span>
+                    <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
+                        <span class="status-dot dot-success"></span>Dữ liệu thời gian thực
+                    </span>
+                </div>
+                <h3 class="fw-bold mb-1 d-flex align-items-center gap-2 text-dark">
+                    <span class="ktx-kpi__icon is-lilac d-inline-flex align-items-center justify-content-center shadow-xs" style="width:42px;height:42px;margin:0;border-radius:12px;">
+                        <i class="bi bi-door-open-fill fs-4"></i>
+                    </span>
+                    <span>Lịch Sử Check-in &amp; Check-out</span>
+                </h3>
+                <p class="text-muted small mb-0 mt-1">
+                    Nhật ký tiếp nhận sinh viên nhận phòng, thanh lý trả phòng và biên bản đối soát hiện trạng tài sản toàn hệ thống
+                </p>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <a th:href="@{${cBase}}" class="btn btn-outline-primary btn-sm px-3 shadow-xs fw-semibold">
+                    <i class="bi bi-file-earmark-text me-1"></i>Quản lý Hợp đồng
+                </a>
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3 shadow-xs" onclick="window.print()" title="In nhật ký ra vào">
+                    <i class="bi bi-printer me-1"></i>In nhật ký
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 Interactive KPI Metric Cards -->
+    <section class="ktx-kpi-grid mb-4">
+        <!-- Card 1: Tổng lượt sự kiện -->
+        <article class="ktx-kpi-interactive">
+            <span class="ktx-kpi__icon is-lilac"><i class="bi bi-clock-history"></i></span>
+            <p class="ktx-kpi__label">Tổng lượt ra vào ghi nhận</p>
+            <p class="ktx-kpi__value text-dark font-mono-num" th:text="${totalCount != null ? totalCount : 0}">0</p>
+            <p class="ktx-kpi__meta text-muted">
+                <i class="bi bi-database-check text-primary me-1"></i>Toàn bộ lịch sử hệ thống
+            </p>
+        </article>
+
+        <!-- Card 2: Lượt nhận phòng (Check-in) -->
+        <article class="ktx-kpi-interactive">
+            <span class="ktx-kpi__icon is-mint"><i class="bi bi-box-arrow-in-right"></i></span>
+            <p class="ktx-kpi__label">Lượt nhận phòng (Check-in)</p>
+            <div class="d-flex align-items-baseline gap-2">
+                <p class="ktx-kpi__value text-success font-mono-num" th:text="${checkinCount != null ? checkinCount : 0}">0</p>
+                <span class="badge bg-success-subtle text-success small font-mono-num fw-bold"
+                      th:if="${totalCount != null && totalCount > 0}"
+                      th:text="${#numbers.formatDecimal((checkinCount * 100.0 / totalCount), 1, 1) + '%'}">0%</span>
+            </div>
+            <p class="ktx-kpi__meta text-success">
+                <i class="bi bi-check-circle-fill me-1"></i>Bàn giao giường thành công
+            </p>
+        </article>
+
+        <!-- Card 3: Lượt trả phòng (Check-out) -->
+        <article class="ktx-kpi-interactive">
+            <span class="ktx-kpi__icon is-sky"><i class="bi bi-box-arrow-left"></i></span>
+            <p class="ktx-kpi__label">Lượt trả phòng (Check-out)</p>
+            <div class="d-flex align-items-baseline gap-2">
+                <p class="ktx-kpi__value text-primary font-mono-num" th:text="${checkoutCount != null ? checkoutCount : 0}">0</p>
+                <span class="badge bg-primary-subtle text-primary small font-mono-num fw-bold"
+                      th:if="${totalCount != null && totalCount > 0}"
+                      th:text="${#numbers.formatDecimal((checkoutCount * 100.0 / totalCount), 1, 1) + '%'}">0%</span>
+            </div>
+            <p class="ktx-kpi__meta text-muted">
+                <i class="bi bi-arrow-repeat text-primary me-1"></i>Thu hồi &amp; nhả giường trống
+            </p>
+        </article>
+
+        <!-- Card 4: Phát sinh hư hại -->
+        <article class="ktx-kpi-interactive">
+            <span class="ktx-kpi__icon is-rose"><i class="bi bi-exclamation-triangle-fill"></i></span>
+            <p class="ktx-kpi__label">Phát sinh hư hại tài sản</p>
+            <div class="d-flex align-items-baseline gap-2">
+                <p class="ktx-kpi__value text-danger font-mono-num" th:text="${damagedCount != null ? damagedCount : 0}">0</p>
+                <span class="badge bg-danger-subtle text-danger small font-mono-num fw-bold"
+                      th:if="${totalCount != null && totalCount > 0}"
+                      th:text="${#numbers.formatDecimal((damagedCount * 100.0 / totalCount), 1, 1) + '%'}">0%</span>
+            </div>
+            <p class="ktx-kpi__meta text-danger">
+                <i class="bi bi-shield-exclamation me-1"></i>Cần xử lý phạt / cọc tài sản
+            </p>
+        </article>
+    </section>
+
+    <!-- Bộ lọc tìm kiếm đa tiêu chí -->
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 16px;">
+        <div class="card-body p-4">
+            <form method="get" th:action="@{${curUrl}}" class="row g-3 align-items-end">
+                <!-- Tòa nhà -->
+                <div class="col-md-3">
+                    <label for="buildingSelect" class="form-label fw-bold text-dark small mb-1">
+                        <i class="bi bi-building me-1 text-primary"></i>Tòa nhà
+                    </label>
+                    <select id="buildingSelect" name="buildingId" class="form-select fw-semibold" onchange="this.form.submit()">
+                        <option value="">-- Tất cả tòa nhà --</option>
+                        <option th:each="b : ${buildings}"
+                                th:value="${b.id}"
+                                th:selected="${b.id == selectedBuildingId}"
+                                th:text="${b.name + ' (' + b.code + ')'}">Tòa A</option>
+                    </select>
+                </div>
+
+                <!-- Loại sự kiện -->
+                <div class="col-md-2">
+                    <label for="eventTypeSelect" class="form-label fw-bold text-dark small mb-1">
+                        <i class="bi bi-funnel me-1 text-primary"></i>Sự kiện
+                    </label>
+                    <select id="eventTypeSelect" name="eventType" class="form-select fw-semibold" onchange="this.form.submit()">
+                        <option value="">-- Tất cả sự kiện --</option>
+                        <option value="CHECK_IN" th:selected="${selectedEventType != null && selectedEventType.name() == 'CHECK_IN'}">Nhận phòng (CHECK-IN)</option>
+                        <option value="CHECK_OUT" th:selected="${selectedEventType != null && selectedEventType.name() == 'CHECK_OUT'}">Trả phòng (CHECK-OUT)</option>
+                    </select>
+                </div>
+
+                <!-- Tình trạng bàn giao -->
+                <div class="col-md-2">
+                    <label for="okSelect" class="form-label fw-bold text-dark small mb-1">
+                        <i class="bi bi-shield-check me-1 text-primary"></i>Hiện trạng
+                    </label>
+                    <select id="okSelect" name="ok" class="form-select fw-semibold" onchange="this.form.submit()">
+                        <option value="">-- Tất cả hiện trạng --</option>
+                        <option value="true" th:selected="${selectedOk != null && selectedOk == true}">Bình thường</option>
+                        <option value="false" th:selected="${selectedOk != null && selectedOk == false}">Có hư hại</option>
+                    </select>
+                </div>
+
+                <!-- Từ khóa tìm kiếm -->
+                <div class="col-md-3">
+                    <label for="keywordInput" class="form-label fw-bold text-dark small mb-1">
+                        <i class="bi bi-search me-1 text-primary"></i>Tìm kiếm nhanh
+                    </label>
                     <div class="input-group">
-                        <span class="input-group-text bg-white"><i class="bi bi-building text-muted"></i></span>
-                        <select id="buildingSelect" name="buildingId" class="form-select" onchange="this.form.submit()">
-                            <option value="">-- Tất cả các tòa nhà --</option>
-                            <option th:each="b : ${buildings}"
-                                    th:value="${b.id}"
-                                    th:selected="${b.id == selectedBuildingId}"
-                                    th:text="${b.name + ' (' + b.code + ')'}">Tòa A</option>
-                        </select>
+                        <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" id="keywordInput" name="keyword" class="form-control border-start-0 ps-0"
+                               th:value="${keyword}"
+                               placeholder="Tên sinh viên, MSSV, số HĐ, phòng..."/>
                     </div>
                 </div>
-                <div class="col-md-7 d-flex justify-content-md-end gap-2">
-                    <a th:href="@{/admin/contracts}" class="btn btn-outline-primary">
-                        <i class="bi bi-file-earmark-text me-1"></i>Quản lý hợp đồng
+
+                <!-- Nút bấm -->
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1 shadow-sm fw-semibold">
+                        <i class="bi bi-funnel me-1"></i>Lọc
+                    </button>
+                    <a th:href="@{${curUrl}}" class="btn btn-outline-secondary" title="Đặt lại bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise"></i>
                     </a>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Bảng nhật ký Check-in / Check-out -->
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <!-- Bảng danh sách nhật ký Check-in / Check-out -->
+    <div class="card shadow-sm border-0" style="border-radius: 16px; overflow: hidden;">
+        <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
-                <i class="bi bi-clock-history text-primary"></i>
-                <span>Nhật ký sự kiện Check-in / Check-out</span>
-                <span class="badge bg-secondary-subtle text-secondary" th:text="${#lists.size(checkInOutList)}">0</span>
+                <i class="bi bi-journal-text text-primary"></i>
+                <span>Danh sách sự kiện tiếp nhận &amp; bàn giao</span>
             </h5>
+            <span class="badge bg-secondary-subtle text-secondary fs-6 px-3 py-1 font-mono-num"
+                  th:if="${checkInOutPage != null}"
+                  th:text="${checkInOutPage.totalElements + ' sự kiện'}">0 sự kiện</span>
         </div>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th class="ps-3">Sự kiện</th>
+                        <th class="ps-4">Sự kiện</th>
                         <th>Thời gian</th>
-                        <th>Cán bộ thực hiện</th>
                         <th>Sinh viên</th>
                         <th>Hợp đồng</th>
                         <th>Phòng / Giường</th>
                         <th>Hiện trạng</th>
-                        <th class="pe-3">Ghi chú tài sản</th>
+                        <th>Cán bộ phụ trách</th>
+                        <th class="pe-4">Ghi chú bàn giao</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr th:if="${#lists.isEmpty(checkInOutList)}">
                         <td colspan="8" class="text-center py-5 text-muted">
-                            <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                            Chưa có sự kiện Check-in hoặc Check-out nào được ghi nhận.
+                            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <div class="fw-bold fs-6">Chưa có sự kiện nào phù hợp</div>
+                            <small class="text-muted">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm để xem thêm kết quả.</small>
                         </td>
                     </tr>
                     <tr th:each="ev : ${checkInOutList}">
-                        <td class="ps-3">
-                            <span class="badge"
-                                  th:classappend="${ev.eventType != null && ev.eventType.name() == 'CHECK_IN' ? 'bg-success' : 'bg-primary'}"
-                                  th:text="${ev.eventType}">CHECK_IN</span>
+                        <!-- Sự kiện -->
+                        <td class="ps-4">
+                            <span class="badge fs-7 px-2 py-1 fw-bold font-mono-num"
+                                  th:classappend="${ev.eventType != null && ev.eventType.name() == 'CHECK_IN' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle'}">
+                                <i th:class="${ev.eventType != null && ev.eventType.name() == 'CHECK_IN' ? 'bi bi-box-arrow-in-right me-1' : 'bi bi-box-arrow-left me-1'}"></i>
+                                <span th:text="${ev.eventType != null && ev.eventType.name() == 'CHECK_IN' ? 'CHECK-IN' : 'CHECK-OUT'}">CHECK-IN</span>
+                            </span>
                         </td>
-                        <td class="small" th:text="${#temporals.format(ev.performedAt, 'dd/MM/yyyy HH:mm')}">01/09/2026 09:30</td>
+
+                        <!-- Thời gian -->
                         <td>
-                            <span class="fw-semibold text-dark" th:text="${ev.performedBy != null ? ev.performedBy.username : '—'}">cán bộ</span>
+                            <div class="fw-semibold text-dark font-mono-num small" th:text="${#temporals.format(ev.performedAt, 'dd/MM/yyyy')}">01/09/2026</div>
+                            <small class="text-muted font-mono-num" th:text="${#temporals.format(ev.performedAt, 'HH:mm')}">09:30</small>
                         </td>
+
+                        <!-- Sinh viên -->
                         <td>
-                            <div class="fw-semibold text-dark" th:text="${ev.contract != null && ev.contract.student != null ? ev.contract.student.fullName : '—'}">Nguyễn Văn A</div>
-                            <small class="text-muted" th:text="${ev.contract != null && ev.contract.student != null ? ev.contract.student.studentCode : '—'}">SV001</small>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="student-avatar" style="width:32px;height:32px;font-size:0.8rem;background:var(--violet-soft);color:var(--violet);display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-weight:700;"
+                                      th:text="${ev.contract != null && ev.contract.student != null && ev.contract.student.fullName != null ? #strings.substring(ev.contract.student.fullName, 0, 1) : 'S'}">S</span>
+                                <div>
+                                    <div class="fw-bold text-dark" th:text="${ev.contract != null && ev.contract.student != null ? ev.contract.student.fullName : '—'}">Nguyễn Văn A</div>
+                                    <small class="text-muted font-mono-num" th:text="${ev.contract != null && ev.contract.student != null ? ev.contract.student.studentCode : '—'}">SV001</small>
+                                </div>
+                            </div>
                         </td>
+
+                        <!-- Hợp đồng -->
                         <td>
-                            <a th:if="${ev.contract != null}" th:href="@{/admin/contracts/{id}(id=${ev.contract.id})}"
-                               class="text-decoration-none fw-bold font-monospace" th:text="${ev.contract.contractNo}">HD-2026-000001</a>
+                            <a th:if="${ev.contract != null}"
+                               th:href="@{${cBase + '/' + ev.contract.id}}"
+                               class="text-decoration-none fw-bold font-mono-num text-primary"
+                               th:text="${ev.contract.contractNo}">HD-2026-000001</a>
+                            <span th:unless="${ev.contract != null}" class="text-muted">—</span>
                         </td>
+
+                        <!-- Phòng / Giường -->
                         <td>
-                            <span class="badge bg-light text-dark border me-1"
-                                  th:text="${ev.contract != null && ev.contract.bed != null && ev.contract.bed.room != null && ev.contract.bed.room.building != null ? ev.contract.bed.room.building.code : '—'}">A</span>
-                            <span th:text="${ev.contract != null && ev.contract.bed != null && ev.contract.bed.room != null ? 'P.' + ev.contract.bed.room.roomNumber : ''}">P.101</span>
-                            <span class="text-muted small" th:text="${ev.contract != null && ev.contract.bed != null ? ' - ' + ev.contract.bed.bedCode : ''}"> - G1</span>
+                            <div class="fw-semibold text-dark">
+                                <span class="badge bg-light text-dark border me-1 font-mono-num"
+                                      th:text="${ev.contract != null && ev.contract.bed != null && ev.contract.bed.room != null && ev.contract.bed.room.building != null ? ev.contract.bed.room.building.code : '—'}">A</span>
+                                <span th:text="${ev.contract != null && ev.contract.bed != null && ev.contract.bed.room != null ? 'Phòng ' + ev.contract.bed.room.roomNumber : '—'}">Phòng 101</span>
+                            </div>
+                            <small class="text-muted font-mono-num"
+                                   th:if="${ev.contract != null && ev.contract.bed != null}"
+                                   th:text="${'Giường: ' + ev.contract.bed.bedCode}">Giường: G1</small>
                         </td>
+
+                        <!-- Hiện trạng -->
                         <td>
-                            <span th:if="${ev.ok}" class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Bình thường</span>
-                            <span th:unless="${ev.ok}" class="badge bg-danger-subtle text-danger"><i class="bi bi-exclamation-circle me-1"></i>Có hư hại</span>
+                            <span th:if="${ev.ok}" class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                <i class="bi bi-check-circle-fill me-1"></i>Bình thường
+                            </span>
+                            <span th:unless="${ev.ok}" class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Có hư hại
+                            </span>
                         </td>
-                        <td class="pe-3 small text-muted" th:text="${ev.assetNote != null ? ev.assetNote : '—'}">—</td>
+
+                        <!-- Cán bộ -->
+                        <td>
+                            <div class="fw-semibold text-dark small" th:text="${ev.performedBy != null ? ev.performedBy.username : 'Hệ thống'}">cán bộ</div>
+                        </td>
+
+                        <!-- Ghi chú tài sản -->
+                        <td class="pe-4 small text-muted">
+                            <span th:if="${ev.assetNote != null && !ev.assetNote.isBlank()}" th:text="${ev.assetNote}">—</span>
+                            <span th:unless="${ev.assetNote != null && !ev.assetNote.isBlank()}" class="text-secondary opacity-50">—</span>
+                        </td>
                     </tr>
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination Footer -->
+        <nav class="d-flex justify-content-between align-items-center px-4 py-3 border-top bg-light"
+             th:if="${checkInOutPage != null && checkInOutPage.totalPages > 1}">
+            <div class="small text-muted font-mono-num">
+                Trang <strong th:text="${checkInOutPage.number + 1}">1</strong> / <strong th:text="${checkInOutPage.totalPages}">10</strong>
+                (Hiển thị <span th:text="${#lists.size(checkInOutList)}">25</span> trên tổng số <span th:text="${checkInOutPage.totalElements}">100</span> sự kiện)
+            </div>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" th:classappend="${checkInOutPage.first} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{${curUrl}(buildingId=${selectedBuildingId}, eventType=${selectedEventType}, ok=${selectedOk}, keyword=${keyword}, page=${checkInOutPage.number - 1})}">
+                        <i class="bi bi-chevron-left"></i> Trước
+                    </a>
+                </li>
+                <li class="page-item"
+                    th:each="p : ${#numbers.sequence(0, checkInOutPage.totalPages - 1)}"
+                    th:if="${p >= checkInOutPage.number - 2 && p <= checkInOutPage.number + 2}"
+                    th:classappend="${p == checkInOutPage.number} ? 'active'">
+                    <a class="page-link"
+                       th:href="@{${curUrl}(buildingId=${selectedBuildingId}, eventType=${selectedEventType}, ok=${selectedOk}, keyword=${keyword}, page=${p})}"
+                       th:text="${p + 1}">1</a>
+                </li>
+                <li class="page-item" th:classappend="${checkInOutPage.last} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{${curUrl}(buildingId=${selectedBuildingId}, eventType=${selectedEventType}, ok=${selectedOk}, keyword=${keyword}, page=${checkInOutPage.number + 1})}">
+                        Sau <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
     </div>
 
 </main>

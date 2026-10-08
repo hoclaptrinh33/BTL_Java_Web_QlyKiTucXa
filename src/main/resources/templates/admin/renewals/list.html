@@ -20,7 +20,7 @@
 
     <!-- Bộ lọc tìm kiếm -->
     <div class="ktx-card mb-4">
-        <form method="get" th:action="@{/admin/renewals}" class="row g-3 align-items-end">
+        <form method="get" th:action="@{${baseUri ?: '/admin/renewals'}}" class="row g-3 align-items-end">
             <div class="col-md-4">
                 <label class="form-label text-muted small fw-semibold">Trạng thái yêu cầu</label>
                 <select name="status" class="form-select">
@@ -43,7 +43,7 @@
                 <button type="submit" class="btn btn-primary rounded-pill w-100 fw-semibold">
                     <i class="bi bi-funnel me-1"></i>Lọc
                 </button>
-                <a th:href="@{/admin/renewals}" class="btn btn-outline-secondary rounded-pill" title="Đặt lại bộ lọc">
+                <a th:href="@{${baseUri ?: '/admin/renewals'}}" class="btn btn-outline-secondary rounded-pill" title="Đặt lại bộ lọc">
                     <i class="bi bi-arrow-counterclockwise"></i>
                 </a>
             </div>
@@ -55,7 +55,7 @@
         <div class="ktx-card__head mb-3">
             <h2 class="h5 fw-bold text-dark mb-0">
                 <i class="bi bi-list-task me-2 text-primary"></i>Danh sách yêu cầu gia hạn
-                <span class="badge bg-primary-subtle text-primary ms-2 fs-6 rounded-pill" th:text="${#lists.size(requests)}">0</span>
+                <span class="badge bg-primary-subtle text-primary ms-2 fs-6 rounded-pill" th:text="${requestPage != null ? requestPage.totalElements : #lists.size(requests)}">0</span>
             </h2>
         </div>
 
@@ -146,6 +146,15 @@
                 </tbody>
             </table>
         </div>
+        <nav class="d-flex justify-content-between align-items-center px-4 py-3 border-top" th:if="${requestPage != null and requestPage.totalPages > 1}">
+            <span class="small text-muted" th:text="${requestPage.totalElements} + ' yêu cầu · trang ' + (${requestPage.number} + 1) + '/' + ${requestPage.totalPages}"></span>
+            <div class="btn-group btn-group-sm">
+                <a class="btn btn-outline-secondary" th:if="${!requestPage.first}"
+                   th:href="@{${baseUri ?: '/admin/renewals'}(buildingId=${selectedBuildingId}, status=${selectedStatus}, page=${requestPage.number - 1})}">Trước</a>
+                <a class="btn btn-outline-secondary" th:if="${!requestPage.last}"
+                   th:href="@{${baseUri ?: '/admin/renewals'}(buildingId=${selectedBuildingId}, status=${selectedStatus}, page=${requestPage.number + 1})}">Sau</a>
+            </div>
+        </nav>
     </div>
 
     <!-- MODALS XỬ LÝ -->

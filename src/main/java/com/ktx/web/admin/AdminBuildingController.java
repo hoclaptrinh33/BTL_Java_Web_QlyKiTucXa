@@ -72,7 +72,9 @@ public class AdminBuildingController {
                 row.setVacantBeds(0);
                 row.setOccupancyPercent(0.0);
                 row.setAddress("Địa chỉ: Khu " + b.getCode() + ", Trường ĐH XYZ");
-                row.setImageUrl("/images/buildings/building-1.jpg");
+                row.setImageUrl(b.getGenderPolicy() == BuildingGenderPolicy.FEMALE 
+                        ? "/images/buildings/building-female-1.jpg" 
+                        : "/images/buildings/building-male-1.jpg");
                 return row;
             }).toList();
         }
@@ -114,7 +116,7 @@ public class AdminBuildingController {
     }
 
     @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+    public String editForm(@PathVariable("id") Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
             Building building = buildingService.getById(id);
             BuildingForm form = new BuildingForm();
@@ -131,7 +133,7 @@ public class AdminBuildingController {
     }
 
     @PostMapping("/{id}/edit")
-    public String update(@PathVariable Long id, @Valid @ModelAttribute("form") BuildingForm form,
+    public String update(@PathVariable("id") Long id, @Valid @ModelAttribute("form") BuildingForm form,
             BindingResult binding, HttpServletRequest request, Model model, RedirectAttributes redirectAttributes) {
         boolean occupying = buildingService.hasOccupyingContracts(id);
         if (binding.hasErrors()) {
@@ -158,7 +160,7 @@ public class AdminBuildingController {
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+    public String delete(@PathVariable("id") Long id, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         try {
             Building building = buildingService.getById(id);
             String code = building.getCode();

@@ -45,6 +45,7 @@ public class AdminReportController {
         model.addAttribute("occupyingCount", contractRepository.countByStatusIn(OccupyingStatuses.OCCUPYING));
         model.addAttribute("overdueCount", invoiceRepository.countByStatus(InvoiceStatus.OVERDUE));
         model.addAttribute("unpaidCount", invoiceRepository.countByStatus(InvoiceStatus.UNPAID));
+        model.addAttribute("paidCount", invoiceRepository.countByStatus(InvoiceStatus.PAID));
         return "admin/reports/index";
     }
 

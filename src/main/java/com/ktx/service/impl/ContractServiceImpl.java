@@ -143,6 +143,13 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
+    public org.springframework.data.domain.Page<Contract> searchContracts(Long buildingId, ContractStatus status, String keyword,
+                                                                          org.springframework.data.domain.Pageable pageable) {
+        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        return contractRepository.searchPage(buildingId, status, kw, pageable);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public java.util.List<Contract> findByBuildingAndStatus(Long buildingId, java.util.Collection<ContractStatus> statuses) {
         return contractRepository.findByBuildingIdAndStatusInWithDetails(buildingId, statuses);
@@ -161,5 +168,11 @@ public class ContractServiceImpl implements ContractService {
         }
         // Giường VẪN giữ OCCUPIED cho đến khi checkout (§04-04)
         contractRepository.save(contract);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<Contract> findRentalHistory(Long roomId, Long bedId) {
+        return contractRepository.findRentalHistoryByRoomOrBed(roomId, bedId);
     }
 }

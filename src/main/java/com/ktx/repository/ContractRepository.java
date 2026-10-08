@@ -4,11 +4,13 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ktx.domain.Contract;
+import com.ktx.domain.Student;
 import com.ktx.domain.enums.ContractStatus;
 
 public interface ContractRepository extends JpaRepository<Contract, Long> {
@@ -102,6 +104,16 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
             @Param("statuses") Collection<ContractStatus> statuses);
 
     @Query("""
+            SELECT c.bed.room.id, COUNT(c) FROM Contract c
+            WHERE c.bed.room.building.id = :buildingId
+              AND c.status IN :statuses
+            GROUP BY c.bed.room.id
+            """)
+    List<Object[]> countOccupyingByBuildingId(
+            @Param("buildingId") Long buildingId,
+            @Param("statuses") Collection<ContractStatus> statuses);
+
+    @Query("""
             SELECT c FROM Contract c
             JOIN FETCH c.student s
             JOIN FETCH s.user u
@@ -141,6 +153,37 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
                                    @Param("status") ContractStatus status,
                                    @Param("keyword") String keyword);
 
+    @Query(value = """
+            SELECT c FROM Contract c
+            JOIN FETCH c.student s
+            JOIN FETCH c.bed b
+            JOIN FETCH b.room r
+            JOIN FETCH r.building build
+            WHERE (:buildingId IS NULL OR r.building.id = :buildingId)
+              AND (:status IS NULL OR c.status = :status)
+              AND (:keyword IS NULL OR :keyword = ''
+                   OR LOWER(s.studentCode) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(s.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(c.contractNo) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            ORDER BY c.id DESC
+            """,
+            countQuery = """
+            SELECT COUNT(c) FROM Contract c
+            JOIN c.bed b
+            JOIN b.room r
+            JOIN c.student s
+            WHERE (:buildingId IS NULL OR r.building.id = :buildingId)
+              AND (:status IS NULL OR c.status = :status)
+              AND (:keyword IS NULL OR :keyword = ''
+                   OR LOWER(s.studentCode) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(s.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(c.contractNo) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            """)
+    org.springframework.data.domain.Page<Contract> searchPage(@Param("buildingId") Long buildingId,
+                                                              @Param("status") ContractStatus status,
+                                                              @Param("keyword") String keyword,
+                                                              org.springframework.data.domain.Pageable pageable);
+
     @Query("""
             SELECT c FROM Contract c
             JOIN FETCH c.student s
@@ -160,5 +203,42 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     List<Contract> findByStatusInAndEndDateBefore(Collection<ContractStatus> statuses, java.time.LocalDate date);
 
     List<Contract> findByStatusInAndEndDateLessThanEqual(Collection<ContractStatus> statuses, java.time.LocalDate date);
+
+    @Query("""
+            SELECT c FROM Contract c
+            JOIN FETCH c.student s
+            JOIN FETCH c.bed b
+            WHERE b.room.id = :roomId
+              AND (:bedId IS NULL OR b.id = :bedId)
+            ORDER BY c.startDate DESC, c.id DESC
+            """)
+    List<Contract> findRentalHistoryByRoomOrBed(@Param("roomId") Long roomId, @Param("bedId") Long bedId);
+
+    @Query("""
+            SELECT DISTINCT c.student FROM Contract c
+            JOIN c.student s
+            JOIN FETCH s.user
+            WHERE c.bed.room.building.id = :buildingId
+              AND c.status IN :statuses
+              AND (LOWER(s.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                OR LOWER(s.studentCode) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            ORDER BY s.studentCode
+            """)
+    List<Student> searchOccupyingByBuildingId(@Param("buildingId") Long buildingId,
+                                             @Param("statuses") Collection<ContractStatus> statuses,
+                                             @Param("keyword") String keyword,
+                                             Pageable pageable);
+
+    @Query("""
+            SELECT c FROM Contract c
+            JOIN FETCH c.student s
+            JOIN FETCH c.bed b
+            JOIN FETCH b.room r
+            JOIN FETCH r.building build
+            WHERE c.student.id IN :studentIds
+              AND c.status IN :statuses
+            """)
+    List<Contract> findOccupyingByStudentIdsWithDetails(@Param("studentIds") Collection<Long> studentIds,
+                                                        @Param("statuses") Collection<ContractStatus> statuses);
 }
 

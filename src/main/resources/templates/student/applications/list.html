@@ -8,6 +8,201 @@
         <p class="text-muted">Xem danh sách đợt đăng ký đang mở và theo dõi các đơn nguyện vọng của bạn</p>
     </div>
 
+    <style>
+        /* Stacked Photo CSS Effect */
+        .photo-stack-wrapper {
+            position: relative;
+            margin-bottom: 0.9rem;
+            padding: 6px 6px 10px 6px;
+            cursor: pointer;
+        }
+        .photo-stack-card {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 16 / 10;
+            background: #0f172a;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            z-index: 2;
+            transition: transform 0.25s ease;
+        }
+        /* Behind Layer 1 (Rotated Right) */
+        .photo-stack-wrapper.has-multiple::before {
+            content: '';
+            position: absolute;
+            top: 7px;
+            left: 12px;
+            right: 4px;
+            bottom: 5px;
+            background: #cbd5e1;
+            border-radius: 12px;
+            transform: rotate(3deg);
+            z-index: 1;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            transition: transform 0.25s ease;
+            border: 2px solid #ffffff;
+        }
+        /* Behind Layer 2 (Rotated Left) */
+        .photo-stack-wrapper.has-multiple::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 12px;
+            bottom: 7px;
+            background: #94a3b8;
+            border-radius: 12px;
+            transform: rotate(-3.5deg);
+            z-index: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: transform 0.25s ease;
+            border: 2px solid #ffffff;
+        }
+        /* Hover Animation: Stack Fan-Out */
+        .photo-stack-wrapper:hover.has-multiple::before {
+            transform: rotate(5.5deg) translate(3px, -2px);
+        }
+        .photo-stack-wrapper:hover.has-multiple::after {
+            transform: rotate(-6deg) translate(-3px, -2px);
+        }
+        .photo-stack-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.35s ease;
+        }
+        .photo-stack-wrapper:hover .photo-stack-card img {
+            transform: scale(1.05);
+        }
+        .stack-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(4px);
+            color: #ffffff;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.74rem;
+            font-weight: 600;
+            z-index: 3;
+            letter-spacing: 0.2px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+        .photo-zoom-hint {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.82) 0%, rgba(15, 23, 42, 0) 100%);
+            color: #ffffff;
+            font-size: 0.76rem;
+            font-weight: 500;
+            padding: 24px 8px 8px 8px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .photo-stack-wrapper:hover .photo-zoom-hint {
+            opacity: 1;
+        }
+
+        /* Card Content Styles */
+        .card-desc {
+            line-height: 1.45;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 48px;
+            font-size: 0.82rem;
+        }
+        .room-price-tag {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 8px;
+            padding: 6px 12px;
+            display: inline-flex;
+            align-items: baseline;
+        }
+        .room-price-tag .price-value {
+            color: #059669;
+            font-weight: 700;
+            font-size: 1.15rem;
+        }
+        .amenity-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 6px;
+        }
+        .amenity-item {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.78rem;
+        }
+
+        /* Lightbox Modal */
+        .lightbox-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(15, 23, 42, 0.65);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 5;
+        }
+        .lightbox-nav-btn:hover {
+            background: rgba(37, 99, 235, 0.9);
+            border-color: #2563eb;
+            transform: translateY(-50%) scale(1.1);
+        }
+        .lightbox-nav-btn.prev { left: 16px; }
+        .lightbox-nav-btn.next { right: 16px; }
+
+        .thumb-item {
+            width: 84px;
+            height: 58px;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2.5px solid transparent;
+            opacity: 0.55;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            background: #1e293b;
+        }
+        .thumb-item:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        .thumb-item.active {
+            border-color: #3b82f6;
+            opacity: 1;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
+            transform: scale(1.05);
+        }
+        .thumb-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+    </style>
 
     <!-- PHẦN 1: ĐỢT ĐĂNG KÝ ĐANG MỞ -->
     <div class="ktx-card mb-4">
@@ -84,6 +279,422 @@
         </div>
     </div>
 
+    <!-- PHẦN: KHÁM PHÁ CƠ SỞ VẬT CHẤT & HÌNH ẢNH KÝ TÚC XÁ -->
+    <div class="ktx-card mb-4 border-0 shadow-sm" style="border-radius: 16px; overflow: hidden; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);">
+        <div class="p-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 mb-1">
+                    <i class="bi bi-camera-fill me-1"></i> Khám phá trực quan
+                </span>
+                <h2 class="h4 fw-bold text-dark mb-1">Cơ sở vật chất & Các loại phòng</h2>
+                <p class="text-muted small mb-0">
+                    Xem trước hình ảnh thực tế các tòa nhà phù hợp với giới tính (<strong th:text="${student.gender == T(com.ktx.domain.enums.Gender).MALE ? 'Nam' : 'Nữ'}">Nam</strong>) và nội thất từng loại phòng để chọn nguyện vọng chính xác nhất.
+                </p>
+            </div>
+            <!-- Tabs Toggle: Tòa nhà / Loại phòng -->
+            <ul class="nav nav-pills gap-2 bg-light p-1 rounded-3" id="showcaseTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active px-3 py-1 fw-semibold small" id="tab-buildings" data-bs-toggle="pill" data-bs-target="#content-buildings" type="button" role="tab">
+                        <i class="bi bi-buildings me-1"></i> Các Tòa Nhà (<span th:text="${buildingGalleries != null ? buildingGalleries.size() : (student.gender == T(com.ktx.domain.enums.Gender).MALE ? 2 : 1)}">2</span>)
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link px-3 py-1 fw-semibold small" id="tab-rooms" data-bs-toggle="pill" data-bs-target="#content-rooms" type="button" role="tab">
+                        <i class="bi bi-door-open me-1"></i> Các Loại Phòng (4)
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="p-4">
+            <div class="tab-content" id="showcaseTabContent">
+                <!-- TAB 1: CÁC TÒA NHÀ -->
+                <div class="tab-pane fade show active" id="content-buildings" role="tabpanel">
+                    
+                    <!-- Hiển thị khi có buildingGalleries từ server -->
+                    <th:block th:if="${buildingGalleries != null && !#lists.isEmpty(buildingGalleries)}">
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                            <div class="col" th:each="bg : ${buildingGalleries}">
+                                <div class="card h-100 border-0 shadow-sm overflow-hidden bg-white p-3" style="border-radius: 14px;">
+                                    
+                                    <!-- Photo Stack Component -->
+                                    <div class="photo-stack-wrapper" 
+                                         th:classappend="${bg.totalImages > 1} ? 'has-multiple' : ''"
+                                         th:data-id="${bg.id}"
+                                         onclick="openPhotoGallery('bldg', this.getAttribute('data-id'))"
+                                         title="Nhấn để xem toàn bộ album ảnh">
+                                        <div class="photo-stack-card">
+                                            <img th:src="${bg.primaryImageUrl}" alt="Ảnh tòa nhà" loading="lazy">
+                                            <span class="stack-badge" th:if="${bg.totalImages > 1}">
+                                                <i class="bi bi-images me-1"></i><span th:text="${bg.totalImages} + ' ảnh'">3 ảnh</span>
+                                            </span>
+                                            <span class="stack-badge" th:if="${bg.totalImages <= 1}">
+                                                <i class="bi bi-image me-1"></i>1 ảnh
+                                            </span>
+                                            <div class="photo-zoom-hint">
+                                                <i class="bi bi-arrows-fullscreen"></i> Nhấn xem chi tiết ảnh
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Thông tin chi tiết tòa -->
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <h5 class="fw-bold mb-0 text-dark" th:text="${bg.name}">Tòa A</h5>
+                                        <span class="badge" 
+                                              th:classappend="${bg.genderLabel == 'Nam' ? 'bg-primary-subtle text-primary' : 'bg-danger-subtle text-danger'}" 
+                                              th:text="'Dành cho ' + ${bg.genderLabel}">
+                                            Dành cho Nam
+                                        </span>
+                                    </div>
+
+                                    <div class="d-flex flex-wrap gap-1 mb-2">
+                                        <span class="badge bg-light text-secondary border">
+                                            <i class="bi bi-door-closed me-1"></i>[[${bg.roomCount}]] phòng
+                                        </span>
+                                        <span class="badge bg-light text-secondary border">
+                                            <i class="bi bi-layout-text-window me-1"></i>[[${bg.bedCount}]] giường
+                                        </span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-check-circle me-1"></i>Trống [[${bg.vacantBeds}]]
+                                        </span>
+                                    </div>
+
+                                    <p class="card-desc text-muted mb-2" th:text="${bg.description}">
+                                        Tòa 5 tầng gần sân thể thao, nhà xe ngầm, khuôn viên cây xanh thoáng mát.
+                                    </p>
+
+                                    <div class="small fw-semibold text-secondary mb-1">
+                                        <i class="bi bi-stars me-1 text-warning"></i>Tiện ích nổi bật:
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1 mb-3">
+                                        <span th:each="am : ${bg.amenities}" 
+                                              class="badge bg-light text-dark border text-truncate" 
+                                              style="max-width: 140px; font-weight: 500;" 
+                                              th:text="${am}">
+                                            Nhà xe
+                                        </span>
+                                    </div>
+
+                                    <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold small mt-auto"
+                                            th:data-id="${bg.id}"
+                                            onclick="openPhotoGallery('bldg', this.getAttribute('data-id'))" style="border-radius: 8px;">
+                                        <i class="bi bi-images me-1"></i> Xem chi tiết album
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </th:block>
+
+                    <!-- Fallback nếu server chưa khởi động lại -->
+                    <th:block th:if="${buildingGalleries == null || #lists.isEmpty(buildingGalleries)}">
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                            <!-- TÒA A (Nếu là sinh viên Nam) -->
+                            <div class="col" th:if="${student.gender == T(com.ktx.domain.enums.Gender).MALE}">
+                                <div class="card h-100 border-0 shadow-sm overflow-hidden bg-white p-3" style="border-radius: 14px;">
+                                    <div class="photo-stack-wrapper has-multiple" onclick="openPhotoGallery('bldg', '1')" title="Nhấn xem chi tiết album">
+                                        <div class="photo-stack-card">
+                                            <img src="/uploads/buildings/bldg-a-main.svg" alt="Tòa A (Nam)" loading="lazy">
+                                            <span class="stack-badge"><i class="bi bi-images me-1"></i>3 ảnh</span>
+                                            <div class="photo-zoom-hint"><i class="bi bi-arrows-fullscreen"></i> Nhấn xem chi tiết ảnh</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <h5 class="fw-bold mb-0 text-dark">Tòa A</h5>
+                                        <span class="badge bg-primary-subtle text-primary">Dành cho Nam</span>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1 mb-2">
+                                        <span class="badge bg-light text-secondary border"><i class="bi bi-door-closed me-1"></i>30 phòng</span>
+                                        <span class="badge bg-light text-secondary border"><i class="bi bi-layout-text-window me-1"></i>120 giường</span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle me-1"></i>Trống 42 chỗ</span>
+                                    </div>
+                                    <p class="card-desc text-muted mb-2">Tòa 5 tầng gần sân thể thao, nhà xe ngầm, khuôn viên cây xanh thoáng mát.</p>
+                                    <div class="small fw-semibold text-secondary mb-1"><i class="bi bi-stars me-1 text-warning"></i>Tiện ích nổi bật:</div>
+                                    <div class="d-flex flex-wrap gap-1 mb-3">
+                                        <span class="badge bg-light text-dark border">Nhà xe tầng hầm</span>
+                                        <span class="badge bg-light text-dark border">Sân thể thao</span>
+                                        <span class="badge bg-light text-dark border">Bảo vệ 24/7</span>
+                                        <span class="badge bg-light text-dark border">Máy giặt chung</span>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold small mt-auto" onclick="openPhotoGallery('bldg', '1')" style="border-radius: 8px;">
+                                        <i class="bi bi-images me-1"></i> Xem chi tiết album
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- TÒA B (Nếu là sinh viên Nữ) -->
+                            <div class="col" th:if="${student.gender == T(com.ktx.domain.enums.Gender).FEMALE}">
+                                <div class="card h-100 border-0 shadow-sm overflow-hidden bg-white p-3" style="border-radius: 14px;">
+                                    <div class="photo-stack-wrapper has-multiple" onclick="openPhotoGallery('bldg', '2')" title="Nhấn xem chi tiết album">
+                                        <div class="photo-stack-card">
+                                            <img src="/uploads/buildings/bldg-b-main.svg" alt="Tòa B (Nữ)" loading="lazy">
+                                            <span class="stack-badge"><i class="bi bi-images me-1"></i>3 ảnh</span>
+                                            <div class="photo-zoom-hint"><i class="bi bi-arrows-fullscreen"></i> Nhấn xem chi tiết ảnh</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <h5 class="fw-bold mb-0 text-dark">Tòa B</h5>
+                                        <span class="badge bg-danger-subtle text-danger">Dành cho Nữ</span>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1 mb-2">
+                                        <span class="badge bg-light text-secondary border"><i class="bi bi-door-closed me-1"></i>25 phòng</span>
+                                        <span class="badge bg-light text-secondary border"><i class="bi bi-layout-text-window me-1"></i>100 giường</span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle me-1"></i>Trống 35 chỗ</span>
+                                    </div>
+                                    <p class="card-desc text-muted mb-2">Tòa 5 tầng dành riêng cho Nữ, khuôn viên yên tĩnh, an ninh và kiểm soát vân tay nghiêm ngặt.</p>
+                                    <div class="small fw-semibold text-secondary mb-1"><i class="bi bi-stars me-1 text-warning"></i>Tiện ích nổi bật:</div>
+                                    <div class="d-flex flex-wrap gap-1 mb-3">
+                                        <span class="badge bg-light text-dark border">Cổng quét vân tay</span>
+                                        <span class="badge bg-light text-dark border">Bảo vệ 24/7</span>
+                                        <span class="badge bg-light text-dark border">Khu tự học tầng 1</span>
+                                        <span class="badge bg-light text-dark border">Máy sấy quần áo</span>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold small mt-auto" onclick="openPhotoGallery('bldg', '2')" style="border-radius: 8px;">
+                                        <i class="bi bi-images me-1"></i> Xem chi tiết album
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- TÒA C (Nếu là sinh viên Nam) -->
+                            <div class="col" th:if="${student.gender == T(com.ktx.domain.enums.Gender).MALE}">
+                                <div class="card h-100 border-0 shadow-sm overflow-hidden bg-white p-3" style="border-radius: 14px;">
+                                    <div class="photo-stack-wrapper has-multiple" onclick="openPhotoGallery('bldg', '3')" title="Nhấn xem chi tiết album">
+                                        <div class="photo-stack-card">
+                                            <img src="/uploads/buildings/bldg-c-main.svg" alt="Tòa C (Nam)" loading="lazy">
+                                            <span class="stack-badge"><i class="bi bi-images me-1"></i>3 ảnh</span>
+                                            <div class="photo-zoom-hint"><i class="bi bi-arrows-fullscreen"></i> Nhấn xem chi tiết ảnh</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <h5 class="fw-bold mb-0 text-dark">Tòa C</h5>
+                                        <span class="badge bg-primary-subtle text-primary">Dành cho Nam</span>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1 mb-2">
+                                        <span class="badge bg-light text-secondary border"><i class="bi bi-door-closed me-1"></i>20 phòng</span>
+                                        <span class="badge bg-light text-secondary border"><i class="bi bi-layout-text-window me-1"></i>80 giường</span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle me-1"></i>Trống 28 chỗ</span>
+                                    </div>
+                                    <p class="card-desc text-muted mb-2">Tòa Nam sinh viên mới nâng cấp, đầy đủ tiện ích sinh hoạt và không gian học tập.</p>
+                                    <div class="small fw-semibold text-secondary mb-1"><i class="bi bi-stars me-1 text-warning"></i>Tiện ích nổi bật:</div>
+                                    <div class="d-flex flex-wrap gap-1 mb-3">
+                                        <span class="badge bg-light text-dark border">Sân bóng rổ</span>
+                                        <span class="badge bg-light text-dark border">Phòng sinh hoạt</span>
+                                        <span class="badge bg-light text-dark border">Nhà xe giám sát</span>
+                                        <span class="badge bg-light text-dark border">Wifi cáp quang</span>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold small mt-auto" onclick="openPhotoGallery('bldg', '3')" style="border-radius: 8px;">
+                                        <i class="bi bi-images me-1"></i> Xem chi tiết album
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </th:block>
+                </div>
+
+                <!-- TAB 2: CÁC LOẠI PHÒNG -->
+                <div class="tab-pane fade" id="content-rooms" role="tabpanel">
+                    
+                    <!-- Hiển thị khi có roomTypeGalleries từ server -->
+                    <th:block th:if="${roomTypeGalleries != null && !#lists.isEmpty(roomTypeGalleries)}">
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
+                            <div class="col" th:each="rg : ${roomTypeGalleries}">
+                                <div class="card h-100 border-0 shadow-sm overflow-hidden bg-white p-3" style="border-radius: 14px;">
+                                    
+                                    <!-- Photo Stack Component -->
+                                    <div class="photo-stack-wrapper" 
+                                         th:classappend="${#lists.size(rg.imageUrls) > 1} ? 'has-multiple' : ''"
+                                         th:data-type="${rg.typeCode}"
+                                         onclick="openPhotoGallery('room', this.getAttribute('data-type'))"
+                                         title="Nhấn để xem toàn bộ album ảnh">
+                                        <div class="photo-stack-card">
+                                            <img th:src="${rg.primaryImageUrl}" alt="Ảnh loại phòng" loading="lazy">
+                                            <span class="stack-badge" th:if="${#lists.size(rg.imageUrls) > 1}">
+                                                <i class="bi bi-images me-1"></i><span th:text="${#lists.size(rg.imageUrls)} + ' ảnh'">3 ảnh</span>
+                                            </span>
+                                            <span class="stack-badge" th:if="${#lists.size(rg.imageUrls) <= 1}">
+                                                <i class="bi bi-image me-1"></i>1 ảnh
+                                            </span>
+                                            <div class="photo-zoom-hint">
+                                                <i class="bi bi-arrows-fullscreen"></i> Nhấn xem chi tiết ảnh
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tiêu đề & Sức chứa -->
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <h5 class="fw-bold mb-0 text-dark" th:text="${rg.title}">Phòng 4 giường</h5>
+                                        <span class="badge bg-primary-subtle text-primary">
+                                            <i class="bi bi-people-fill me-1"></i>[[${rg.capacity}]] người
+                                        </span>
+                                    </div>
+
+                                    <!-- Giá tiền nổi bật -->
+                                    <div class="room-price-tag mb-2">
+                                        <span class="price-value" th:text="${rg.priceFormatted}">2.400.000 đ/kỳ</span>
+                                        <span class="text-muted small ms-1">(1 kỳ học)</span>
+                                    </div>
+
+                                    <!-- Mô tả không gian -->
+                                    <p class="card-desc text-muted mb-2" th:text="${rg.description}">
+                                        Không gian tiện nghi, thông thoáng, tối ưu cho học tập...
+                                    </p>
+
+                                    <!-- Trang thiết bị & Tiện nghi -->
+                                    <div class="small fw-semibold text-secondary mb-1">
+                                        <i class="bi bi-check-all me-1 text-success"></i>Trang bị & Tiện nghi:
+                                    </div>
+                                    <div class="amenity-grid mb-3">
+                                        <div th:each="am : ${rg.amenities}" class="amenity-item text-dark" th:title="${am}">
+                                            <i class="bi bi-check-circle-fill text-success me-1"></i><span th:text="${am}">Điều hòa</span>
+                                        </div>
+                                    </div>
+
+                                    <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold small mt-auto"
+                                            th:data-type="${rg.typeCode}"
+                                            onclick="openPhotoGallery('room', this.getAttribute('data-type'))" style="border-radius: 8px;">
+                                        <i class="bi bi-images me-1"></i> Xem chi tiết album
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </th:block>
+
+                    <!-- Fallback nếu server chưa khởi động lại -->
+                    <th:block th:if="${roomTypeGalleries == null || #lists.isEmpty(roomTypeGalleries)}">
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
+                            <!-- STANDARD_4 -->
+                            <div class="col">
+                                <div class="card h-100 border-0 shadow-sm overflow-hidden bg-white p-3" style="border-radius: 14px;">
+                                    <div class="photo-stack-wrapper has-multiple" onclick="openPhotoGallery('room', 'STANDARD_4')" title="Nhấn xem chi tiết album">
+                                        <div class="photo-stack-card">
+                                            <img src="/uploads/rooms/room-standard_4-overview.svg" alt="Phòng 4 giường tiêu chuẩn" loading="lazy">
+                                            <span class="stack-badge"><i class="bi bi-images me-1"></i>3 ảnh</span>
+                                            <div class="photo-zoom-hint"><i class="bi bi-arrows-fullscreen"></i> Nhấn xem chi tiết ảnh</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <h5 class="fw-bold mb-0 text-dark">Phòng 4 giường</h5>
+                                        <span class="badge bg-primary-subtle text-primary"><i class="bi bi-people-fill me-1"></i>4 người</span>
+                                    </div>
+                                    <div class="room-price-tag mb-2">
+                                        <span class="price-value">2.400.000 đ/kỳ</span>
+                                        <span class="text-muted small ms-1">(1 kỳ học)</span>
+                                    </div>
+                                    <p class="card-desc text-muted mb-2">Mỗi phòng gồm 2 giường tầng cao cấp, bàn học rộng rãi, đầy đủ ánh sáng tự nhiên và khu vệ sinh khép kín.</p>
+                                    <div class="small fw-semibold text-secondary mb-1"><i class="bi bi-check-all me-1 text-success"></i>Trang bị & Tiện nghi:</div>
+                                    <div class="amenity-grid mb-3">
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Điều hòa 2 chiều</div>
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Bình nóng lạnh</div>
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Bàn học riêng</div>
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Tủ đồ cá nhân</div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold small mt-auto" onclick="openPhotoGallery('room', 'STANDARD_4')" style="border-radius: 8px;">
+                                        <i class="bi bi-images me-1"></i> Xem chi tiết album
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- STANDARD_6 -->
+                            <div class="col">
+                                <div class="card h-100 border-0 shadow-sm overflow-hidden bg-white p-3" style="border-radius: 14px;">
+                                    <div class="photo-stack-wrapper has-multiple" onclick="openPhotoGallery('room', 'STANDARD_6')" title="Nhấn xem chi tiết album">
+                                        <div class="photo-stack-card">
+                                            <img src="/uploads/rooms/room-standard_6-overview.svg" alt="Phòng 6 giường tiêu chuẩn" loading="lazy">
+                                            <span class="stack-badge"><i class="bi bi-images me-1"></i>3 ảnh</span>
+                                            <div class="photo-zoom-hint"><i class="bi bi-arrows-fullscreen"></i> Nhấn xem chi tiết ảnh</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <h5 class="fw-bold mb-0 text-dark">Phòng 6 giường</h5>
+                                        <span class="badge bg-primary-subtle text-primary"><i class="bi bi-people-fill me-1"></i>6 người</span>
+                                    </div>
+                                    <div class="room-price-tag mb-2">
+                                        <span class="price-value">1.800.000 đ/kỳ</span>
+                                        <span class="text-muted small ms-1">(1 kỳ học)</span>
+                                    </div>
+                                    <p class="card-desc text-muted mb-2">Phòng 6 người được thiết kế tối ưu hóa diện tích sinh hoạt chung, thích hợp cho sinh viên muốn tiết kiệm chi phí.</p>
+                                    <div class="small fw-semibold text-secondary mb-1"><i class="bi bi-check-all me-1 text-success"></i>Trang bị & Tiện nghi:</div>
+                                    <div class="amenity-grid mb-3">
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Quạt trần & thông gió</div>
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Bình nóng lạnh</div>
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Bàn học cá nhân</div>
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Tủ sắt 6 ngăn</div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold small mt-auto" onclick="openPhotoGallery('room', 'STANDARD_6')" style="border-radius: 8px;">
+                                        <i class="bi bi-images me-1"></i> Xem chi tiết album
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- STANDARD_8 -->
+                            <div class="col">
+                                <div class="card h-100 border-0 shadow-sm overflow-hidden bg-white p-3" style="border-radius: 14px;">
+                                    <div class="photo-stack-wrapper has-multiple" onclick="openPhotoGallery('room', 'STANDARD_8')" title="Nhấn xem chi tiết album">
+                                        <div class="photo-stack-card">
+                                            <img src="/uploads/rooms/room-standard_8-overview.svg" alt="Phòng 8 giường tiết kiệm" loading="lazy">
+                                            <span class="stack-badge"><i class="bi bi-images me-1"></i>3 ảnh</span>
+                                            <div class="photo-zoom-hint"><i class="bi bi-arrows-fullscreen"></i> Nhấn xem chi tiết ảnh</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <h5 class="fw-bold mb-0 text-dark">Phòng 8 giường</h5>
+                                        <span class="badge bg-primary-subtle text-primary"><i class="bi bi-people-fill me-1"></i>8 người</span>
+                                    </div>
+                                    <div class="room-price-tag mb-2">
+                                        <span class="price-value">1.200.000 đ/kỳ</span>
+                                        <span class="text-muted small ms-1">(1 kỳ học)</span>
+                                    </div>
+                                    <p class="card-desc text-muted mb-2">Lựa chọn tiết kiệm nhất trong ký túc xá, không khí tập thể vui vẻ, an ninh đảm bảo 24/7.</p>
+                                    <div class="small fw-semibold text-secondary mb-1"><i class="bi bi-check-all me-1 text-success"></i>Trang bị & Tiện nghi:</div>
+                                    <div class="amenity-grid mb-3">
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Quạt trần công suất lớn</div>
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Bình nóng lạnh</div>
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Tủ đồ cá nhân</div>
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Wifi sinh viên</div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold small mt-auto" onclick="openPhotoGallery('room', 'STANDARD_8')" style="border-radius: 8px;">
+                                        <i class="bi bi-images me-1"></i> Xem chi tiết album
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- VIP_AC -->
+                            <div class="col">
+                                <div class="card h-100 border-0 shadow-sm overflow-hidden bg-white p-3" style="border-radius: 14px;">
+                                    <div class="photo-stack-wrapper has-multiple" onclick="openPhotoGallery('room', 'VIP_AC')" title="Nhấn xem chi tiết album">
+                                        <div class="photo-stack-card">
+                                            <img src="/uploads/rooms/room-vip_ac-living.svg" alt="Phòng VIP Cao cấp" loading="lazy">
+                                            <span class="stack-badge"><i class="bi bi-images me-1"></i>3 ảnh</span>
+                                            <div class="photo-zoom-hint"><i class="bi bi-arrows-fullscreen"></i> Nhấn xem chi tiết ảnh</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <h5 class="fw-bold mb-0 text-dark">Phòng VIP Cao cấp</h5>
+                                        <span class="badge bg-primary-subtle text-primary"><i class="bi bi-people-fill me-1"></i>2 người</span>
+                                    </div>
+                                    <div class="room-price-tag mb-2">
+                                        <span class="price-value">4.000.000 đ/kỳ</span>
+                                        <span class="text-muted small ms-1">(1 kỳ học)</span>
+                                    </div>
+                                    <p class="card-desc text-muted mb-2">Không gian riêng tư, trang thiết bị nội thất cao cấp tương đương căn hộ dịch vụ mini.</p>
+                                    <div class="small fw-semibold text-secondary mb-1"><i class="bi bi-check-all me-1 text-success"></i>Trang bị & Tiện nghi:</div>
+                                    <div class="amenity-grid mb-3">
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Điều hòa Inverter</div>
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Tủ lạnh mini</div>
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Phòng tắm kính</div>
+                                        <div class="amenity-item text-dark"><i class="bi bi-check-circle-fill text-success me-1"></i>Bàn học & ghế xoay</div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold small mt-auto" onclick="openPhotoGallery('room', 'VIP_AC')" style="border-radius: 8px;">
+                                        <i class="bi bi-images me-1"></i> Xem chi tiết album
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- PHẦN 2: LỊCH SỬ ĐƠN NGUYỆN VỌNG -->
     <div class="ktx-card">
         <div class="ktx-card__head mb-3">
@@ -97,71 +708,416 @@
             </div>
 
             <!-- Bảng danh sách đơn đã nộp -->
-            <div th:if="${!#lists.isEmpty(applications)}" class="table-responsive">
-                <table class="table table-hover align-middle mb-0 ktx-table">
-                    <thead>
-                        <tr>
-                            <th class="ps-4" style="width: 25%">Đợt đăng ký</th>
-                            <th style="width: 25%">Nguyện vọng</th>
-                            <th style="width: 15%">Thời gian nộp</th>
-                            <th style="width: 15%">Điểm ưu tiên</th>
-                            <th style="width: 10%">Trạng thái</th>
-                            <th class="text-end pe-4" style="width: 10%">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="a : ${applications}">
-                            <td class="ps-4">
-                                <strong class="text-dark" th:text="${a.period.name}">Đợt tuyển sinh</strong>
-                                <div class="small text-muted" th:text="${a.period.academicYear}">2026-2027</div>
-                            </td>
-                            <td>
-                                <div>
-                                    <i class="bi bi-building me-1 text-secondary"></i>
-                                    <span th:text="${a.preferredBuilding != null ? a.preferredBuilding.name : 'Tự do'}">Tòa nhà</span>
-                                </div>
-                                <div class="small text-muted">
-                                    <i class="bi bi-door-closed me-1"></i> Loại phòng: 
-                                    <span th:text="${a.preferredRoomType != null ? (a.preferredRoomType.name() == 'STANDARD_4' ? 'Phòng 4 giường' : (a.preferredRoomType.name() == 'STANDARD_6' ? 'Phòng 6 giường' : (a.preferredRoomType.name() == 'STANDARD_8' ? 'Phòng 8 giường' : 'Phòng VIP'))) : 'Tự do'}">Loại phòng</span>
-                                </div>
-                            </td>
-                            <td th:text="${a.submittedAt != null ? #temporals.format(a.submittedAt, 'dd/MM/yyyy HH:mm') : 'Chưa nộp'}">
-                                24/08/2026 12:00
-                            </td>
-                            <td>
-                                <div class="d-inline-flex align-items-center mb-1">
-                                    <span class="ktx-pill is-violet" th:text="${a.computedScore != null ? a.computedScore + 'đ' : '0đ'}">1200đ</span>
-                                </div>
-                                <div class="small text-muted" style="font-size: 0.75rem;">
-                                    <span th:text="${a.prioritySnapshot.name() == 'POLICY' ? 'Chính sách' : (a.prioritySnapshot.name() == 'REMOTE_AREA' ? 'Vùng sâu' : 'Không')}">Ưu tiên</span>
-                                    <span th:if="${a.previousStayGoodSnapshot}"> | Lịch sử tốt</span>
-                                </div>
-                            </td>
-                            <td>
-                                <!-- Trạng thái đơn -->
-                                <span class="ktx-pill" th:classappend="${a.status.name() == 'SUBMITTED' ? 'is-violet' : (a.status.name() == 'WITHDRAWN' ? 'is-muted' : (a.status.name() == 'ALLOCATED' ? 'is-mint' : (a.status.name() == 'REJECTED' ? 'is-rose' : 'is-peach')))}"
-                                      th:text="${a.status.name() == 'SUBMITTED' ? 'Đã nộp' : (a.status.name() == 'WITHDRAWN' ? 'Đã rút' : (a.status.name() == 'ALLOCATED' ? 'Đã xếp' : (a.status.name() == 'REJECTED' ? 'Từ chối' : 'Danh sách chờ')))}">
-                                    Trạng thái
-                                </span>
-                            </td>
-                            <td class="text-end pe-4">
-                                <!-- Nút rút đơn (Chỉ hiển thị khi đơn đang SUBMITTED và đợt đăng ký chưa bị CLOSED) -->
-                                <form th:if="${a.status.name() == 'SUBMITTED' && a.period.status.name() != 'CLOSED'}"
-                                      th:action="@{/student/applications/{id}/withdraw(id=${a.id})}"
-                                      method="post"
-                                      data-confirm="Bạn chắc chắn muốn rút đơn đăng ký nguyện vọng này? Hàng đợi phân bổ của bạn sẽ bị hủy bỏ."
-                                      data-confirm-title="Xác nhận rút đơn"
-                                      data-confirm-type="warning">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger fw-semibold px-3" style="border-radius: 8px;">Rút đơn</button>
-                                </form>
-                                <span th:if="${a.status.name() != 'SUBMITTED' || a.period.status.name() == 'CLOSED'}" class="text-muted small">-</span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div th:if="${!#lists.isEmpty(applications)}">
+                <!-- 1. Desktop Table View -->
+                <div class="table-responsive d-none d-md-block">
+                    <table class="table table-hover align-middle mb-0 ktx-table">
+                        <thead>
+                            <tr>
+                                <th class="ps-4" style="width: 25%">Đợt đăng ký</th>
+                                <th style="width: 25%">Nguyện vọng</th>
+                                <th style="width: 15%">Thời gian nộp</th>
+                                <th style="width: 15%">Điểm ưu tiên</th>
+                                <th style="width: 10%">Trạng thái</th>
+                                <th class="text-end pe-4" style="width: 10%">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="a : ${applications}">
+                                <td class="ps-4">
+                                    <strong class="text-dark" th:text="${a.period.name}">Đợt tuyển sinh</strong>
+                                    <div class="small text-muted" th:text="${a.period.academicYear}">2026-2027</div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <i class="bi bi-building me-1 text-secondary"></i>
+                                        <span th:text="${a.preferredBuilding != null ? a.preferredBuilding.name : 'Tự do'}">Tòa nhà</span>
+                                    </div>
+                                    <div class="small text-muted">
+                                        <i class="bi bi-door-closed me-1"></i> Loại phòng: 
+                                        <span th:text="${a.preferredRoomType != null ? (a.preferredRoomType.name() == 'STANDARD_4' ? 'Phòng 4 giường' : (a.preferredRoomType.name() == 'STANDARD_6' ? 'Phòng 6 giường' : (a.preferredRoomType.name() == 'STANDARD_8' ? 'Phòng 8 giường' : 'Phòng VIP'))) : 'Tự do'}">Loại phòng</span>
+                                    </div>
+                                </td>
+                                <td th:text="${a.submittedAt != null ? #temporals.format(a.submittedAt, 'dd/MM/yyyy HH:mm') : 'Chưa nộp'}">
+                                    24/08/2026 12:00
+                                </td>
+                                <td>
+                                    <div class="d-inline-flex align-items-center mb-1">
+                                        <span class="ktx-pill is-violet" th:text="${a.computedScore != null ? a.computedScore + 'đ' : '0đ'}">1200đ</span>
+                                    </div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">
+                                        <span th:text="${a.prioritySnapshot.name() == 'POLICY' ? 'Chính sách' : (a.prioritySnapshot.name() == 'REMOTE_AREA' ? 'Vùng sâu' : 'Không')}">Ưu tiên</span>
+                                        <span th:if="${a.previousStayGoodSnapshot}"> | Lịch sử tốt</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <!-- Trạng thái đơn -->
+                                    <span class="ktx-pill" th:classappend="${a.status.name() == 'SUBMITTED' ? 'is-violet' : (a.status.name() == 'WITHDRAWN' ? 'is-muted' : (a.status.name() == 'ALLOCATED' ? 'is-mint' : (a.status.name() == 'REJECTED' ? 'is-rose' : 'is-peach')))}"
+                                          th:text="${a.status.name() == 'SUBMITTED' ? 'Đã nộp' : (a.status.name() == 'WITHDRAWN' ? 'Đã rút' : (a.status.name() == 'ALLOCATED' ? 'Đã xếp' : (a.status.name() == 'REJECTED' ? 'Từ chối' : 'Danh sách chờ')))}">
+                                        Trạng thái
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <!-- Nút rút đơn (Chỉ hiển thị khi đơn đang SUBMITTED và đợt đăng ký chưa bị CLOSED) -->
+                                    <form th:if="${a.status.name() == 'SUBMITTED' && a.period.status.name() != 'CLOSED'}"
+                                          th:action="@{/student/applications/{id}/withdraw(id=${a.id})}"
+                                          method="post"
+                                          data-confirm="Bạn chắc chắn muốn rút đơn đăng ký nguyện vọng này? Hàng đợi phân bổ của bạn sẽ bị hủy bỏ."
+                                          data-confirm-title="Xác nhận rút đơn"
+                                          data-confirm-type="warning">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger fw-semibold px-3" style="border-radius: 8px;">Rút đơn</button>
+                                    </form>
+                                    <span th:if="${a.status.name() != 'SUBMITTED' || a.period.status.name() == 'CLOSED'}" class="text-muted small">-</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 2. Mobile Cards View -->
+                <div class="d-md-none p-3 pt-0">
+                    <div th:each="a : ${applications}" class="student-mobile-card mb-2">
+                        <div class="student-mobile-card__header">
+                            <div>
+                                <strong class="small text-dark d-block" th:text="${a.period.name}">Đợt tuyển sinh</strong>
+                                <small class="text-muted" th:text="${a.period.academicYear}">2026-2027</small>
+                            </div>
+                            <span class="ktx-pill" th:classappend="${a.status.name() == 'SUBMITTED' ? 'is-violet' : (a.status.name() == 'WITHDRAWN' ? 'is-muted' : (a.status.name() == 'ALLOCATED' ? 'is-mint' : (a.status.name() == 'REJECTED' ? 'is-rose' : 'is-peach')))}"
+                                  th:text="${a.status.name() == 'SUBMITTED' ? 'Đã nộp' : (a.status.name() == 'WITHDRAWN' ? 'Đã rút' : (a.status.name() == 'ALLOCATED' ? 'Đã xếp' : (a.status.name() == 'REJECTED' ? 'Từ chối' : 'Danh sách chờ')))}">
+                                Trạng thái
+                            </span>
+                        </div>
+
+                        <div class="student-mobile-card__row">
+                            <span class="student-mobile-card__label"><i class="bi bi-building me-1"></i>Nguyện vọng:</span>
+                            <span class="student-mobile-card__value text-dark" th:text="${(a.preferredBuilding != null ? a.preferredBuilding.name : 'Tòa tự do') + ' · ' + (a.preferredRoomType != null ? (a.preferredRoomType.name() == 'STANDARD_4' ? '4 giường' : (a.preferredRoomType.name() == 'STANDARD_6' ? '6 giường' : (a.preferredRoomType.name() == 'STANDARD_8' ? '8 giường' : 'VIP'))) : 'Tự do')}">Tòa A · 4 giường</span>
+                        </div>
+
+                        <div class="student-mobile-card__row">
+                            <span class="student-mobile-card__label"><i class="bi bi-clock me-1"></i>Thời gian nộp:</span>
+                            <span class="student-mobile-card__value text-muted" th:text="${a.submittedAt != null ? #temporals.format(a.submittedAt, 'dd/MM/yyyy HH:mm') : '—'}">24/08/2026 12:00</span>
+                        </div>
+
+                        <div class="student-mobile-card__row">
+                            <span class="student-mobile-card__label"><i class="bi bi-award me-1"></i>Điểm ưu tiên:</span>
+                            <span class="student-mobile-card__value text-primary" th:text="${a.computedScore != null ? a.computedScore + ' điểm' : '0 điểm'}">1200 điểm</span>
+                        </div>
+
+                        <div class="student-mobile-card__action" th:if="${a.status.name() == 'SUBMITTED' && a.period.status.name() != 'CLOSED'}">
+                            <form th:action="@{/student/applications/{id}/withdraw(id=${a.id})}"
+                                  method="post"
+                                  data-confirm="Bạn chắc chắn muốn rút đơn đăng ký nguyện vọng này? Hàng đợi phân bổ của bạn sẽ bị hủy bỏ."
+                                  data-confirm-title="Xác nhận rút đơn"
+                                  data-confirm-type="warning">
+                                <button type="submit" class="btn btn-outline-danger rounded-pill w-100">
+                                    <i class="bi bi-x-circle me-1"></i> Rút đơn đăng ký
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Hộp thoại xem chi tiết ảnh (Lightbox Modal với Ảnh to ở giữa + Dải Thumbnail bên dưới) -->
+    <div class="modal fade" id="lightboxModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden; background: #0f172a; color: #ffffff;">
+                <div class="modal-header border-0 pb-2 px-4 pt-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <h5 class="modal-title fw-bold text-white mb-0" id="lightboxTitle">
+                            <i class="bi bi-camera me-2 text-primary"></i>Chi tiết hình ảnh
+                        </h5>
+                        <span class="badge bg-secondary text-white rounded-pill px-3" id="lightboxCounter">1 / 1</span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <div class="modal-body px-4 py-2">
+                    <!-- Ảnh phóng to ở giữa -->
+                    <div class="position-relative text-center d-flex align-items-center justify-content-center" 
+                         style="min-height: 400px; max-height: 500px; background: #020617; border-radius: 12px; margin-bottom: 12px; overflow: hidden;">
+                        
+                        <button type="button" class="lightbox-nav-btn prev" onclick="lightboxPrev()" title="Ảnh trước (Phím ←)">
+                            <i class="bi bi-chevron-left fs-5"></i>
+                        </button>
+                        
+                        <img id="lightboxBigImg" src="" class="img-fluid" 
+                             style="max-height: 480px; object-fit: contain; width: auto; max-width: 100%; transition: opacity 0.2s ease;" 
+                             alt="Ảnh chi tiết phóng to">
+                        
+                        <button type="button" class="lightbox-nav-btn next" onclick="lightboxNext()" title="Ảnh kế tiếp (Phím →)">
+                            <i class="bi bi-chevron-right fs-5"></i>
+                        </button>
+                    </div>
+
+                    <!-- Chú thích ảnh -->
+                    <div class="text-center text-light small mb-3 px-3" id="lightboxCaption" style="min-height: 22px;">
+                        Chú thích ảnh
+                    </div>
+
+                    <!-- Dải danh sách hình ảnh thu nhỏ ở bên dưới -->
+                    <div class="d-flex gap-2 overflow-x-auto justify-content-start justify-content-md-center py-2 px-1" id="lightboxThumbs">
+                        <!-- Danh sách thumbnails được render bằng Javascript -->
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0 px-4 pb-3 d-flex justify-content-between">
+                    <span class="small text-muted"><i class="bi bi-keyboard me-1"></i>Sử dụng phím mũi tên ← → để lướt ảnh</span>
+                    <button type="button" class="btn btn-outline-light px-4" data-bs-dismiss="modal" style="border-radius: 8px;">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client-side script: Xử lý Lightbox Modal cho danh sách -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        let bldgDataList = /*[[${buildingGalleries}]]*/ [];
+        let roomDataList = /*[[${roomTypeGalleries}]]*/ [];
+
+        // Fallback dữ liệu nếu server chưa khởi động lại
+        if (!bldgDataList || bldgDataList.length === 0) {
+            bldgDataList = [
+                {
+                    id: 1,
+                    code: 'A',
+                    name: 'Tòa A',
+                    genderLabel: 'Nam',
+                    primaryImageUrl: '/uploads/buildings/bldg-a-main.svg',
+                    imageUrls: [
+                        '/uploads/buildings/bldg-a-main.svg',
+                        '/uploads/buildings/bldg-a-yard.svg',
+                        '/uploads/buildings/bldg-a-parking.svg'
+                    ],
+                    captions: ['Mặt tiền Tòa A (Khu Nam)', 'Khuôn viên & Sân thể thao', 'Nhà để xe có camera'],
+                    totalImages: 3,
+                    roomCount: 30,
+                    bedCount: 120,
+                    vacantBeds: 42,
+                    description: 'Tòa 5 tầng gần sân thể thao, nhà xe ngầm, khuôn viên cây xanh thoáng mát.',
+                    amenities: ['Nhà xe tầng hầm', 'Sân bóng đá & TDTT', 'Bảo vệ trực 24/7', 'Camera an ninh', 'Máy giặt chung', 'Wifi cáp quang']
+                },
+                {
+                    id: 2,
+                    code: 'B',
+                    name: 'Tòa B',
+                    genderLabel: 'Nữ',
+                    primaryImageUrl: '/uploads/buildings/bldg-b-main.svg',
+                    imageUrls: [
+                        '/uploads/buildings/bldg-b-main.svg',
+                        '/uploads/buildings/bldg-b-hall.svg',
+                        '/uploads/buildings/bldg-b-study.svg'
+                    ],
+                    captions: ['Cổng chính Tòa B (Nữ)', 'Sảnh kiểm soát vân tay', 'Phòng tự học tập trung'],
+                    totalImages: 3,
+                    roomCount: 25,
+                    bedCount: 100,
+                    vacantBeds: 35,
+                    description: 'Tòa 5 tầng dành riêng cho Nữ, khuôn viên yên tĩnh, an ninh và kiểm soát vân tay nghiêm ngặt.',
+                    amenities: ['Cổng quét vân tay', 'Bảo vệ trực 24/7', 'Khu tự học tầng 1', 'Nhà xe có mái che', 'Máy sấy quần áo', 'Wifi tốc độ cao']
+                },
+                {
+                    id: 3,
+                    code: 'C',
+                    name: 'Tòa C',
+                    genderLabel: 'Nam',
+                    primaryImageUrl: '/uploads/buildings/bldg-c-main.svg',
+                    imageUrls: [
+                        '/uploads/buildings/bldg-c-main.svg',
+                        '/uploads/buildings/bldg-c-sport.svg',
+                        '/uploads/buildings/bldg-c-club.svg'
+                    ],
+                    captions: ['Toàn cảnh Tòa C (Nam)', 'Sân tập thể thao đa năng', 'Phòng sinh hoạt chung'],
+                    totalImages: 3,
+                    roomCount: 20,
+                    bedCount: 80,
+                    vacantBeds: 28,
+                    description: 'Tòa Nam sinh viên mới nâng cấp, đầy đủ tiện ích sinh hoạt và không gian học tập.',
+                    amenities: ['Sân bóng rổ', 'Nhà xe camera giám sát', 'Phòng sinh hoạt chung', 'Bảo vệ trực 24/7', 'Wifi cáp quang tốc độ cao']
+                }
+            ];
+        }
+
+        if (!roomDataList || roomDataList.length === 0) {
+            roomDataList = [
+                {
+                    typeCode: 'STANDARD_4',
+                    title: 'Phòng 4 giường tiêu chuẩn',
+                    subtitle: 'Không gian tiện nghi, thông thoáng, tối ưu cho học tập',
+                    priceFormatted: '2.400.000 đ/kỳ',
+                    capacity: 4,
+                    primaryImageUrl: '/uploads/rooms/room-standard_4-overview.svg',
+                    imageUrls: [
+                        '/uploads/rooms/room-standard_4-overview.svg',
+                        '/uploads/rooms/room-standard_4-desk.svg',
+                        '/uploads/rooms/room-standard_4-bath.svg'
+                    ],
+                    captions: ['Tổng quan phòng 4 giường', 'Bàn học cá nhân & giá sách', 'Khu vệ sinh khép kín'],
+                    description: 'Mỗi phòng gồm 2 giường tầng cao cấp, bàn học rộng rãi, đầy đủ ánh sáng tự nhiên và khu vệ sinh khép kín sạch sẽ.',
+                    amenities: ['Điều hòa 2 chiều', 'Bình nóng lạnh', 'Bàn học & giá sách riêng', 'Tủ đồ cá nhân có khóa', 'Ban công phơi đồ', 'Wifi tốc độ cao']
+                },
+                {
+                    typeCode: 'STANDARD_6',
+                    title: 'Phòng 6 giường tiêu chuẩn',
+                    subtitle: 'Chi phí hợp lý, năng động, gắn kết sinh viên',
+                    priceFormatted: '1.800.000 đ/kỳ',
+                    capacity: 6,
+                    primaryImageUrl: '/uploads/rooms/room-standard_6-overview.svg',
+                    imageUrls: [
+                        '/uploads/rooms/room-standard_6-overview.svg',
+                        '/uploads/rooms/room-standard_6-bed.svg',
+                        '/uploads/rooms/room-standard_6-locker.svg'
+                    ],
+                    captions: ['Toàn cảnh phòng 6 giường', 'Không gian giường tầng sắt', 'Tủ cá nhân 6 ngăn'],
+                    description: 'Phòng 6 người được thiết kế tối ưu hóa diện tích sinh hoạt chung, thích hợp cho sinh viên muốn tiết kiệm chi phí nhưng vẫn đảm bảo tiện nghi.',
+                    amenities: ['Quạt trần & thông gió', 'Bình nóng lạnh', 'Bàn học cá nhân', 'Tủ sắt 6 ngăn khóa riêng', 'Ban công phơi đồ', 'Wifi tốc độ cao']
+                },
+                {
+                    typeCode: 'STANDARD_8',
+                    title: 'Phòng 8 giường tiết kiệm',
+                    subtitle: 'Tiết kiệm tối đa chi phí lưu trú cho sinh viên',
+                    priceFormatted: '1.200.000 đ/kỳ',
+                    capacity: 8,
+                    primaryImageUrl: '/uploads/rooms/room-standard_8-overview.svg',
+                    imageUrls: [
+                        '/uploads/rooms/room-standard_8-overview.svg',
+                        '/uploads/rooms/room-standard_8-space.svg',
+                        '/uploads/rooms/room-standard_8-window.svg'
+                    ],
+                    captions: ['Phòng 8 giường sinh viên', 'Khu vực sinh hoạt chung', 'Cửa sổ đón nắng'],
+                    description: 'Lựa chọn tiết kiệm nhất trong ký túc xá, không khí tập thể vui vẻ, an ninh đảm bảo 24/7.',
+                    amenities: ['Quạt trần công suất lớn', 'Bình nóng lạnh', 'Tủ đồ cá nhân', 'Khu vệ sinh riêng', 'Wifi sinh viên']
+                },
+                {
+                    typeCode: 'VIP_AC',
+                    title: 'Phòng VIP Cao cấp',
+                    subtitle: 'Trải nghiệm cao cấp, đầy đủ tiện nghi khép kín',
+                    priceFormatted: '4.000.000 đ/kỳ',
+                    capacity: 2,
+                    primaryImageUrl: '/uploads/rooms/room-vip_ac-living.svg',
+                    imageUrls: [
+                        '/uploads/rooms/room-vip_ac-living.svg',
+                        '/uploads/rooms/room-vip_ac-bed.svg',
+                        '/uploads/rooms/room-vip_ac-bath.svg'
+                    ],
+                    captions: ['Nội thất sang trọng phòng VIP', 'Giường đơn êm ái & bàn làm việc', 'Phòng tắm kính cao cấp'],
+                    description: 'Không gian riêng tư, trang thiết bị nội thất cao cấp tương đương căn hộ dịch vụ mini, phù hợp sinh viên cần không gian yên tĩnh tuyệt đối.',
+                    amenities: ['Điều hòa Inverter', 'Bình nóng lạnh', 'Tủ lạnh mini', 'Bàn học & ghế xoay', 'Tủ quần áo gỗ', 'Phòng tắm kính cao cấp', 'Wifi riêng từng phòng']
+                }
+            ];
+        }
+
+        let currentGalleryImages = [];
+        let currentGalleryCaptions = [];
+        let currentPhotoIndex = 0;
+        let lightboxModalInstance = null;
+
+        // Mở Lightbox xem chi tiết album
+        function openPhotoGallery(category, identifier) {
+            let item = null;
+            let titlePrefix = '';
+
+            if (category === 'bldg') {
+                item = bldgDataList.find(b => String(b.id) === String(identifier));
+                titlePrefix = 'Tòa nhà: ';
+            } else if (category === 'room') {
+                item = roomDataList.find(r => r.typeCode === String(identifier));
+                titlePrefix = 'Loại phòng: ';
+            }
+
+            if (!item) return;
+
+            currentGalleryImages = item.imageUrls && item.imageUrls.length > 0 ? item.imageUrls : [item.primaryImageUrl];
+            currentGalleryCaptions = item.captions && item.captions.length > 0 ? item.captions : [item.name || item.title];
+            currentPhotoIndex = 0;
+
+            const name = item.name || item.title || '';
+            document.getElementById('lightboxTitle').innerHTML = '<i class="bi bi-camera me-2 text-primary"></i>' + titlePrefix + name;
+
+            renderThumbnails();
+            showPhoto(0);
+
+            const modalEl = document.getElementById('lightboxModal');
+            if (!lightboxModalInstance) {
+                lightboxModalInstance = new bootstrap.Modal(modalEl);
+            }
+            lightboxModalInstance.show();
+        }
+
+        // Hiển thị ảnh tại vị trí index
+        function showPhoto(index) {
+            if (!currentGalleryImages || currentGalleryImages.length === 0) return;
+            if (index < 0) index = currentGalleryImages.length - 1;
+            if (index >= currentGalleryImages.length) index = 0;
+
+            currentPhotoIndex = index;
+
+            const bigImg = document.getElementById('lightboxBigImg');
+            bigImg.style.opacity = '0.4';
+            setTimeout(() => {
+                bigImg.src = currentGalleryImages[currentPhotoIndex];
+                bigImg.style.opacity = '1';
+            }, 80);
+
+            // Cập nhật chú thích và bộ đếm
+            const caption = currentGalleryCaptions[currentPhotoIndex] || ('Hình ảnh ' + (currentPhotoIndex + 1));
+            document.getElementById('lightboxCaption').innerText = caption;
+            document.getElementById('lightboxCounter').innerText = (currentPhotoIndex + 1) + ' / ' + currentGalleryImages.length;
+
+            // Highlight thumbnail tương ứng
+            document.querySelectorAll('#lightboxThumbs .thumb-item').forEach((thumb, i) => {
+                if (i === currentPhotoIndex) {
+                    thumb.classList.add('active');
+                    thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                } else {
+                    thumb.classList.remove('active');
+                }
+            });
+        }
+
+        function lightboxPrev() {
+            showPhoto(currentPhotoIndex - 1);
+        }
+
+        function lightboxNext() {
+            showPhoto(currentPhotoIndex + 1);
+        }
+
+        // Xây dựng dải thumbnail bên dưới ảnh to
+        function renderThumbnails() {
+            const container = document.getElementById('lightboxThumbs');
+            container.innerHTML = '';
+
+            currentGalleryImages.forEach((url, i) => {
+                const thumb = document.createElement('div');
+                thumb.className = 'thumb-item' + (i === 0 ? ' active' : '');
+                thumb.title = currentGalleryCaptions[i] || ('Ảnh ' + (i + 1));
+                thumb.onclick = () => showPhoto(i);
+
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'Thumbnail ' + (i + 1);
+                thumb.appendChild(img);
+
+                container.appendChild(thumb);
+            });
+        }
+
+        // Phím mũi tên bàn phím
+        document.addEventListener('keydown', function(e) {
+            const modalEl = document.getElementById('lightboxModal');
+            if (modalEl && modalEl.classList.contains('show')) {
+                if (e.key === 'ArrowLeft') {
+                    lightboxPrev();
+                } else if (e.key === 'ArrowRight') {
+                    lightboxNext();
+                }
+            }
+        });
+        /*]]>*/
+    </script>
 </main>
 </body>
 </html>

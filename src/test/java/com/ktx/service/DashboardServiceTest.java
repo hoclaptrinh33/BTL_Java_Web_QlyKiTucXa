@@ -1,11 +1,9 @@
 package com.ktx.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -19,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Pageable;
 
 import com.ktx.domain.Bed;
 import com.ktx.domain.Building;
@@ -32,7 +29,6 @@ import com.ktx.domain.enums.BuildingGenderPolicy;
 import com.ktx.domain.enums.InvoiceStatus;
 import com.ktx.domain.enums.PeriodStatus;
 import com.ktx.domain.enums.RoomStatus;
-import com.ktx.domain.enums.RoomType;
 import com.ktx.domain.enums.TicketStatus;
 import com.ktx.dto.DashboardSnapshot;
 import com.ktx.dto.DebtByMonthDto;
@@ -202,7 +198,9 @@ class DashboardServiceTest {
         inv3.setTotal(new BigDecimal("1500000"));
         inv3.setStatus(InvoiceStatus.OVERDUE);
 
-        when(invoiceRepository.findByStatusInOrderByDueDateAsc(any())).thenReturn(List.of(inv1, inv2, inv3));
+        when(invoiceRepository.sumDebtByMonth(any())).thenReturn(List.of(
+                new Object[] {2026, 8, new BigDecimal("1000000"), 1L},
+                new Object[] {2026, 9, new BigDecimal("3500000"), 2L}));
 
         DebtByMonthDto dto = dashboardService.calculateDebtByMonth();
 

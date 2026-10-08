@@ -30,15 +30,20 @@ public class SecurityConfig {
         http
             .csrf(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+                .requestMatchers("/css/**", "/js/**", "/images/**", "/uploads/**", "/webjars/**").permitAll()
                 .requestMatchers("/login", "/login/google", "/oauth2/**", "/login/oauth2/**",
                         "/register", "/register/google", "/error", "/error/403", "/error/404").permitAll()
                 // Specific matcher for system configs
                 .requestMatchers("/admin/configs", "/admin/configs/**")
-                    .hasAnyAuthority("config.read", "config.write", "admin_account.manage")
+                    .hasAnyAuthority("config.read", "config.write", "admin_account.manage", "log.read", "ROLE_SYSTEM_ADMIN")
+                // Tổng quan và tài khoản quản trị thuộc cổng hệ thống, không đòi ROLE_ADMIN
+                .requestMatchers("/admin", "/admin/dashboard", "/admin/dashboard/**",
+                        "/admin/accounts", "/admin/accounts/**",
+                        "/admin/logs", "/admin/logs/**")
+                    .hasAnyAuthority("config.read", "config.write", "admin_account.manage", "log.read", "ROLE_ADMIN", "ROLE_SYSTEM_ADMIN")
                 // Specific matchers for profile and password
                 .requestMatchers("/admin/profile", "/admin/profile/**", "/admin/password", "/admin/password/**")
-                    .hasAnyAuthority("config.read", "config.write", "admin_account.manage", "ROLE_ADMIN")
+                    .hasAnyAuthority("config.read", "config.write", "admin_account.manage", "log.read", "ROLE_ADMIN", "ROLE_SYSTEM_ADMIN")
                 // General admin matchers: QUAN_LY (ROLE_ADMIN or operation permissions), while staff and SYSTEM_ADMIN are blocked
                 .requestMatchers("/admin/**")
                     .access((authentication, context) -> {

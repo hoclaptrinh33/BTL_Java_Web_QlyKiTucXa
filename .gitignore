@@ -39,7 +39,8 @@ desktop.ini
 
 # Logs
 *.log
-logs/
+/logs/
+!src/**/templates/**/logs/
 
 # Env / secrets
 .env
@@ -63,3 +64,9 @@ replay_pid*
 # Uploads / runtime
 uploads/
 tmp/
+
+# Scratch & local files
+scratch/
+cookies.txt
+nop-bai/
+.claude/

@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.ktx.common.exception.BusinessException;
-import com.ktx.domain.Contract;
 import com.ktx.domain.Invoice;
 import com.ktx.domain.InvoiceItem;
 import com.ktx.domain.Payment;
@@ -85,7 +84,9 @@ public class StudentInvoiceController {
         }
 
         Student student = getStudent(principal);
-        Invoice invoice = invoiceRepository.findById(id).orElse(null);
+        Invoice invoice = invoiceRepository.findByIdWithDetails(id)
+                .or(() -> invoiceRepository.findById(id))
+                .orElse(null);
 
         // Bảo mật: chỉ xem hóa đơn của chính mình
         if (invoice != null && !invoice.getStudent().getId().equals(student.getId())) {

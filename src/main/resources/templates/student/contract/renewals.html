@@ -65,7 +65,7 @@
                         Điều kiện xét duyệt: Sinh viên có điểm rèn luyện KTX tốt, chấp hành nội quy và không có hóa đơn nợ quá hạn.
                     </div>
 
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 mt-2">
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 mt-2 w-100 py-2 fw-semibold">
                         <i class="bi bi-send me-1"></i>Gửi đơn gia hạn
                     </button>
                 </form>
@@ -84,50 +84,90 @@
                     <p class="mb-0">Bạn chưa có yêu cầu gia hạn hợp đồng nào.</p>
                 </div>
 
-                <div th:if="${!#lists.isEmpty(requests)}" class="table-responsive">
-                    <table class="table table-hover align-middle ktx-table mb-0">
-                        <thead>
-                            <tr>
-                                <th>Mã đơn</th>
-                                <th>Thời gian nộp</th>
-                                <th>Hết hạn đề xuất</th>
-                                <th>Trạng thái</th>
-                                <th>Ghi chú BQL</th>
-                                <th>Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr th:each="req : ${requests}">
-                                <td><span class="badge bg-light text-dark border">#<span th:text="${req.id}"></span></span></td>
-                                <td>
-                                    <strong th:text="${#temporals.format(req.createdAt, 'dd/MM/yyyy')}"></strong>
-                                    <div class="small text-muted" th:text="${#temporals.format(req.createdAt, 'HH:mm')}"></div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-primary-subtle text-primary" th:text="${#temporals.format(req.requestedEnd, 'dd/MM/yyyy')}"></span>
-                                </td>
-                                <td>
-                                    <span th:if="${req.status.name() == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning-emphasis">Chờ duyệt</span>
-                                    <span th:if="${req.status.name() == 'APPROVED'}" class="badge bg-success-subtle text-success">Đã duyệt</span>
-                                    <span th:if="${req.status.name() == 'REJECTED'}" class="badge bg-danger-subtle text-danger">Từ chối</span>
-                                    <span th:if="${req.status.name() == 'CANCELLED'}" class="badge bg-secondary-subtle text-secondary">Đã hủy</span>
-                                </td>
-                                <td>
-                                    <span class="small text-muted" th:text="${req.adminNote != null ? req.adminNote : '—'}"></span>
-                                </td>
-                                <td>
-                                    <form th:if="${req.status.name() == 'SUBMITTED'}"
-                                          th:action="@{/student/renewals/{id}/cancel(id=${req.id})}" method="post"
-                                          onsubmit="return confirm('Bạn có chắc muốn hủy đơn xin gia hạn này? Hợp đồng sẽ trở lại trạng thái ACTIVE.');">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0">
-                                            Hủy đơn
-                                        </button>
-                                    </form>
-                                    <span th:if="${req.status.name() != 'SUBMITTED'}" class="text-muted small">—</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div th:if="${!#lists.isEmpty(requests)}">
+                    <!-- 1. Desktop Table -->
+                    <div class="table-responsive d-none d-md-block">
+                        <table class="table table-hover align-middle ktx-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Mã đơn</th>
+                                    <th>Thời gian nộp</th>
+                                    <th>Hết hạn đề xuất</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ghi chú BQL</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="req : ${requests}">
+                                    <td><span class="badge bg-light text-dark border">#<span th:text="${req.id}"></span></span></td>
+                                    <td>
+                                        <strong th:text="${#temporals.format(req.createdAt, 'dd/MM/yyyy')}"></strong>
+                                        <div class="small text-muted" th:text="${#temporals.format(req.createdAt, 'HH:mm')}"></div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary-subtle text-primary" th:text="${#temporals.format(req.requestedEnd, 'dd/MM/yyyy')}"></span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${req.status.name() == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning-emphasis">Chờ duyệt</span>
+                                        <span th:if="${req.status.name() == 'APPROVED'}" class="badge bg-success-subtle text-success">Đã duyệt</span>
+                                        <span th:if="${req.status.name() == 'REJECTED'}" class="badge bg-danger-subtle text-danger">Từ chối</span>
+                                        <span th:if="${req.status.name() == 'CANCELLED'}" class="badge bg-secondary-subtle text-secondary">Đã hủy</span>
+                                    </td>
+                                    <td>
+                                        <span class="small text-muted" th:text="${req.adminNote != null ? req.adminNote : '—'}"></span>
+                                    </td>
+                                    <td>
+                                        <form th:if="${req.status.name() == 'SUBMITTED'}"
+                                              th:action="@{/student/renewals/{id}/cancel(id=${req.id})}" method="post"
+                                              onsubmit="return confirm('Bạn có chắc muốn hủy đơn xin gia hạn này? Hợp đồng sẽ trở lại trạng thái ACTIVE.');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0">
+                                                Hủy đơn
+                                            </button>
+                                        </form>
+                                        <span th:if="${req.status.name() != 'SUBMITTED'}" class="text-muted small">—</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 2. Mobile Cards -->
+                    <div class="d-md-none">
+                        <div th:each="req : ${requests}" class="student-mobile-card mb-2">
+                            <div class="student-mobile-card__header">
+                                <span class="badge bg-light text-dark border font-monospace">#<span th:text="${req.id}"></span></span>
+                                <span th:if="${req.status.name() == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning-emphasis">Chờ duyệt</span>
+                                <span th:if="${req.status.name() == 'APPROVED'}" class="badge bg-success-subtle text-success">Đã duyệt</span>
+                                <span th:if="${req.status.name() == 'REJECTED'}" class="badge bg-danger-subtle text-danger">Từ chối</span>
+                                <span th:if="${req.status.name() == 'CANCELLED'}" class="badge bg-secondary-subtle text-secondary">Đã hủy</span>
+                            </div>
+
+                            <div class="student-mobile-card__row">
+                                <span class="student-mobile-card__label"><i class="bi bi-clock me-1"></i>Thời gian nộp:</span>
+                                <span class="student-mobile-card__value text-dark" th:text="${#temporals.format(req.createdAt, 'dd/MM/yyyy HH:mm')}">24/08/2026</span>
+                            </div>
+
+                            <div class="student-mobile-card__row">
+                                <span class="student-mobile-card__label"><i class="bi bi-calendar-check me-1"></i>Hết hạn đề xuất:</span>
+                                <span class="student-mobile-card__value text-primary" th:text="${#temporals.format(req.requestedEnd, 'dd/MM/yyyy')}">31/01/2027</span>
+                            </div>
+
+                            <div class="student-mobile-card__row" th:if="${req.adminNote != null}">
+                                <span class="student-mobile-card__label">Ghi chú BQL:</span>
+                                <span class="student-mobile-card__value text-muted" th:text="${req.adminNote}">—</span>
+                            </div>
+
+                            <div class="student-mobile-card__action" th:if="${req.status.name() == 'SUBMITTED'}">
+                                <form th:action="@{/student/renewals/{id}/cancel(id=${req.id})}" method="post"
+                                      onsubmit="return confirm('Bạn có chắc muốn hủy đơn xin gia hạn này? Hợp đồng sẽ trở lại trạng thái ACTIVE.');">
+                                    <button type="submit" class="btn btn-outline-danger rounded-pill w-100">
+                                        <i class="bi bi-x-circle me-1"></i> Hủy đơn gia hạn
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

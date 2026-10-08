@@ -4,8 +4,12 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -126,6 +130,22 @@ public class StaffReadingController {
                 List<Room> rooms = roomRepository.findByBuildingIdWithBuilding(building.getId());
                 LocalDate billingDate = ym.atDay(1);
 
+                Map<Long, Integer> occupyingMap = new HashMap<>();
+                for (Object[] row : contractRepository.countOccupyingByBuildingId(building.getId(), OccupyingStatuses.OCCUPYING)) {
+                    occupyingMap.put((Long) row[0], ((Number) row[1]).intValue());
+                }
+
+                Map<Long, UtilityReading> readingMap = new HashMap<>();
+                for (UtilityReading ur : utilityReadingService.getReadingsByBuilding(building.getId(), ym)) {
+                    if (ur.getRoom() != null) {
+                        readingMap.put(ur.getRoom().getId(), ur);
+                    }
+                }
+
+                Set<Long> invoicedRoomIds = new HashSet<>(
+                        invoiceRepository.findRoomIdsWithActiveInvoice(building.getId(), billingDate, InvoiceType.UTILITY, InvoiceStatus.CANCELLED)
+                );
+
                 for (Room room : rooms) {
                     RoomReadingDto dto = new RoomReadingDto();
                     dto.setRoomId(room.getId());
@@ -133,12 +153,10 @@ public class StaffReadingController {
                     dto.setFloor(room.getFloor());
                     dto.setRoomTypeName(room.getRoomType() != null ? room.getRoomType().name() : "");
 
-                    List<Contract> occupying = contractRepository.findOccupyingByRoomId(room.getId(), OccupyingStatuses.OCCUPYING);
-                    dto.setOccupyingCount(occupying.size());
+                    dto.setOccupyingCount(occupyingMap.getOrDefault(room.getId(), 0));
 
-                    Optional<UtilityReading> readingOpt = utilityReadingService.getReading(room.getId(), ym);
-                    if (readingOpt.isPresent()) {
-                        UtilityReading r = readingOpt.get();
+                    UtilityReading r = readingMap.get(room.getId());
+                    if (r != null) {
                         dto.setReading(r);
                         dto.setHasReading(true);
                         try {
@@ -156,8 +174,7 @@ public class StaffReadingController {
                         dto.setHasReading(false);
                     }
 
-                    boolean hasActiveInvoice = invoiceRepository.existsByRoomIdAndBillingMonthAndInvoiceTypeAndStatusNot(
-                            room.getId(), billingDate, InvoiceType.UTILITY, InvoiceStatus.CANCELLED);
+                    boolean hasActiveInvoice = invoicedRoomIds.contains(room.getId());
                     dto.setHasActiveInvoice(hasActiveInvoice);
                     if (hasActiveInvoice) {
                         issuedCount++;

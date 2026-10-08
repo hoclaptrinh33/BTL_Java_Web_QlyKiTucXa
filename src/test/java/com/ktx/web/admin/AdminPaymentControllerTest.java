@@ -1,7 +1,6 @@
 package com.ktx.web.admin;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
@@ -67,7 +66,8 @@ class AdminPaymentControllerTest {
     @Test
     @DisplayName("GET /admin/payments: Admin xem danh sách thanh toán thành công")
     void adminCanAccessPaymentsList() throws Exception {
-        when(paymentService.searchPayments(any())).thenReturn(List.of());
+        when(paymentService.searchPayments(any(), any())).thenReturn(org.springframework.data.domain.Page.empty());
+        when(paymentService.sumPayments(any())).thenReturn(java.math.BigDecimal.ZERO);
 
         mockMvc.perform(get("/admin/payments")
                         .with(user("admin").roles("ADMIN")))

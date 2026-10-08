@@ -52,6 +52,7 @@ Quy trình Git (Gitflow) cho thành viên: [../CONTRIBUTING.md](../CONTRIBUTING.
 ## Đọc khi implement
 
 - Mô hình dữ liệu / ERD: [03-mo-hinh-du-lieu.md](./03-mo-hinh-du-lieu.md) (§5)
+- Tài liệu CSDL dbdocs / DBML: [dbdocs/README.md](./dbdocs/README.md) · [schema.dbml](./dbdocs/schema.dbml)
 - Máy trạng thái: [06-may-trang-thai.md](./06-may-trang-thai.md) (§9)
 - Quyết định then chốt: [09-quyet-dinh-va-rui-ro.md](./09-quyet-dinh-va-rui-ro.md) (§13)
 - Kế hoạch PR (18 slice): [12-pr-plan.md](./12-pr-plan.md)

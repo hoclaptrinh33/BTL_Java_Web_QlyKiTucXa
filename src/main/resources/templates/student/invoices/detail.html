@@ -146,11 +146,21 @@
                     <div class="p-3 border rounded-3 bg-light">
                         <div class="fw-bold text-dark mb-2"><i class="bi bi-bank me-1 text-primary"></i>1. Chuyển khoản qua ngân hàng</div>
                         <div class="mb-1"><span class="text-muted">Ngân hàng:</span> <strong>Vietcombank (VCB)</strong></div>
-                        <div class="mb-1"><span class="text-muted">Số tài khoản:</span> <strong class="text-primary font-monospace">1023456789</strong></div>
+                        <div class="mb-2 d-flex align-items-center justify-content-between flex-wrap gap-1">
+                            <div><span class="text-muted">Số tài khoản:</span> <strong id="bankAccNo" class="text-primary font-monospace fs-6">1023456789</strong></div>
+                            <button type="button" class="btn-copy-quick" onclick="copyToClipboard('1023456789', this)">
+                                <i class="bi bi-clipboard"></i> Sao chép
+                            </button>
+                        </div>
                         <div class="mb-1"><span class="text-muted">Chủ tài khoản:</span> <strong>BAN QUAN LY KTX SINH VIEN</strong></div>
                         <div class="mt-2 p-2 bg-white rounded border">
-                            <span class="text-muted d-block small">Nội dung chuyển khoản (bắt buộc):</span>
-                            <strong class="text-danger font-monospace" th:text="${student.studentCode + ' ' + invoice.invoiceNo}">D22CQCN001 HD-00001</strong>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small">Nội dung chuyển khoản (bắt buộc):</span>
+                                <button type="button" class="btn-copy-quick" th:data-copy="${student.studentCode + ' ' + invoice.invoiceNo}" onclick="copyToClipboard(this.getAttribute('data-copy'), this)">
+                                    <i class="bi bi-clipboard"></i> Sao chép
+                                </button>
+                            </div>
+                            <strong class="text-danger font-monospace fs-6 d-block" th:text="${student.studentCode + ' ' + invoice.invoiceNo}">D22CQCN001 HD-00001</strong>
                         </div>
                     </div>
 
@@ -160,6 +170,30 @@
                         <div>Sinh viên đến nộp trực tiếp tại <strong>Phòng Kế toán - Tầng 1 Nhà Điều hành KTX</strong> trong giờ hành chính (8:00 - 17:00, Thứ 2 đến Thứ 6).</div>
                     </div>
                 </div>
+
+                <script>
+                    function copyToClipboard(text, btn) {
+                        if (navigator.clipboard && window.isSecureContext) {
+                            navigator.clipboard.writeText(text).then(showDone).catch(function() { fallbackCopy(text, btn); });
+                        } else {
+                            fallbackCopy(text, btn);
+                        }
+                        function showDone() {
+                            var orig = btn.innerHTML;
+                            btn.innerHTML = '<i class="bi bi-check2 text-success"></i> Đã chép!';
+                            setTimeout(function() { btn.innerHTML = orig; }, 1800);
+                        }
+                        function fallbackCopy(val, b) {
+                            var t = document.createElement('textarea');
+                            t.value = val;
+                            document.body.appendChild(t);
+                            t.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(t);
+                            showDone();
+                        }
+                    }
+                </script>
             </div>
         </div>
     </div>

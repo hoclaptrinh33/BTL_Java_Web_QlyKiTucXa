@@ -42,7 +42,7 @@
                 <h2>Tỷ lệ sử dụng giường <span th:text="${building != null ? building.code : ''}">A</span></h2>
                 <div class="ktx-donut-wrap" th:if="${dash.hasBeds}">
                     <div class="ktx-donut">
-                        <canvas id="ktxOccupancyDonut" width="220" height="220"></canvas>
+                        <canvas id="ktxOccupancyDonut"></canvas>
                         <div class="ktx-donut__center">
                             <strong th:text="${dash.occupancyPercentLabel} + '%'">0%</strong>
                             <span>Đang sử dụng</span>

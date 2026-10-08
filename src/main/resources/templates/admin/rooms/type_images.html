@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
+<body>
+<main th:fragment="content" class="py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="bi bi-door-open me-2 text-primary"></i>Quản lý album ảnh mẫu các loại phòng
+            </h1>
+            <p class="text-muted small mb-0">
+                Hình ảnh tải lên ở đây sẽ hiển thị trực quan cho sinh viên xem và so sánh tiện nghi các loại phòng khi nộp đơn đăng ký.
+            </p>
+        </div>
+        <div>
+            <a th:href="@{/admin/rooms}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Quản lý danh sách phòng
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-1"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Tab chọn loại phòng -->
+    <ul class="nav nav-pills mb-4 gap-2">
+        <li class="nav-item" th:each="t : ${roomTypes}">
+            <a class="nav-link px-3 py-2 fw-semibold" 
+               th:classappend="${t == selectedType} ? 'active' : 'bg-white border text-secondary'"
+               th:href="@{/admin/room-types/images(type=${t.name()})}">
+                <i class="bi bi-door-closed me-1"></i>
+                <span th:text="${t.name() == 'STANDARD_4' ? 'Phòng 4 giường tiêu chuẩn' : (t.name() == 'STANDARD_6' ? 'Phòng 6 giường tiêu chuẩn' : (t.name() == 'STANDARD_8' ? 'Phòng 8 giường tiết kiệm' : 'Phòng VIP Cao cấp'))}">Loại phòng</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="row g-4">
+        <!-- Cột trái: Upload ảnh cho loại phòng đã chọn -->
+        <div class="col-lg-4">
+            <div class="ktx-card">
+                <div class="ktx-card__head mb-3">
+                    <h2 class="h5 mb-0">
+                        <i class="bi bi-cloud-arrow-up me-2 text-primary"></i>Tải ảnh cho 
+                        <span class="text-primary" th:text="${selectedType.name()}">STANDARD_4</span>
+                    </h2>
+                </div>
+                <div>
+                    <form th:action="@{/admin/room-types/images/upload}" 
+                          method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="roomType" th:value="${selectedType.name()}">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Chọn tòa nhà áp dụng (Tùy chọn)</label>
+                            <select name="buildingId" class="form-select">
+                                <option value="">— Áp dụng chung cho tất cả các tòa —</option>
+                                <option th:each="b : ${buildings}" th:value="${b.id}" th:text="'Tòa ' + ${b.code} + ' (' + ${b.name} + ')'">Tòa A</option>
+                            </select>
+                            <div class="form-text">Để trống nếu là ảnh phòng mẫu chuẩn toàn trường.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Chọn file ảnh <span class="text-danger">*</span></label>
+                            <input type="file" name="files" class="form-control" multiple accept="image/png, image/jpeg, image/webp" required>
+                            <div class="form-text">JPG, PNG, WEBP (< 10MB). Có thể chọn nhiều ảnh cùng lúc.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Ghi chú không gian / Góc chụp</label>
+                            <input type="text" name="caption" class="form-control" placeholder="VD: Góc bàn học & giá sách, Khu giường tầng...">
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" name="isPrimary" id="isPrimaryRoom" value="true">
+                            <label class="form-check-label" for="isPrimaryRoom">
+                                Đặt làm ảnh đại diện chính của loại phòng
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            <i class="bi bi-upload me-1"></i> Tải ảnh lên
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Danh sách ảnh của loại phòng -->
+        <div class="col-lg-8">
+            <div class="ktx-card">
+                <div class="ktx-card__head mb-3 d-flex justify-content-between align-items-center">
+                    <h2 class="h5 mb-0">
+                        <i class="bi bi-images me-2"></i>Thư viện ảnh (<span th:text="${images.size()}">0</span> ảnh)
+                    </h2>
+                </div>
+                <div>
+                    <!-- Nếu chưa có ảnh -->
+                    <div th:if="${#lists.isEmpty(images)}" class="text-center py-5 text-muted">
+                        <i class="bi bi-camera fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                        <p class="mb-1">Loại phòng này chưa có ảnh upload nào.</p>
+                        <small class="text-secondary">Hệ thống đang sử dụng ảnh mẫu mặc định khi hiển thị cho sinh viên.</small>
+                    </div>
+
+                    <!-- Lưới danh sách ảnh -->
+                    <div th:if="${!#lists.isEmpty(images)}" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                        <div class="col" th:each="img : ${images}">
+                            <div class="card h-100 shadow-sm border-0 position-relative overflow-hidden" style="border-radius: 10px;">
+                                <!-- Huy hiệu ảnh đại diện -->
+                                <span th:if="${img.primary}" 
+                                      class="badge bg-warning text-dark position-absolute top-0 start-0 m-2 shadow-sm" style="z-index: 2;">
+                                    <i class="bi bi-star-fill me-1"></i> Ảnh đại diện
+                                </span>
+
+                                <span th:if="${img.building != null}"
+                                      class="badge bg-info text-white position-absolute top-0 end-0 m-2 shadow-sm" style="z-index: 2;"
+                                      th:text="'Tòa ' + ${img.building?.code}">
+                                    Tòa A
+                                </span>
+
+                                <!-- Ảnh thumbnail -->
+                                <div style="height: 180px; background-color: #f1f5f9; overflow: hidden;" class="position-relative">
+                                    <img th:src="${img.imageUrl}" alt="Ảnh phòng"
+                                         class="w-100 h-100 object-fit-cover"
+                                         onerror="this.src='/images/rooms/room-standard-4.jpg'">
+                                </div>
+
+                                <!-- Nội dung & Chú thích -->
+                                <div class="card-body p-2 d-flex flex-column justify-content-between">
+                                    <p class="card-text small mb-2 text-truncate" 
+                                       th:text="${img.caption != null && !img.caption.isBlank() ? img.caption : 'Chưa có chú thích'}"
+                                       th:title="${img.caption}">
+                                        Góc học tập
+                                    </p>
+
+                                    <!-- Nút hành động -->
+                                    <div class="d-flex justify-content-between align-items-center pt-2 border-top gap-1">
+                                        <form th:if="${!img.primary}" 
+                                              th:action="@{/admin/room-types/images/{imageId}/primary(imageId=${img.id})}" 
+                                              method="post">
+                                            <input type="hidden" name="roomType" th:value="${selectedType.name()}">
+                                            <button type="submit" class="btn btn-xs btn-outline-warning text-dark" title="Đặt làm ảnh bìa">
+                                                <i class="bi bi-star"></i> Chọn làm bìa
+                                            </button>
+                                        </form>
+                                        <span th:if="${img.primary}" class="text-success small fw-semibold">
+                                            <i class="bi bi-check2"></i> Đang là bìa
+                                        </span>
+
+                                        <form th:action="@{/admin/room-types/images/{imageId}/delete(imageId=${img.id})}" 
+                                              method="post" onsubmit="return confirm('Bạn có chắc muốn xóa ảnh này không?');">
+                                            <input type="hidden" name="roomType" th:value="${selectedType.name()}">
+                                            <button type="submit" class="btn btn-xs btn-outline-danger" title="Xóa ảnh">
+                                                <i class="bi bi-trash"></i> Xóa
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

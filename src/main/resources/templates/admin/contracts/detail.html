@@ -19,6 +19,11 @@
         </div>
 
         <div class="d-flex gap-2">
+            <!-- Nút In hợp đồng A4 -->
+            <a th:href="@{/admin/contracts/{id}/print(id=${contract.id})}" target="_blank" class="btn btn-outline-dark shadow-sm">
+                <i class="bi bi-printer me-1"></i>In hợp đồng (A4)
+            </a>
+
             <!-- Nút Check-in nếu DRAFT -->
             <button th:if="${contract.status != null && contract.status.name() == 'DRAFT'}"
                     type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#checkInModal">

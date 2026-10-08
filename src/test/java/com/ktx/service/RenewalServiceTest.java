@@ -30,7 +30,6 @@ import com.ktx.domain.enums.BedStatus;
 import com.ktx.domain.enums.ContractStatus;
 import com.ktx.domain.enums.Gender;
 import com.ktx.domain.enums.RenewalStatus;
-import com.ktx.domain.enums.Role;
 import com.ktx.repository.ContractRepository;
 import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.RenewalRequestRepository;
@@ -195,7 +194,6 @@ class RenewalServiceTest {
         RenewalRequest request = new RenewalRequest();
         request.setId(100L);
         request.setContract(contract);
-        request.setStudent(student);
         request.setStatus(RenewalStatus.SUBMITTED);
         request.setRequestedEnd(LocalDate.of(2026, 12, 31));
 
@@ -238,7 +236,6 @@ class RenewalServiceTest {
         RenewalRequest request = new RenewalRequest();
         request.setId(100L);
         request.setContract(contract);
-        request.setStudent(student);
         request.setStatus(RenewalStatus.SUBMITTED);
         request.setRequestedEnd(LocalDate.of(2026, 12, 31));
 
@@ -266,7 +263,6 @@ class RenewalServiceTest {
         RenewalRequest request = new RenewalRequest();
         request.setId(100L);
         request.setContract(contract);
-        request.setStudent(student);
         request.setStatus(RenewalStatus.SUBMITTED);
 
         when(renewalRequestRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(request));
@@ -287,7 +283,6 @@ class RenewalServiceTest {
         RenewalRequest request = new RenewalRequest();
         request.setId(100L);
         request.setContract(contract);
-        request.setStudent(student); // id = 10L
         request.setStatus(RenewalStatus.SUBMITTED);
 
         when(renewalRequestRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(request));
@@ -306,7 +301,6 @@ class RenewalServiceTest {
         RenewalRequest request = new RenewalRequest();
         request.setId(100L);
         request.setContract(contract);
-        request.setStudent(student);
         request.setStatus(RenewalStatus.SUBMITTED);
 
         LocalDate today = LocalDate.now();

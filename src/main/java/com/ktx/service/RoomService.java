@@ -103,6 +103,32 @@ public class RoomService {
         return rows;
     }
 
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<RoomRow> pageRows(Long buildingId, org.springframework.data.domain.Pageable pageable) {
+        org.springframework.data.domain.Page<Room> roomPage;
+        if (buildingId != null) {
+            roomPage = roomRepository.findByBuildingIdWithBuilding(buildingId, pageable);
+        } else {
+            roomPage = roomRepository.findAllWithBuilding(pageable);
+        }
+        List<Long> roomIds = roomPage.getContent().stream().map(Room::getId).toList();
+        Map<Long, long[]> counts = new HashMap<>();
+        if (!roomIds.isEmpty()) {
+            List<Bed> beds = bedRepository.findByRoomIdIn(roomIds);
+            for (Bed bed : beds) {
+                long[] c = counts.computeIfAbsent(bed.getRoom().getId(), id -> new long[3]);
+                if (bed.getStatus() == BedStatus.OCCUPIED) {
+                    c[0]++;
+                } else if (bed.getStatus() == BedStatus.VACANT) {
+                    c[1]++;
+                } else {
+                    c[2]++;
+                }
+            }
+        }
+        return roomPage.map(room -> toRow(room, counts.getOrDefault(room.getId(), new long[3])));
+    }
+
     public static RoomRow toRow(Room room, long[] bedCounts) {
         RoomRow row = new RoomRow();
         row.setId(room.getId());
@@ -128,6 +154,12 @@ public class RoomService {
         row.setOccupiedBeds(bedCounts[0]);
         row.setVacantBeds(bedCounts[1]);
         row.setMaintenanceBeds(bedCounts[2]);
+        row.setImageUrl(switch (room.getRoomType()) {
+            case VIP_AC -> "/images/rooms/room-vip-ac.jpg";
+            case STANDARD_8 -> "/images/rooms/room-standard-8.jpg";
+            case STANDARD_6 -> "/images/rooms/room-standard-6.jpg";
+            default -> "/images/rooms/room-standard-4.jpg";
+        });
         return row;
     }
 

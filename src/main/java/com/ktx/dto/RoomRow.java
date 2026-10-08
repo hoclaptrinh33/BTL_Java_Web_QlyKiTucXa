@@ -25,6 +25,15 @@ public class RoomRow {
     private long occupiedBeds;
     private long vacantBeds;
     private long maintenanceBeds;
+    private String imageUrl;
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
 
     public Long getId() {
         return id;

@@ -97,6 +97,23 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    public org.springframework.data.domain.Page<Payment> searchPayments(String keyword, org.springframework.data.domain.Pageable pageable) {
+        if (keyword == null || keyword.isBlank()) {
+            return paymentRepository.findAllPage(pageable);
+        }
+        return paymentRepository.searchPage(keyword.trim(), pageable);
+    }
+
+    @Override
+    public BigDecimal sumPayments(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return paymentRepository.sumAll();
+        }
+        BigDecimal sum = paymentRepository.sumSearch(keyword.trim());
+        return sum != null ? sum : BigDecimal.ZERO;
+    }
+
+    @Override
     public List<Payment> getPaymentsByInvoice(Long invoiceId) {
         return paymentRepository.findByInvoiceIdOrderByPaidAtDesc(invoiceId);
     }

@@ -53,16 +53,67 @@ public class StaffViolationController {
         return "staff/violations/list";
     }
 
-    @GetMapping("/new")
-    public String newViolationForm(Authentication auth, Model model) {
+    @GetMapping("/search-students")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public List<java.util.Map<String, Object>> searchStudents(
+            @RequestParam(value = "keyword", defaultValue = "") String keyword,
+            Authentication auth) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
         Long buildingId = staffScope.buildingId(auth)
                 .orElseThrow(() -> new AccessDeniedException(StaffScope.DENIED_STAFF));
 
-        List<Contract> contracts = contractRepository.findOccupyingContractsByBuildingId(
-                buildingId, OccupyingStatuses.OCCUPYING);
-        List<Student> students = contracts.stream().map(Contract::getStudent).distinct().toList();
+        List<Student> students = contractRepository.searchOccupyingByBuildingId(
+                buildingId, OccupyingStatuses.OCCUPYING, keyword.trim(), org.springframework.data.domain.PageRequest.of(0, 15));
 
-        model.addAttribute("students", students);
+        if (students.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> studentIds = students.stream().map(Student::getId).toList();
+        java.util.Map<Long, String> roomMap = new java.util.HashMap<>();
+        List<Contract> contracts = contractRepository.findOccupyingByStudentIdsWithDetails(studentIds, OccupyingStatuses.OCCUPYING);
+        for (Contract c : contracts) {
+            if (c.getBed() != null && c.getBed().getRoom() != null) {
+                String bldg = c.getBed().getRoom().getBuilding() != null ? c.getBed().getRoom().getBuilding().getCode() : "";
+                roomMap.put(c.getStudent().getId(), "P." + c.getBed().getRoom().getRoomNumber() + (!bldg.isEmpty() ? " (" + bldg + ")" : ""));
+            }
+        }
+
+        return students.stream().map(s -> {
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("id", s.getId());
+            map.put("fullName", s.getFullName());
+            map.put("studentCode", s.getStudentCode());
+            map.put("conductScore", s.getConductScore() != null ? s.getConductScore() : 100);
+            map.put("facultyCode", s.getFacultyCode() != null ? s.getFacultyCode() : "");
+            map.put("classCode", s.getClassCode() != null ? s.getClassCode() : "");
+            map.put("room", roomMap.getOrDefault(s.getId(), "Phòng ở tòa"));
+            return map;
+        }).toList();
+    }
+
+    @GetMapping("/new")
+    public String newViolationForm(
+            @RequestParam(value = "studentId", required = false) Long preselectedStudentId,
+            Authentication auth, Model model) {
+        Long buildingId = staffScope.buildingId(auth)
+                .orElseThrow(() -> new AccessDeniedException(StaffScope.DENIED_STAFF));
+
+        if (preselectedStudentId != null) {
+            List<Contract> contracts = contractRepository.findByStudentIdAndStatusInWithDetails(preselectedStudentId, OccupyingStatuses.OCCUPYING);
+            if (!contracts.isEmpty()) {
+                Student s = contracts.get(0).getStudent();
+                model.addAttribute("selectedStudent", s);
+                if (contracts.get(0).getBed() != null && contracts.get(0).getBed().getRoom() != null) {
+                    String bldg = contracts.get(0).getBed().getRoom().getBuilding() != null ? contracts.get(0).getBed().getRoom().getBuilding().getCode() : "";
+                    model.addAttribute("selectedStudentRoom", "P." + contracts.get(0).getBed().getRoom().getRoomNumber() + (!bldg.isEmpty() ? " (" + bldg + ")" : ""));
+                }
+            }
+        }
+
+        model.addAttribute("students", List.of());
         model.addAttribute("types", ViolationType.values());
         model.addAttribute("severities", ViolationSeverity.values());
         model.addAttribute("actions", ViolationAction.values());

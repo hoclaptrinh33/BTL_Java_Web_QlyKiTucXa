@@ -2,9 +2,13 @@ package com.ktx.web.admin;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -49,41 +53,67 @@ public class AdminInvoiceController {
         this.billingEngine = billingEngine;
     }
 
+    private static volatile LocalDate lastLateFeeRunDate = null;
+
     @GetMapping
     public String list(@RequestParam(value = "status", required = false) InvoiceStatus status,
                        @RequestParam(value = "type", required = false) InvoiceType type,
                        @RequestParam(value = "keyword", required = false) String keyword,
+                       @RequestParam(value = "page", defaultValue = "0") int page,
                        Model model) {
-        // Quét cập nhật hóa đơn quá hạn
         try {
-            billingEngine.applyLateFees(LocalDate.now());
+            LocalDate today = LocalDate.now();
+            if (!today.equals(lastLateFeeRunDate)) {
+                billingEngine.applyLateFees(today);
+                lastLateFeeRunDate = today;
+            }
         } catch (Exception ignored) {
         }
 
-        List<Invoice> invoices = invoiceService.searchInvoices(status, type, keyword);
+        Page<Invoice> invoicePage = invoiceService.searchInvoices(status, type, keyword, PageRequest.of(Math.max(page, 0), 30));
+        if (invoicePage == null) {
+            invoicePage = Page.empty();
+        }
+        List<Invoice> invoices = invoicePage.getContent();
 
-        // Tính toán các chỉ số thống kê tổng quan
-        List<Invoice> allInvoices = invoiceRepository.findAllByOrderByDueDateDesc();
-        long totalCount = allInvoices.size();
-        long paidCount = allInvoices.stream().filter(i -> i.getStatus() == InvoiceStatus.PAID).count();
-        long overdueCount = allInvoices.stream().filter(i -> i.getStatus() == InvoiceStatus.OVERDUE).count();
-        long unpaidCount = allInvoices.stream().filter(i -> i.getStatus() == InvoiceStatus.UNPAID).count();
+        long totalCount = 0;
+        long paidCount = 0;
+        long overdueCount = 0;
+        long unpaidCount = 0;
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        BigDecimal totalDebt = BigDecimal.ZERO;
+        List<Object[]> summary = invoiceService.summarizeByStatus();
+        if (summary != null) {
+            for (Object[] row : summary) {
+                InvoiceStatus rowStatus = (InvoiceStatus) row[0];
+                long count = ((Number) row[1]).longValue();
+                BigDecimal sum = (BigDecimal) row[2];
+                totalCount += count;
+                if (rowStatus == InvoiceStatus.PAID) {
+                    paidCount = count;
+                    totalRevenue = sum;
+                } else if (rowStatus == InvoiceStatus.OVERDUE) {
+                    overdueCount = count;
+                    totalDebt = totalDebt.add(sum);
+                } else if (rowStatus == InvoiceStatus.UNPAID) {
+                    unpaidCount = count;
+                    totalDebt = totalDebt.add(sum);
+                }
+            }
+        }
 
-        BigDecimal totalRevenue = allInvoices.stream()
-                .filter(i -> i.getStatus() == InvoiceStatus.PAID)
-                .map(Invoice::getTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalDebt = allInvoices.stream()
-                .filter(i -> i.getStatus() == InvoiceStatus.UNPAID || i.getStatus() == InvoiceStatus.OVERDUE)
-                .map(i -> invoiceService.getRemainingAmount(i.getId()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        Map<Long, BigDecimal> remainingMap = new HashMap<>();
-        Map<Long, BigDecimal> paidMap = new HashMap<>();
+        List<Long> ids = new ArrayList<>();
         for (Invoice inv : invoices) {
-            remainingMap.put(inv.getId(), invoiceService.getRemainingAmount(inv.getId()));
-            paidMap.put(inv.getId(), invoiceService.getTotalPaid(inv.getId()));
+            ids.add(inv.getId());
+        }
+        Map<Long, BigDecimal> fetchedPaid = ids.isEmpty() ? Map.of() : invoiceService.paidAmounts(ids);
+        Map<Long, BigDecimal> paidMap = new HashMap<>(fetchedPaid != null ? fetchedPaid : Map.of());
+        Map<Long, BigDecimal> remainingMap = new HashMap<>();
+        for (Invoice inv : invoices) {
+            BigDecimal paid = paidMap.getOrDefault(inv.getId(), BigDecimal.ZERO);
+            BigDecimal total = inv.getTotal() != null ? inv.getTotal() : BigDecimal.ZERO;
+            BigDecimal remaining = total.subtract(paid);
+            remainingMap.put(inv.getId(), remaining.signum() > 0 ? remaining : BigDecimal.ZERO);
         }
 
         model.addAttribute("invoices", invoices);
@@ -98,8 +128,11 @@ public class AdminInvoiceController {
         model.addAttribute("selectedStatus", status);
         model.addAttribute("selectedType", type);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("invoicePage", invoicePage);
         model.addAttribute("statuses", InvoiceStatus.values());
         model.addAttribute("types", InvoiceType.values());
+        model.addAttribute("invoiceBase", base());
+        model.addAttribute("paymentBase", paymentBase());
         model.addAttribute("pageTitle", "Quản lý Hóa đơn & Thu phí");
         model.addAttribute("pageSubtitle", "Tiền phòng theo kỳ, tiền đặt cọc và hóa đơn điện nước");
         model.addAttribute("activeMenu", "invoices");
@@ -125,6 +158,8 @@ public class AdminInvoiceController {
         model.addAttribute("payments", payments);
         model.addAttribute("totalPaid", totalPaid);
         model.addAttribute("remaining", remaining);
+        model.addAttribute("invoiceBase", base());
+        model.addAttribute("paymentBase", paymentBase());
         model.addAttribute("pageTitle", "Hóa đơn #" + invoice.getInvoiceNo());
         model.addAttribute("pageSubtitle", "Chi tiết các khoản thu và lịch sử thanh toán");
         model.addAttribute("activeMenu", "invoices");
@@ -161,5 +196,18 @@ public class AdminInvoiceController {
             }
         } catch (Exception ignored) {}
         return "/admin/invoices";
+    }
+
+    private String paymentBase() {
+        try {
+            var attrs = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra) {
+                String uri = sra.getRequest().getRequestURI();
+                if (uri != null && uri.startsWith("/manage")) {
+                    return "/manage/payments";
+                }
+            }
+        } catch (Exception ignored) {}
+        return "/admin/payments";
     }
 }

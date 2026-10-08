@@ -91,6 +91,9 @@
                                 </td>
                                 <td class="text-end font-monospace fw-semibold" th:text="${c.depositAmount != null ? #numbers.formatInteger(c.depositAmount, 1, 'POINT') + ' đ' : '0 đ'}">600.000 đ</td>
                                 <td class="text-end pe-3">
+                                    <a th:href="@{/staff/checkin/{id}/print(id=${c.id})}" target="_blank" class="btn btn-sm btn-outline-primary shadow-sm me-1" title="In hợp đồng A4">
+                                        <i class="bi bi-printer"></i>
+                                    </a>
                                     <a th:href="@{/staff/checkin/{id}(id=${c.id})}" class="btn btn-sm btn-success shadow-sm">
                                         <i class="bi bi-box-arrow-in-right me-1"></i>Check-in
                                     </a>

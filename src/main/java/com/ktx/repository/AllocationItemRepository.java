@@ -12,8 +12,9 @@ public interface AllocationItemRepository extends JpaRepository<AllocationItem, 
     List<AllocationItem> findByRunIdOrderByRankNoAsc(Long runId);
 
     @Query("SELECT i FROM AllocationItem i " +
-           "JOIN FETCH i.student s " +
            "JOIN FETCH i.application a " +
+           "JOIN FETCH a.student s " +
+           "LEFT JOIN FETCH a.preferredBuilding pb " +
            "LEFT JOIN FETCH i.bed b " +
            "LEFT JOIN FETCH b.room r " +
            "LEFT JOIN FETCH r.building bg " +

@@ -38,7 +38,7 @@
             <h2>Tỷ lệ sử dụng giường</h2>
             <div class="ktx-donut-wrap" th:if="${dash.hasBeds}">
                 <div class="ktx-donut">
-                    <canvas id="ktxOccupancyDonut" width="220" height="220"></canvas>
+                    <canvas id="ktxOccupancyDonut"></canvas>
                     <div class="ktx-donut__center">
                         <strong th:text="${dash.occupancyPercentLabel} + '%'">0%</strong>
                         <span>Đang sử dụng</span>
@@ -55,17 +55,28 @@
 
         <!-- Debt bar chart -->
         <article class="ktx-card">
-            <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
                 <h2 class="mb-0">Công nợ theo tháng</h2>
                 <span class="badge bg-danger-subtle text-danger fw-bold" th:if="${dash.debtByMonth != null}" th:text="'Tổng: ' + ${dash.debtByMonth.formattedTotalDebt}">0 đ</span>
             </div>
+
+            <!-- Bộ lọc thời gian cho biểu đồ -->
+            <div class="d-flex align-items-center justify-content-between mb-2" th:if="${dash.debtByMonth != null && !dash.debtByMonth.items.empty}">
+                <small class="text-muted fw-semibold" style="font-size: 0.75rem;">Biểu đồ xu hướng:</small>
+                <div class="btn-group btn-group-sm" role="group" id="debtRangeGroup" style="transform: scale(0.9); transform-origin: right center;">
+                    <button type="button" class="btn btn-outline-secondary debt-range-btn py-0 px-2 active" data-range="6">6 tháng</button>
+                    <button type="button" class="btn btn-outline-secondary debt-range-btn py-0 px-2" data-range="12">12 tháng</button>
+                    <button type="button" class="btn btn-outline-secondary debt-range-btn py-0 px-2" data-range="all">Tất cả</button>
+                </div>
+            </div>
+
             <div style="position: relative; height: 180px; width: 100%;">
                 <canvas id="ktxDebtBarChart"></canvas>
             </div>
 
             <!-- Debt numbers table underneath -->
             <div class="mt-3 table-responsive" th:if="${dash.debtByMonth != null && !dash.debtByMonth.items.empty}">
-                <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.85rem;">
+                <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.85rem;" id="ktxDebtTable">
                     <thead class="table-light text-center">
                     <tr>
                         <th>Tháng</th>
@@ -73,14 +84,30 @@
                         <th class="text-end">Tiền nợ (VNĐ)</th>
                     </tr>
                     </thead>
-                    <tbody>
-                    <tr th:each="it : ${dash.debtByMonth.items}">
+                    <tbody id="ktxDebtTableBody">
+                    <tr th:each="it : ${dash.debtByMonth.items}" class="ktx-debt-row"
+                        th:attr="data-month=${it.month}, data-amount=${it.amount}">
                         <td class="text-center fw-semibold" th:text="${it.label}">09/2026</td>
                         <td class="text-center" th:text="${it.count}">0</td>
                         <td class="text-end fw-bold text-danger" th:text="${it.formattedAmount}">0 đ</td>
                     </tr>
                     </tbody>
                 </table>
+
+                <!-- Thanh phân trang mini cho bảng công nợ -->
+                <div class="d-flex align-items-center justify-content-between mt-2 pt-2 border-top small" id="ktxDebtPagination">
+                    <span class="text-muted" style="font-size:0.75rem;">
+                        Trang <strong id="debtCurrentPage" class="text-dark">1</strong>/<span id="debtTotalPages">1</span> (<span id="debtTotalCount">0</span> kỳ)
+                    </span>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" id="debtPrevBtn" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;" disabled title="Trang trước">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <button type="button" id="debtNextBtn" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;" title="Trang sau">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
             <p class="ktx-empty" th:if="${dash.debtByMonth == null || dash.debtByMonth.items.empty}">Không có công nợ quá hạn hoặc chưa thanh toán.</p>
         </article>

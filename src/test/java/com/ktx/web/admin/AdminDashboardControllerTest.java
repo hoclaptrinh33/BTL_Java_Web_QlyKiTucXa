@@ -16,7 +16,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.ktx.dto.DashboardSnapshot;
 import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.UserRepository;
 import com.ktx.security.KtxUserDetailsService;
@@ -26,7 +25,6 @@ import com.ktx.security.SecurityConfig;
 import com.ktx.service.AuthService;
 import com.ktx.service.BuildingService;
 import com.ktx.service.DashboardService;
-import com.ktx.service.RoomService;
 import com.ktx.service.StudentService;
 
 @WebMvcTest(controllers = AdminDashboardController.class)
@@ -64,7 +62,9 @@ class AdminDashboardControllerTest {
         ));
         when(userRepository.findByRoleIn(any())).thenReturn(java.util.List.of());
 
-        mockMvc.perform(get("/admin/dashboard").with(user("admin").roles("ADMIN")))
+        mockMvc.perform(get("/admin/dashboard").with(user("admin").authorities(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("config.read"),
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("admin_account.manage"))))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("admin/configs")))
                 .andExpect(content().string(containsString("admin/accounts")))

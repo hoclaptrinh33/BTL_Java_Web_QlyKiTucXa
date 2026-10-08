@@ -2,35 +2,96 @@
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
 <body>
 <main th:fragment="content" class="container-fluid py-4">
+    <!-- Header / Breadcrumb -->
     <div class="mb-4">
         <a th:href="@{/staff/violations}" class="text-decoration-none text-muted small d-inline-flex align-items-center mb-2">
             <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách vi phạm
         </a>
-        <h1 class="h3 mb-1 text-gray-800">Lập biên bản vi phạm nội quy</h1>
-        <p class="text-muted mb-0">Ghi nhận hành vi vi phạm và trừ điểm rèn luyện của sinh viên trong tòa phụ trách</p>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge rounded-pill bg-danger-subtle text-danger px-3 py-1 fw-semibold">
+                <i class="bi bi-shield-slash me-1"></i>Kỷ luật &amp; Nội quy
+            </span>
+            <span class="badge rounded-pill bg-light text-secondary border">Cán bộ phụ trách</span>
+        </div>
+        <h3 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+            <span class="ktx-kpi__icon is-peach d-inline-flex align-items-center justify-content-center shadow-xs" style="width:38px;height:38px;margin:0;border-radius:10px;">
+                <i class="bi bi-file-earmark-diff fs-5 text-danger"></i>
+            </span>
+            <span>Lập Biên Bản Vi Phạm Nội Quy</span>
+        </h3>
+        <p class="text-muted small mb-0">Ghi nhận hành vi vi phạm và trừ điểm rèn luyện của sinh viên trong tòa phụ trách</p>
     </div>
 
     <div class="row g-4">
         <div class="col-lg-8">
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-sm border-0" style="border-radius: 16px;">
                 <div class="card-body p-4">
-                    <form th:action="@{/staff/violations}" method="post" class="d-flex flex-column gap-3">
+                    <form th:action="@{/staff/violations}" method="post" id="violationForm" class="d-flex flex-column gap-3">
+                        
+                        <!-- Ô chọn sinh viên dạng Tìm kiếm / Autocomplete thông minh -->
                         <div>
-                            <label for="studentId" class="form-label fw-semibold text-dark">Chọn sinh viên vi phạm <span class="text-danger">*</span></label>
-                            <select id="studentId" name="studentId" class="form-select" required>
-                                <option value="">-- Chọn sinh viên --</option>
-                                <option th:each="s : ${students}"
-                                        th:value="${s.id}"
-                                        th:text="${s.fullName + ' — ' + s.studentCode + ' (Điểm hiện tại: ' + s.conductScore + ')'}">
-                                    Nguyễn Văn A — B22DCCN001
-                                </option>
-                            </select>
+                            <label class="form-label fw-bold text-dark small mb-1">
+                                Sinh viên vi phạm <span class="text-danger">*</span>
+                            </label>
+
+                            <!-- Hidden Input lưu studentId để submit form -->
+                            <input type="hidden" id="studentId" name="studentId" th:value="${selectedStudent != null ? selectedStudent.id : ''}" required/>
+
+                            <!-- Thẻ Sinh viên đã chọn (Selected Student Card) -->
+                            <div id="selectedStudentCard" class="p-3 bg-light border rounded-3 align-items-center justify-content-between"
+                                 th:style="${selectedStudent != null ? 'display: flex !important;' : 'display: none !important;'}">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="student-avatar" id="selectedStudentAvatar"
+                                          th:text="${selectedStudent != null ? #strings.substring(selectedStudent.fullName, 0, 1) : 'S'}">S</span>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <strong class="text-dark fs-6" id="selectedStudentName"
+                                                    th:text="${selectedStudent != null ? selectedStudent.fullName : ''}">Nguyễn Văn A</strong>
+                                            <span class="badge bg-secondary-subtle text-secondary font-mono-num" id="selectedStudentCode"
+                                                  th:text="${selectedStudent != null ? selectedStudent.studentCode : ''}">B22DCCN001</span>
+                                        </div>
+                                        <div class="small text-muted mt-1 d-flex align-items-center gap-3 flex-wrap">
+                                            <span><i class="bi bi-door-closed me-1"></i><span id="selectedStudentRoom" th:text="${selectedStudentRoom != null ? selectedStudentRoom : 'Đang ở tòa'}">P.101 (Tòa A)</span></span>
+                                            <span><i class="bi bi-shield-check me-1 text-primary"></i>Điểm rèn luyện: <strong class="text-primary font-mono-num" id="selectedStudentScore" th:text="${selectedStudent != null ? selectedStudent.conductScore : '100'}">100</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger btn-sm px-3 shadow-xs fw-semibold" onclick="clearSelectedStudent()">
+                                    <i class="bi bi-arrow-repeat me-1"></i>Chọn lại
+                                </button>
+                            </div>
+
+                            <!-- Khung Nhập Tìm Kiếm Tức Thì (hiển thị khi chưa chọn) -->
+                            <div id="studentSearchWrapper" class="position-relative"
+                                 th:style="${selectedStudent != null ? 'display: none !important;' : 'display: block !important;'}">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="studentSearchInput" class="form-control border-start-0 ps-0"
+                                           placeholder="Gõ họ tên hoặc mã sinh viên (MSSV) để tìm kiếm nhanh..."
+                                           autocomplete="off" oninput="onStudentSearchInput(this.value)" onkeydown="onSearchKeyDown(event)"/>
+                                    <span class="input-group-text bg-white border-start-0 text-muted" id="searchLoadingSpinner" style="display: none;">
+                                        <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                                    </span>
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    <i class="bi bi-info-circle me-1"></i>Gõ chữ cái hoặc số để hệ thống gợi ý ngay danh sách sinh viên trùng khớp trong tòa phụ trách.
+                                </small>
+
+                                <!-- Dropdown Menu Gợi Ý Sinh Viên -->
+                                <div id="studentSearchResults" class="dropdown-menu shadow-lg w-100 p-0 border border-1"
+                                     style="max-height: 320px; overflow-y: auto; display: none; position: absolute; z-index: 1050; border-radius: 12px; margin-top: 4px;">
+                                    <!-- Render danh sách sinh viên qua JS -->
+                                </div>
+                            </div>
                         </div>
 
+                        <!-- Hành vi vi phạm & Mức độ -->
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="violationType" class="form-label fw-semibold text-dark">Hành vi vi phạm <span class="text-danger">*</span></label>
-                                <select id="violationType" name="violationType" class="form-select" onchange="onTypeChanged()" required>
+                                <label for="violationType" class="form-label fw-bold text-dark small mb-1">
+                                    Hành vi vi phạm <span class="text-danger">*</span>
+                                </label>
+                                <select id="violationType" name="violationType" class="form-select fw-semibold" onchange="onTypeChanged()" required>
                                     <option value="LATE_RETURN">Về muộn sau 23:00 (LATE_RETURN)</option>
                                     <option value="ILLEGAL_COOKING">Nấu ăn trái phép trong phòng (ILLEGAL_COOKING)</option>
                                     <option value="DISTURBANCE">Gây mất trật tự sau 22:00 (DISTURBANCE)</option>
@@ -39,8 +100,10 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="severity" class="form-label fw-semibold text-dark">Mức độ nghiêm trọng <span class="text-danger">*</span></label>
-                                <select id="severity" name="severity" class="form-select" onchange="onSeverityChanged()" required>
+                                <label for="severity" class="form-label fw-bold text-dark small mb-1">
+                                    Mức độ nghiêm trọng <span class="text-danger">*</span>
+                                </label>
+                                <select id="severity" name="severity" class="form-select fw-semibold" onchange="onSeverityChanged()" required>
                                     <option value="MINOR">Nhẹ (MINOR)</option>
                                     <option value="MAJOR">Nặng (MAJOR)</option>
                                     <option value="SEVERE">Nghiêm trọng (SEVERE)</option>
@@ -48,15 +111,23 @@
                             </div>
                         </div>
 
+                        <!-- Điểm trừ & Biện pháp xử lý -->
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="pointsDeducted" class="form-label fw-semibold text-dark">Số điểm trừ <span class="text-danger">*</span></label>
-                                <input type="number" id="pointsDeducted" name="pointsDeducted" class="form-control" value="5" min="0" required/>
-                                <div class="form-text">Điểm trừ sẽ được khấu trừ trực tiếp vào điểm rèn luyện (không âm).</div>
+                                <label for="pointsDeducted" class="form-label fw-bold text-dark small mb-1">
+                                    Số điểm trừ <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" id="pointsDeducted" name="pointsDeducted" class="form-control font-mono-num fw-bold text-danger" value="5" min="0" required/>
+                                    <span class="input-group-text bg-white fw-bold">Điểm</span>
+                                </div>
+                                <div class="form-text text-muted" style="font-size: 0.76rem;">Điểm trừ sẽ được khấu trừ trực tiếp vào điểm rèn luyện (không âm).</div>
                             </div>
                             <div class="col-md-6">
-                                <label for="action" class="form-label fw-semibold text-dark">Biện pháp xử lý <span class="text-danger">*</span></label>
-                                <select id="action" name="action" class="form-select" required>
+                                <label for="action" class="form-label fw-bold text-dark small mb-1">
+                                    Biện pháp xử lý <span class="text-danger">*</span>
+                                </label>
+                                <select id="action" name="action" class="form-select fw-semibold" required>
                                     <option value="WARNING">Nhắc nhở / Cảnh cáo (WARNING)</option>
                                     <option value="POINT_DEDUCT">Trừ điểm rèn luyện (POINT_DEDUCT)</option>
                                     <option value="TERMINATE">Đề nghị chấm dứt HĐ (TERMINATE)</option>
@@ -64,20 +135,25 @@
                             </div>
                         </div>
 
+                        <!-- Thời điểm xảy ra -->
                         <div>
-                            <label for="occurredAt" class="form-label fw-semibold text-dark">Thời điểm xảy ra vi phạm <span class="text-danger">*</span></label>
-                            <input type="datetime-local" id="occurredAt" name="occurredAt" class="form-control" required/>
+                            <label for="occurredAt" class="form-label fw-bold text-dark small mb-1">
+                                Thời điểm xảy ra vi phạm <span class="text-danger">*</span>
+                            </label>
+                            <input type="datetime-local" id="occurredAt" name="occurredAt" class="form-control font-mono-num fw-semibold" required/>
                         </div>
 
+                        <!-- Mô tả chi tiết -->
                         <div>
-                            <label for="description" class="form-label fw-semibold text-dark">Mô tả chi tiết sự việc</label>
+                            <label for="description" class="form-label fw-bold text-dark small mb-1">Mô tả chi tiết sự việc</label>
                             <textarea id="description" name="description" class="form-control" rows="3"
-                                      placeholder="Ghi nhận cụ thể thời gian, vị trí, biểu hiện vi phạm và các nhân chứng nếu có..."></textarea>
+                                      placeholder="Ghi nhận cụ thể thời gian, địa điểm, nhân chứng, biểu hiện hoặc thiệt hại vi phạm..."></textarea>
                         </div>
 
-                        <div class="d-flex justify-content-end gap-2 mt-3">
+                        <!-- Nút Thao tác -->
+                        <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top">
                             <a th:href="@{/staff/violations}" class="btn btn-outline-secondary px-4">Hủy bỏ</a>
-                            <button type="submit" class="btn btn-danger px-4">
+                            <button type="submit" class="btn btn-danger px-4 shadow-sm fw-semibold">
                                 <i class="bi bi-shield-slash me-1"></i>Lưu biên bản vi phạm
                             </button>
                         </div>
@@ -86,58 +162,225 @@
             </div>
         </div>
 
+        <!-- Khung Hướng dẫn Quy định Xử phạt -->
         <div class="col-lg-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-0 py-3">
-                    <h6 class="card-title mb-0 fw-bold text-dark"><i class="bi bi-info-circle me-2 text-primary"></i>Quy định khung xử phạt</h6>
+            <div class="card shadow-sm border-0 mb-4" style="border-radius: 16px;">
+                <div class="card-header bg-white border-0 py-3 px-4">
+                    <h6 class="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-info-circle-fill text-primary"></i>
+                        <span>Quy định khung xử phạt</span>
+                    </h6>
                 </div>
-                <div class="card-body p-3">
+                <div class="card-body p-4 pt-0">
                     <ul class="list-group list-group-flush small">
                         <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>Về muộn (LATE_RETURN)</strong>
-                                <div class="text-muted">Mức Nhẹ (MINOR)</div>
+                                <strong class="text-dark">Về muộn sau 23:00</strong>
+                                <div class="text-muted" style="font-size: 0.76rem;">Mức Nhẹ (MINOR) · Nhắc nhở</div>
                             </div>
-                            <span class="badge bg-danger-subtle text-danger">-5 điểm</span>
+                            <span class="badge bg-warning-subtle text-dark font-mono-num fw-bold px-2 py-1">-5 điểm</span>
                         </li>
                         <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>Nấu ăn trái phép (ILLEGAL_COOKING)</strong>
-                                <div class="text-muted">Mức Nặng (MAJOR)</div>
+                                <strong class="text-dark">Nấu ăn trái phép</strong>
+                                <div class="text-muted" style="font-size: 0.76rem;">Mức Nặng (MAJOR) · Trừ điểm</div>
                             </div>
-                            <span class="badge bg-danger-subtle text-danger">-20 điểm</span>
+                            <span class="badge bg-danger-subtle text-danger font-mono-num fw-bold px-2 py-1">-20 điểm</span>
                         </li>
                         <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>Gây mất trật tự (DISTURBANCE)</strong>
-                                <div class="text-muted">Mức Nặng (MAJOR)</div>
+                                <strong class="text-dark">Gây mất trật tự sau 22:00</strong>
+                                <div class="text-muted" style="font-size: 0.76rem;">Mức Nặng (MAJOR) · Trừ điểm</div>
                             </div>
-                            <span class="badge bg-danger-subtle text-danger">-25 điểm</span>
+                            <span class="badge bg-danger-subtle text-danger font-mono-num fw-bold px-2 py-1">-25 điểm</span>
                         </li>
                         <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>Làm hỏng tài sản (DAMAGE)</strong>
-                                <div class="text-muted">Nghiêm trọng (SEVERE)</div>
+                                <strong class="text-dark">Làm hư hỏng tài sản</strong>
+                                <div class="text-muted" style="font-size: 0.76rem;">Nghiêm trọng (SEVERE) · Chấm dứt HĐ</div>
                             </div>
-                            <span class="badge bg-danger-subtle text-danger">-50 điểm</span>
+                            <span class="badge bg-danger text-white font-mono-num fw-bold px-2 py-1">-50 điểm</span>
                         </li>
                     </ul>
-                    <div class="mt-3 small text-muted">
-                        <i class="bi bi-exclamation-triangle text-warning me-1"></i>
-                        Điểm rèn luyện về 0 hoặc mức SEVERE + TERMINATE sẽ dẫn đến cấm đăng ký chỗ ở.
+                    <div class="mt-3 p-3 bg-danger-subtle rounded-3 small text-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        Sinh viên có điểm rèn luyện dưới 50 hoặc vi phạm mức SEVERE + TERMINATE sẽ bị buộc thôi lưu trú KTX.
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
+    <!-- Scripts Autocomplete Tìm Kiếm & Xử Lý Form -->
+    <script th:inline="javascript">
+        const searchApiUrl = /*[[@{/staff/violations/search-students}]]*/ '/staff/violations/search-students';
+        let searchTimeout = null;
+        let activeSuggestionIndex = -1;
+        let currentSuggestions = [];
+
         document.addEventListener('DOMContentLoaded', function() {
             var now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('occurredAt').value = now.toISOString().slice(0,16);
+            document.getElementById('occurredAt').value = now.toISOString().slice(0, 16);
             onTypeChanged();
+
+            // Đóng dropdown gợi ý khi click bên ngoài
+            document.addEventListener('click', function(e) {
+                const wrapper = document.getElementById('studentSearchWrapper');
+                if (wrapper && !wrapper.contains(e.target)) {
+                    hideSuggestions();
+                }
+            });
+
+            // Kiểm tra trước khi submit form
+            document.getElementById('violationForm').addEventListener('submit', function(e) {
+                const studentId = document.getElementById('studentId').value;
+                if (!studentId) {
+                    e.preventDefault();
+                    alert('Vui lòng tìm và chọn sinh viên vi phạm trước khi lưu biên bản!');
+                    document.getElementById('studentSearchInput').focus();
+                }
+            });
         });
+
+        function onStudentSearchInput(val) {
+            clearTimeout(searchTimeout);
+            const keyword = val.trim();
+            if (!keyword) {
+                hideSuggestions();
+                return;
+            }
+
+            document.getElementById('searchLoadingSpinner').style.display = 'inline-block';
+
+            searchTimeout = setTimeout(() => {
+                fetch(searchApiUrl + '?keyword=' + encodeURIComponent(keyword))
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('searchLoadingSpinner').style.display = 'none';
+                        renderSuggestions(data, keyword);
+                    })
+                    .catch(err => {
+                        document.getElementById('searchLoadingSpinner').style.display = 'none';
+                        console.error('Lỗi tìm kiếm sinh viên:', err);
+                    });
+            }, 250);
+        }
+
+        function renderSuggestions(students, keyword) {
+            currentSuggestions = students || [];
+            activeSuggestionIndex = -1;
+            const container = document.getElementById('studentSearchResults');
+            container.innerHTML = '';
+
+            if (currentSuggestions.length === 0) {
+                container.innerHTML = `
+                    <div class="p-3 text-center text-muted small">
+                        <i class="bi bi-search me-1"></i>Không tìm thấy sinh viên nào khớp với "<strong>${escapeHtml(keyword)}</strong>"
+                    </div>`;
+                container.style.display = 'block';
+                return;
+            }
+
+            currentSuggestions.forEach((s, idx) => {
+                const item = document.createElement('a');
+                item.href = 'javascript:void(0)';
+                item.className = 'dropdown-item py-2 px-3 border-bottom d-flex align-items-center justify-content-between';
+                item.setAttribute('data-index', idx);
+                item.onclick = function() { selectStudent(s); };
+
+                const initial = (s.fullName || 'S').charAt(0).toUpperCase();
+                const scoreColor = (s.conductScore >= 80) ? 'text-success' : ((s.conductScore >= 50) ? 'text-warning' : 'text-danger');
+
+                item.innerHTML = `
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="student-avatar" style="width:32px;height:32px;font-size:0.8rem;">${initial}</span>
+                        <div>
+                            <div class="fw-bold text-dark lh-1 mb-1">${escapeHtml(s.fullName)}</div>
+                            <small class="text-muted font-mono-num">MSSV: ${escapeHtml(s.studentCode)} · ${escapeHtml(s.room || 'Chưa xếp phòng')}</small>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-light border font-mono-num ${scoreColor}">
+                            ${s.conductScore} đ
+                        </span>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+
+            container.style.display = 'block';
+        }
+
+        function selectStudent(s) {
+            document.getElementById('studentId').value = s.id;
+            document.getElementById('selectedStudentName').textContent = s.fullName;
+            document.getElementById('selectedStudentCode').textContent = s.studentCode;
+            document.getElementById('selectedStudentRoom').textContent = s.room || 'Đang ở tòa';
+            document.getElementById('selectedStudentScore').textContent = s.conductScore;
+            document.getElementById('selectedStudentAvatar').textContent = (s.fullName || 'S').charAt(0).toUpperCase();
+
+            document.getElementById('selectedStudentCard').style.display = 'flex';
+            document.getElementById('studentSearchWrapper').style.display = 'none';
+            hideSuggestions();
+        }
+
+        function clearSelectedStudent() {
+            document.getElementById('studentId').value = '';
+            document.getElementById('selectedStudentCard').style.display = 'none';
+            document.getElementById('studentSearchWrapper').style.display = 'block';
+            const input = document.getElementById('studentSearchInput');
+            input.value = '';
+            input.focus();
+        }
+
+        function hideSuggestions() {
+            const container = document.getElementById('studentSearchResults');
+            if (container) container.style.display = 'none';
+        }
+
+        function onSearchKeyDown(e) {
+            const container = document.getElementById('studentSearchResults');
+            if (container.style.display === 'none' || currentSuggestions.length === 0) return;
+
+            const items = container.querySelectorAll('.dropdown-item');
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeSuggestionIndex = (activeSuggestionIndex + 1) % items.length;
+                updateActiveSuggestion(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeSuggestionIndex = (activeSuggestionIndex - 1 + items.length) % items.length;
+                updateActiveSuggestion(items);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (activeSuggestionIndex >= 0 && activeSuggestionIndex < currentSuggestions.length) {
+                    selectStudent(currentSuggestions[activeSuggestionIndex]);
+                } else if (currentSuggestions.length === 1) {
+                    selectStudent(currentSuggestions[0]);
+                }
+            } else if (e.key === 'Escape') {
+                hideSuggestions();
+            }
+        }
+
+        function updateActiveSuggestion(items) {
+            items.forEach((it, idx) => {
+                if (idx === activeSuggestionIndex) {
+                    it.classList.add('active');
+                    it.scrollIntoView({ block: 'nearest' });
+                } else {
+                    it.classList.remove('active');
+                }
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
 
         function onTypeChanged() {
             var type = document.getElementById('violationType').value;

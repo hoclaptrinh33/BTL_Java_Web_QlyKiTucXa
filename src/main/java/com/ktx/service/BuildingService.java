@@ -1,13 +1,14 @@
 package com.ktx.service;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import com.ktx.common.exception.DuplicateFieldException;
 import com.ktx.common.util.OccupyingStatuses;
 import com.ktx.domain.Bed;
 import com.ktx.domain.Building;
+import com.ktx.domain.BuildingImage;
 import com.ktx.domain.Room;
 import com.ktx.domain.enums.BedStatus;
 import com.ktx.domain.enums.BuildingGenderPolicy;
@@ -26,6 +28,7 @@ import com.ktx.dto.BuildingForm;
 import com.ktx.dto.BuildingOverviewDto;
 import com.ktx.dto.BuildingRowDto;
 import com.ktx.repository.BedRepository;
+import com.ktx.repository.BuildingImageRepository;
 import com.ktx.repository.BuildingRepository;
 import com.ktx.repository.ContractRepository;
 import com.ktx.repository.RoomRepository;
@@ -44,6 +47,7 @@ public class BuildingService {
     private final ContractRepository contractRepository;
     private final RoomRepository roomRepository;
     private final BedRepository bedRepository;
+    private BuildingImageRepository buildingImageRepository;
 
     @Autowired
     public BuildingService(BuildingRepository buildingRepository, ContractRepository contractRepository,
@@ -52,6 +56,11 @@ public class BuildingService {
         this.contractRepository = contractRepository;
         this.roomRepository = roomRepository;
         this.bedRepository = bedRepository;
+    }
+
+    @Autowired(required = false)
+    public void setBuildingImageRepository(BuildingImageRepository buildingImageRepository) {
+        this.buildingImageRepository = buildingImageRepository;
     }
 
     public BuildingService(BuildingRepository buildingRepository, ContractRepository contractRepository) {
@@ -180,10 +189,15 @@ public class BuildingService {
         }
 
         List<BuildingRowDto> rows = new ArrayList<>();
-        String[] fallbackImages = {
-            "/images/buildings/building-1.jpg",
-            "/images/buildings/building-2.jpg",
-            "/images/buildings/building-3.jpg"
+        String[] maleFallbackImages = {
+            "/images/buildings/building-male-1.jpg",
+            "/images/buildings/building-sports-1.jpg",
+            "/images/buildings/building-modern-1.jpg"
+        };
+        String[] femaleFallbackImages = {
+            "/images/buildings/building-female-1.jpg",
+            "/images/buildings/building-garden-1.jpg",
+            "/images/buildings/building-urban-1.jpg"
         };
 
         for (int i = 0; i < allBuildings.size(); i++) {
@@ -269,7 +283,27 @@ public class BuildingService {
 
             // Address and image
             row.setAddress("Địa chỉ: " + zoneName + ", Trường ĐH XYZ");
-            row.setImageUrl(fallbackImages[Math.abs(b.getId() != null ? b.getId().hashCode() : i) % fallbackImages.length]);
+            String assignedImage = null;
+            if (buildingImageRepository != null && b.getId() != null) {
+                Optional<BuildingImage> primaryImg = buildingImageRepository.findFirstByBuildingIdAndPrimaryTrue(b.getId());
+                if (primaryImg.isPresent()) {
+                    assignedImage = primaryImg.get().getImageUrl();
+                } else {
+                    List<BuildingImage> allImg = buildingImageRepository.findByBuildingIdOrderByDisplayOrderAscIdAsc(b.getId());
+                    if (!allImg.isEmpty()) {
+                        assignedImage = allImg.get(0).getImageUrl();
+                    }
+                }
+            }
+            if (assignedImage == null) {
+                int index = Math.abs(b.getId() != null ? b.getId().hashCode() : i);
+                if (b.getGenderPolicy() == BuildingGenderPolicy.FEMALE) {
+                    assignedImage = femaleFallbackImages[index % femaleFallbackImages.length];
+                } else {
+                    assignedImage = maleFallbackImages[index % maleFallbackImages.length];
+                }
+            }
+            row.setImageUrl(assignedImage);
 
             rows.add(row);
         }

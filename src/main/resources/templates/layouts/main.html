@@ -33,6 +33,11 @@
     </div>
 </div>
 <div class="ktx-portal" sec:authorize="hasRole('STUDENT')">
+    <div class="offcanvas offcanvas-start ktx-offcanvas d-lg-none" tabindex="-1" id="studentSidebar" aria-label="Menu sinh viên">
+        <div class="offcanvas-body p-0">
+            <div th:replace="~{fragments/sidebar :: inner}"></div>
+        </div>
+    </div>
     <header th:replace="~{fragments/navbar :: navbar-student}"></header>
     <main class="ktx-portal-main">
         <div class="container-xl py-4">

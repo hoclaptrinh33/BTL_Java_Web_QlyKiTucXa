@@ -41,6 +41,7 @@ public class AdminTicketController {
     @GetMapping
     public String listTickets(@RequestParam(value = "buildingId", required = false) Long buildingId,
                               @RequestParam(value = "status", required = false) TicketStatus status,
+                              @RequestParam(value = "page", defaultValue = "0") int page,
                               Authentication auth,
                               Model model) {
         boolean isStaffScoper = isStaffScoped(auth);
@@ -54,12 +55,14 @@ public class AdminTicketController {
             buildings = buildingRepository.findAll();
         }
 
-        List<MaintenanceTicket> tickets = ticketService.getTicketsForAdmin(effectiveBuildingId, status);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(Math.max(page, 0), 20);
+        org.springframework.data.domain.Page<MaintenanceTicket> ticketPage = ticketService.getTicketsForAdmin(effectiveBuildingId, status, pageable);
 
         model.addAttribute("buildings", buildings);
         model.addAttribute("selectedBuildingId", effectiveBuildingId);
         model.addAttribute("selectedStatus", status);
-        model.addAttribute("tickets", tickets);
+        model.addAttribute("ticketPage", ticketPage);
+        model.addAttribute("tickets", ticketPage.getContent());
         model.addAttribute("statuses", TicketStatus.values());
         model.addAttribute("pageTitle", "Yêu cầu sửa chữa & Sự cố");
         model.addAttribute("pageSubtitle", "Quản lý và tiếp nhận các yêu cầu bảo trì, báo hỏng thiết bị từ sinh viên");

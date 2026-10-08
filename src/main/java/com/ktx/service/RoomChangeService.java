@@ -57,4 +57,9 @@ public interface RoomChangeService {
      * Tìm kiếm và lọc đơn chuyển / trả phòng cho admin / staff.
      */
     List<RoomChangeRequest> searchRequests(RoomChangeKind kind, RoomChangeStatus status, Long buildingId);
+
+    /**
+     * Tìm kiếm và phân trang đơn chuyển / trả phòng cho admin / staff.
+     */
+    org.springframework.data.domain.Page<RoomChangeRequest> searchRequests(RoomChangeKind kind, RoomChangeStatus status, Long buildingId, org.springframework.data.domain.Pageable pageable);
 }

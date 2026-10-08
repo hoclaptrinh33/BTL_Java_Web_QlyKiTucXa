@@ -27,7 +27,6 @@ import com.ktx.repository.StudentRepository;
 import com.ktx.security.KtxUserDetails;
 import com.ktx.service.AllocationService;
 import com.ktx.service.ContractService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;

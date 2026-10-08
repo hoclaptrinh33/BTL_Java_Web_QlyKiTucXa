@@ -21,11 +21,11 @@
             <table class="table table-hover align-middle mb-0 ktx-table">
                 <thead>
                 <tr>
-                    <th>Tên đợt</th>
+                    <th>Tên đợt & Hỗ trợ</th>
                     <th>Loại đợt</th>
-                    <th>Năm học</th>
+                    <th>Đối tượng & Quỹ phòng</th>
                     <th>Cửa sổ nộp đơn</th>
-                    <th>Thời gian kỳ học</th>
+                    <th>Lộ trình kỳ học</th>
                     <th>Trạng thái</th>
                     <th class="text-end">Thao tác</th>
                 </tr>
@@ -33,29 +33,55 @@
                 <tbody>
                 <tr th:each="p : ${periods}">
                     <td>
-                        <strong th:text="${p.name}">Đợt tân SV 2026</strong>
-                        <small class="d-block text-muted" th:text="'Người tạo: ' + ${p.createdBy.username}">admin</small>
+                        <strong class="d-block" th:text="${p.name}">Đợt tân SV 2026</strong>
+                        <div class="small text-muted mt-1">
+                            <span th:text="'Người tạo: ' + ${p.createdBy.username}">admin</span>
+                            <span th:if="${p.contactPhone != null}" th:text="' · Hotline: ' + ${p.contactPhone}"></span>
+                        </div>
                     </td>
                     <td>
-                        <span th:if="${p.periodType.name() == 'FRESHMAN'}">Tân sinh viên</span>
-                        <span th:if="${p.periodType.name() == 'NEW_ACADEMIC_YEAR'}">Năm học mới</span>
-                        <span th:if="${p.periodType.name() == 'SUMMER'}">Hè</span>
+                        <span class="badge text-bg-secondary" th:if="${p.periodType.name() == 'FRESHMAN'}">Tân sinh viên</span>
+                        <span class="badge text-bg-info" th:if="${p.periodType.name() == 'NEW_ACADEMIC_YEAR'}">Năm học mới</span>
+                        <span class="badge text-bg-warning" th:if="${p.periodType.name() == 'SUMMER'}">Hè</span>
+                        <div class="small text-muted mt-1" th:text="${p.academicYear}">2026-2027</div>
                     </td>
-                    <td><span class="ktx-chip" th:text="${p.academicYear}">2026-2027</span></td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-1 mb-1">
+                            <span class="badge text-bg-light border" th:if="${p.genderScope != null && p.genderScope.name() == 'ALL'}">
+                                <i class="bi bi-gender-ambiguous me-1"></i>Tất cả
+                            </span>
+                            <span class="badge text-bg-primary" th:if="${p.genderScope != null && p.genderScope.name() == 'MALE_ONLY'}">
+                                <i class="bi bi-gender-male me-1"></i>Chỉ Nam
+                            </span>
+                            <span class="badge text-bg-danger" th:if="${p.genderScope != null && p.genderScope.name() == 'FEMALE_ONLY'}">
+                                <i class="bi bi-gender-female me-1"></i>Chỉ Nữ
+                            </span>
+                            <span class="badge text-bg-light border" th:if="${p.targetQuota != null}">
+                                <i class="bi bi-pie-chart me-1"></i><span th:text="${p.targetQuota} + ' chỗ'"></span>
+                            </span>
+                        </div>
+                        <div class="small text-muted" th:if="${p.targetCohort != null}" th:text="${p.targetCohort}">Tân sinh viên K68</div>
+                        <div class="small text-muted" th:if="${p.minConductScore != null && p.minConductScore > 0}">
+                            <i class="bi bi-award me-1"></i>ĐRL &ge; <span th:text="${p.minConductScore}">60</span>
+                        </div>
+                    </td>
                     <td>
                         <div class="small">
-                            Mở: <span th:text="${#temporals.format(p.openAt, 'dd/MM/yyyy HH:mm')}">24/08/2026 09:00</span>
+                            <span class="text-success"><i class="bi bi-calendar-check me-1"></i>Mở:</span> <span th:text="${#temporals.format(p.openAt, 'dd/MM/yyyy HH:mm')}">24/08/2026 09:00</span>
                         </div>
                         <div class="small text-muted">
-                            Đóng: <span th:text="${#temporals.format(p.closeAt, 'dd/MM/yyyy HH:mm')}">31/08/2026 17:00</span>
+                            <span class="text-danger"><i class="bi bi-calendar-x me-1"></i>Đóng:</span> <span th:text="${#temporals.format(p.closeAt, 'dd/MM/yyyy HH:mm')}">31/08/2026 17:00</span>
                         </div>
                     </td>
                     <td>
                         <div class="small">
-                            Bắt đầu: <span th:text="${#temporals.format(p.termStart, 'dd/MM/yyyy')}">01/09/2026</span>
+                            Kỳ học: <span th:text="${#temporals.format(p.termStart, 'dd/MM/yyyy')} + ' - ' + ${#temporals.format(p.termEnd, 'dd/MM/yyyy')}">01/09/2026 - 15/01/2027</span>
                         </div>
-                        <div class="small text-muted">
-                            Kết thúc: <span th:text="${#temporals.format(p.termEnd, 'dd/MM/yyyy')}">15/01/2027</span>
+                        <div class="small text-muted" th:if="${p.paymentDeadline != null}">
+                            Hạn cọc: <span th:text="${#temporals.format(p.paymentDeadline, 'dd/MM/yyyy HH:mm')}"></span>
+                        </div>
+                        <div class="small text-muted" th:if="${p.checkinStart != null}">
+                            Nhận phòng: <span th:text="${#temporals.format(p.checkinStart, 'dd/MM/yyyy')} + (${p.checkinEnd != null} ? ' - ' + ${#temporals.format(p.checkinEnd, 'dd/MM/yyyy')} : '')"></span>
                         </div>
                     </td>
                     <td>
@@ -97,6 +123,15 @@
                 </tbody>
             </table>
         </div>
+        <nav class="d-flex justify-content-between align-items-center px-4 py-3 border-top" th:if="${periodPage != null and periodPage.totalPages > 1}">
+            <span class="small text-muted" th:text="${periodPage.totalElements} + ' đợt đăng ký · trang ' + (${periodPage.number} + 1) + '/' + ${periodPage.totalPages}"></span>
+            <div class="btn-group btn-group-sm">
+                <a class="btn btn-outline-secondary" th:if="${!periodPage.first}"
+                   th:href="@{${baseUri ?: '/admin/periods'}(page=${periodPage.number - 1})}">Trước</a>
+                <a class="btn btn-outline-secondary" th:if="${!periodPage.last}"
+                   th:href="@{${baseUri ?: '/admin/periods'}(page=${periodPage.number + 1})}">Sau</a>
+            </div>
+        </nav>
     </section>
 </main>
 </body>

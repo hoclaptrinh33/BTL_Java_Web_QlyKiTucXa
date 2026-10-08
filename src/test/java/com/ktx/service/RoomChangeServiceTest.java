@@ -13,9 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -237,7 +235,7 @@ class RoomChangeServiceTest {
     void cancelRequest_success() {
         RoomChangeRequest req = new RoomChangeRequest();
         req.setId(10L);
-        req.setStudent(maleStudent);
+        req.setContract(contractMale);
         req.setStatus(RoomChangeStatus.SUBMITTED);
 
         when(roomChangeRequestRepository.findById(10L)).thenReturn(Optional.of(req));
@@ -251,8 +249,10 @@ class RoomChangeServiceTest {
     @DisplayName("Không được hủy đơn của sinh viên khác")
     void cancelRequest_fail_wrongStudent() {
         RoomChangeRequest req = new RoomChangeRequest();
+        Contract otherContract = new Contract();
+        otherContract.setStudent(femaleStudent);
         req.setId(10L);
-        req.setStudent(femaleStudent);
+        req.setContract(otherContract);
         req.setStatus(RoomChangeStatus.SUBMITTED);
 
         when(roomChangeRequestRepository.findById(10L)).thenReturn(Optional.of(req));
@@ -270,7 +270,6 @@ class RoomChangeServiceTest {
 
         RoomChangeRequest req = new RoomChangeRequest();
         req.setId(100L);
-        req.setStudent(maleStudent);
         req.setContract(contractMale);
         req.setCurrentBed(bedMale1);
         req.setRequestKind(RoomChangeKind.CHANGE);
@@ -305,7 +304,6 @@ class RoomChangeServiceTest {
 
         RoomChangeRequest req = new RoomChangeRequest();
         req.setId(100L);
-        req.setStudent(maleStudent);
         req.setContract(contractMale);
         req.setCurrentBed(bedMale1);
         req.setRequestKind(RoomChangeKind.CHANGE);
@@ -324,7 +322,6 @@ class RoomChangeServiceTest {
     void approveAndExecuteRoomChange_fail_genderPolicyMismatch() {
         RoomChangeRequest req = new RoomChangeRequest();
         req.setId(100L);
-        req.setStudent(maleStudent);
         req.setContract(contractMale);
         req.setCurrentBed(bedMale1);
         req.setRequestKind(RoomChangeKind.CHANGE);
@@ -344,7 +341,6 @@ class RoomChangeServiceTest {
     void approveReturnRoom_success_callsCheckout() {
         RoomChangeRequest req = new RoomChangeRequest();
         req.setId(200L);
-        req.setStudent(maleStudent);
         req.setContract(contractMale);
         req.setCurrentBed(bedMale1);
         req.setRequestKind(RoomChangeKind.RETURN);

@@ -18,15 +18,45 @@ import org.springframework.stereotype.Component;
 public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
+    private final com.ktx.service.AuditLogService auditLogService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public LoginSuccessHandler(@org.springframework.beans.factory.annotation.Autowired(required = false) com.ktx.service.AuditLogService auditLogService) {
+        this.auditLogService = auditLogService;
+    }
+
+    public LoginSuccessHandler() {
+        this(null);
+    }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException {
+        if (auditLogService != null && authentication != null) {
+            String username = authentication.getName();
+            String role = authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .filter(a -> a.startsWith("ROLE_"))
+                    .findFirst()
+                    .map(r -> r.replace("ROLE_", ""))
+                    .orElse("USER");
+            String ip = getClientIP(request);
+            auditLogService.log(username, role, "LOGIN_SUCCESS", "AUTH", username,
+                    "Đăng nhập thành công vào hệ thống", ip, "SUCCESS");
+        }
         redirectStrategy.sendRedirect(request, response, resolveTarget(authentication));
     }
 
+    private String getClientIP(HttpServletRequest request) {
+        String xfHeader = request.getHeader("X-Forwarded-For");
+        if (xfHeader == null || xfHeader.trim().isEmpty()) {
+            return request.getRemoteAddr();
+        }
+        return xfHeader.split(",")[0].trim();
+    }
+
     public static final Set<String> SYSTEM_PERMISSIONS = Set.of(
-            "config.read", "config.write", "admin_account.manage"
+            "config.read", "config.write", "admin_account.manage", "log.read"
     );
 
     public static final Set<String> OPERATION_PERMISSIONS = Set.of(
@@ -62,7 +92,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         boolean hasSystem = authorities.stream().anyMatch(SYSTEM_PERMISSIONS::contains)
                 || authorities.contains("ROLE_SYSTEM_ADMIN");
         if (hasSystem) {
-            return "/admin/configs";
+            return "/admin/dashboard";
         }
         return "/login";
     }

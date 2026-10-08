@@ -158,6 +158,12 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<MaintenanceTicket> getTicketsForAdmin(Long buildingId, TicketStatus status, org.springframework.data.domain.Pageable pageable) {
+        return maintenanceTicketRepository.searchTicketsForAdmin(buildingId, status, pageable);
+    }
+
+    @Override
     public int autoCloseResolvedTickets(int days) {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(days);
         List<MaintenanceTicket> list = maintenanceTicketRepository.findByStatusAndResolvedAtBefore(

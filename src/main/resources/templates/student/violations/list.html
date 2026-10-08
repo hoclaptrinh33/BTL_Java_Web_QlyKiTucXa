@@ -9,11 +9,11 @@
     </div>
 
     <!-- Khối chỉ số điểm rèn luyện -->
-    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+    <div class="row row-cols-1 row-cols-sm-3 g-2 g-md-3 mb-3 mb-md-4">
         <div class="col">
             <div class="ktx-card h-100 p-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="p-3 rounded-circle bg-primary-subtle text-primary fs-3"><i class="bi bi-shield-check"></i></div>
+                    <div class="p-2 p-md-3 rounded-circle bg-primary-subtle text-primary fs-3"><i class="bi bi-shield-check"></i></div>
                     <div>
                         <div class="text-muted small">Điểm rèn luyện hiện tại</div>
                         <div class="h3 fw-bold text-dark mb-0" th:text="${student.conductScore != null ? student.conductScore : 100}">100</div>
@@ -29,7 +29,7 @@
         <div class="col">
             <div class="ktx-card h-100 p-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="p-3 rounded-circle bg-warning-subtle text-warning fs-3"><i class="bi bi-exclamation-triangle"></i></div>
+                    <div class="p-2 p-md-3 rounded-circle bg-warning-subtle text-warning fs-3"><i class="bi bi-exclamation-triangle"></i></div>
                     <div>
                         <div class="text-muted small">Số lần vi phạm ghi nhận</div>
                         <div class="h3 fw-bold text-dark mb-0" th:text="${#lists.size(violations)}">0</div>
@@ -41,7 +41,7 @@
         <div class="col">
             <div class="ktx-card h-100 p-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="p-3 rounded-circle bg-info-subtle text-info fs-3"><i class="bi bi-award"></i></div>
+                    <div class="p-2 p-md-3 rounded-circle bg-info-subtle text-info fs-3"><i class="bi bi-award"></i></div>
                     <div>
                         <div class="text-muted small">Quyền ưu tiên xét ở kỳ sau</div>
                         <div class="fw-bold mb-0"
@@ -63,44 +63,69 @@
                     <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-journal-text me-2 text-primary"></i>Lịch sử biên bản vi phạm</h2>
                 </div>
 
-                <!-- Bảng biên bản -->
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle ktx-table mb-0">
-                        <thead>
-                            <tr>
-                                <th>Thời gian</th>
-                                <th>Hành vi vi phạm</th>
-                                <th>Mức độ</th>
-                                <th>Điểm trừ</th>
-                                <th>Cán bộ ghi nhận</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Không có vi phạm -->
-                            <tr th:if="${#lists.isEmpty(violations)}">
-                                <td colspan="5" class="text-center py-4 text-muted">
-                                    <i class="bi bi-emoji-smile fs-2 text-success d-block mb-2"></i>
-                                    <strong class="text-dark">Rất tốt! Bạn chưa từng vi phạm nội quy KTX.</strong>
-                                    <p class="mb-0 small">Hãy tiếp tục giữ gìn môi trường sống văn minh và an toàn tại ký túc xá.</p>
-                                </td>
-                            </tr>
-                            <!-- Danh sách vi phạm -->
-                            <tr th:each="v : ${violations}">
-                                <td th:text="${#temporals.format(v.occurredAt, 'dd/MM/yyyy HH:mm')}">24/08/2026</td>
-                                <td>
-                                    <strong class="text-dark" th:text="${v.violationType}">LATE_RETURN</strong>
-                                    <div class="small text-muted" th:text="${v.description}">Mô tả</div>
-                                </td>
-                                <td>
-                                    <span class="badge"
-                                          th:classappend="${v.severity != null && v.severity.name() == 'SEVERE' ? 'bg-danger-subtle text-danger' : (v.severity != null && v.severity.name() == 'MAJOR' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary')}"
-                                          th:text="${v.severity}">Nhẹ</span>
-                                </td>
-                                <td class="text-danger fw-bold" th:text="${'-' + v.pointsDeducted + ' điểm'}">-5 điểm</td>
-                                <td th:text="${v.recordedBy != null ? (v.recordedBy.fullName != null ? v.recordedBy.fullName : v.recordedBy.username) : 'Hệ thống'}">Cán bộ</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- Không có vi phạm -->
+                <div th:if="${#lists.isEmpty(violations)}" class="text-center py-5 text-muted">
+                    <i class="bi bi-emoji-smile fs-1 text-success d-block mb-2"></i>
+                    <strong class="text-dark d-block mb-1">Rất tốt! Bạn chưa từng vi phạm nội quy KTX.</strong>
+                    <p class="mb-0 small">Hãy tiếp tục giữ gìn môi trường sống văn minh và an toàn tại ký túc xá.</p>
+                </div>
+
+                <div th:if="${!#lists.isEmpty(violations)}">
+                    <!-- 1. Desktop Table View -->
+                    <div class="table-responsive d-none d-md-block">
+                        <table class="table table-hover align-middle ktx-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Thời gian</th>
+                                    <th>Hành vi vi phạm</th>
+                                    <th>Mức độ</th>
+                                    <th>Điểm trừ</th>
+                                    <th>Cán bộ ghi nhận</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="v : ${violations}">
+                                    <td th:text="${#temporals.format(v.occurredAt, 'dd/MM/yyyy HH:mm')}">24/08/2026</td>
+                                    <td>
+                                        <strong class="text-dark" th:text="${v.violationType}">LATE_RETURN</strong>
+                                        <div class="small text-muted" th:text="${v.description}">Mô tả</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge"
+                                              th:classappend="${v.severity != null && v.severity.name() == 'SEVERE' ? 'bg-danger-subtle text-danger' : (v.severity != null && v.severity.name() == 'MAJOR' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary')}"
+                                              th:text="${v.severity != null ? (v.severity.name() == 'SEVERE' ? 'Nghiêm trọng' : (v.severity.name() == 'MAJOR' ? 'Trung bình' : 'Nhẹ')) : 'Nhẹ'}">Nhẹ</span>
+                                    </td>
+                                    <td class="text-danger fw-bold" th:text="${'-' + v.pointsDeducted + ' điểm'}">-5 điểm</td>
+                                    <td th:text="${v.recordedBy != null ? (v.recordedBy.fullName != null ? v.recordedBy.fullName : v.recordedBy.username) : 'Hệ thống'}">Cán bộ</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 2. Mobile Cards View -->
+                    <div class="d-md-none">
+                        <div th:each="v : ${violations}" class="student-mobile-card">
+                            <div class="student-mobile-card__header">
+                                <span class="small text-muted" th:text="${#temporals.format(v.occurredAt, 'dd/MM/yyyy HH:mm')}">24/08/2026 23:15</span>
+                                <span class="badge"
+                                      th:classappend="${v.severity != null && v.severity.name() == 'SEVERE' ? 'bg-danger-subtle text-danger' : (v.severity != null && v.severity.name() == 'MAJOR' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary')}"
+                                      th:text="${v.severity != null ? (v.severity.name() == 'SEVERE' ? 'Nghiêm trọng' : (v.severity.name() == 'MAJOR' ? 'Trung bình' : 'Nhẹ')) : 'Nhẹ'}">Nhẹ</span>
+                            </div>
+
+                            <div class="student-mobile-card__title" th:text="${v.violationType}">Hành vi vi phạm</div>
+                            <p class="small text-secondary mb-2" th:text="${v.description}">Mô tả chi tiết vi phạm</p>
+
+                            <div class="student-mobile-card__row">
+                                <span class="student-mobile-card__label"><i class="bi bi-dash-circle text-danger me-1"></i>Trừ điểm rèn luyện:</span>
+                                <span class="student-mobile-card__value text-danger fs-6" th:text="${'-' + v.pointsDeducted + ' điểm'}">-5 điểm</span>
+                            </div>
+
+                            <div class="student-mobile-card__row">
+                                <span class="student-mobile-card__label"><i class="bi bi-person-badge me-1"></i>Người lập biên bản:</span>
+                                <span class="student-mobile-card__value text-muted" th:text="${v.recordedBy != null ? (v.recordedBy.fullName != null ? v.recordedBy.fullName : v.recordedBy.username) : 'Ban Quản lý KTX'}">Cán bộ</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

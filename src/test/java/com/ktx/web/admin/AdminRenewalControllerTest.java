@@ -86,7 +86,7 @@ class AdminRenewalControllerTest {
         b.setName("Tòa A");
 
         when(buildingRepository.findAll()).thenReturn(List.of(b));
-        when(renewalService.searchRequests(any(), any())).thenReturn(List.of());
+        when(renewalService.searchRequests(any(), any(), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of()));
 
         mockMvc.perform(get("/admin/renewals").with(user(adminUser())))
                 .andExpect(status().isOk())

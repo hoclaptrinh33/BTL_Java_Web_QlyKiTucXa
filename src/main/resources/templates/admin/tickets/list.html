@@ -140,6 +140,15 @@
                     </tbody>
                 </table>
             </div>
+            <nav class="d-flex justify-content-between align-items-center px-4 py-3 border-top" th:if="${ticketPage != null and ticketPage.totalPages > 1}">
+                <span class="small text-muted" th:text="${ticketPage.totalElements} + ' sự cố · trang ' + (${ticketPage.number} + 1) + '/' + ${ticketPage.totalPages}"></span>
+                <div class="btn-group btn-group-sm">
+                    <a class="btn btn-outline-secondary" th:if="${!ticketPage.first}"
+                       th:href="@{/admin/tickets(buildingId=${selectedBuildingId}, status=${selectedStatus}, page=${ticketPage.number - 1})}">Trước</a>
+                    <a class="btn btn-outline-secondary" th:if="${!ticketPage.last}"
+                       th:href="@{/admin/tickets(buildingId=${selectedBuildingId}, status=${selectedStatus}, page=${ticketPage.number + 1})}">Sau</a>
+                </div>
+            </nav>
         </div>
     </div>
 </main>

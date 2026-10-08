@@ -13,6 +13,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ktx.dto.BqlUserForm;
 import com.ktx.domain.enums.Role;
+import com.ktx.service.AuditLogService;
 import com.ktx.service.BuildingService;
 import com.ktx.service.UserService;
 
@@ -24,10 +25,18 @@ public class AdminUserController {
 
     private final UserService userService;
     private final BuildingService buildingService;
+    private final AuditLogService auditLogService;
 
-    public AdminUserController(UserService userService, BuildingService buildingService) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public AdminUserController(UserService userService, BuildingService buildingService,
+                              @org.springframework.beans.factory.annotation.Autowired(required = false) AuditLogService auditLogService) {
         this.userService = userService;
         this.buildingService = buildingService;
+        this.auditLogService = auditLogService;
+    }
+
+    public AdminUserController(UserService userService, BuildingService buildingService) {
+        this(userService, buildingService, null);
     }
 
     @GetMapping
@@ -83,9 +92,17 @@ public class AdminUserController {
 
         try {
             userService.createBqlUser(form);
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_CREATE", "USER", form.getUsername(),
+                        "Tạo tài khoản Ban quản lý: " + form.getUsername() + " (" + form.getRole() + ")", "SUCCESS");
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Tạo tài khoản thành công!");
             return "redirect:/admin/users";
         } catch (Exception ex) {
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_CREATE", "USER", form.getUsername(),
+                        "Lỗi tạo tài khoản Ban quản lý: " + ex.getMessage(), "FAILURE");
+            }
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("pageTitle", "Thêm người dùng");
             model.addAttribute("pageSubtitle", "Tạo tài khoản Ban quản lý mới");
@@ -96,7 +113,7 @@ public class AdminUserController {
     }
 
     @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model) {
+    public String editForm(@PathVariable("id") Long id, Model model) {
         BqlUserForm form = userService.getBqlUserById(id);
         model.addAttribute("pageTitle", "Sửa người dùng");
         model.addAttribute("pageSubtitle", "Cập nhật tài khoản Ban quản lý");
@@ -107,7 +124,7 @@ public class AdminUserController {
     }
 
     @PostMapping("/{id}")
-    public String update(@PathVariable Long id, @Valid @ModelAttribute("userForm") BqlUserForm form,
+    public String update(@PathVariable("id") Long id, @Valid @ModelAttribute("userForm") BqlUserForm form,
             BindingResult bindingResult, Model model, RedirectAttributes redirectAttributes) {
 
         if (form.getRole() == Role.STAFF && form.getAssignedBuildingId() == null) {
@@ -138,9 +155,17 @@ public class AdminUserController {
 
         try {
             userService.updateBqlUser(id, form);
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_UPDATE", "USER", form.getUsername(),
+                        "Cập nhật tài khoản Ban quản lý: " + form.getUsername() + " (" + form.getRole() + ")", "SUCCESS");
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật tài khoản thành công!");
             return "redirect:/admin/users";
         } catch (Exception ex) {
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_UPDATE", "USER", form.getUsername(),
+                        "Lỗi cập nhật tài khoản Ban quản lý: " + ex.getMessage(), "FAILURE");
+            }
             form.setId(id);
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("pageTitle", "Sửa người dùng");
@@ -152,23 +177,39 @@ public class AdminUserController {
     }
 
     @PostMapping("/{id}/toggle-status")
-    public String toggleStatus(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String toggleStatus(@PathVariable("id") Long id, RedirectAttributes redirectAttributes) {
         try {
             userService.toggleStatus(id);
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_TOGGLE_STATUS", "USER", String.valueOf(id),
+                        "Thay đổi trạng thái tài khoản Ban quản lý ID " + id, "SUCCESS");
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Thay đổi trạng thái tài khoản thành công!");
         } catch (Exception ex) {
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_TOGGLE_STATUS", "USER", String.valueOf(id),
+                        "Lỗi thay đổi trạng thái tài khoản: " + ex.getMessage(), "FAILURE");
+            }
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/admin/users";
     }
 
     @PostMapping("/{id}/reset-password")
-    public String resetPassword(@PathVariable Long id, @RequestParam("newPassword") String newPassword,
+    public String resetPassword(@PathVariable("id") Long id, @RequestParam("newPassword") String newPassword,
             RedirectAttributes redirectAttributes) {
         try {
             userService.resetPassword(id, newPassword);
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_RESET_PASSWORD", "USER", String.valueOf(id),
+                        "Đặt lại mật khẩu tài khoản Ban quản lý ID " + id, "SUCCESS");
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Đặt lại mật khẩu thành công!");
         } catch (Exception ex) {
+            if (auditLogService != null) {
+                auditLogService.logCurrent("USER_RESET_PASSWORD", "USER", String.valueOf(id),
+                        "Lỗi đặt lại mật khẩu tài khoản: " + ex.getMessage(), "FAILURE");
+            }
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/admin/users";

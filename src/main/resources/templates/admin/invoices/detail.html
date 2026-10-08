@@ -5,7 +5,7 @@
 
     <!-- Nút quay lại & Tiêu đề -->
     <div class="mb-4">
-        <a th:href="@{/admin/invoices}" class="text-decoration-none text-muted small d-inline-flex align-items-center mb-2">
+        <a th:href="${invoiceBase != null ? invoiceBase : '/manage/invoices'}" class="text-decoration-none text-muted small d-inline-flex align-items-center mb-2">
             <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách hóa đơn
         </a>
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
@@ -22,11 +22,11 @@
                       th:text="${invoice.status.name() == 'PAID' ? 'ĐÃ THANH TOÁN' : (invoice.status.name() == 'OVERDUE' ? 'QUÁ HẠN NỘP' : (invoice.status.name() == 'CANCELLED' ? 'ĐÃ HỦY' : 'CHỜ THANH TOÁN'))}">
                     Trạng thái
                 </span>
-                <a th:href="@{'/admin/reports/invoices/' + ${invoice.id} + '/pdf'}" target="_blank" class="btn btn-outline-primary btn-sm">
+                <a th:href="@{${(invoiceBase != null ? invoiceBase : '/manage/invoices') + '/' + invoice.id + '/pdf'}}" target="_blank" class="btn btn-outline-primary btn-sm">
                     <i class="bi bi-printer me-1"></i>In biên lai (PDF)
                 </a>
                 <form th:if="${(invoice.status.name() == 'UNPAID' || invoice.status.name() == 'OVERDUE') && totalPaid.compareTo(T(java.math.BigDecimal).ZERO) == 0}"
-                      th:action="@{'/admin/invoices/' + ${invoice.id} + '/cancel'}"
+                      th:action="@{${(invoiceBase != null ? invoiceBase : '/manage/invoices') + '/' + invoice.id + '/cancel'}}"
                       method="post"
                       data-confirm="Bạn có chắc chắn muốn HỦY hóa đơn này? Thao tác này sẽ đánh dấu hóa đơn đã hủy và cho phép phát hành lại hóa đơn mới."
                       data-confirm-title="Hủy hóa đơn"
@@ -53,14 +53,15 @@
                     <div class="row g-3">
                         <div class="col-sm-6">
                             <span class="text-muted small">Sinh viên:</span>
-                            <div class="fw-bold text-dark fs-6" th:text="${invoice.student.fullName}">Nguyễn Văn A</div>
-                            <small class="text-muted font-monospace" th:text="${'MSSV: ' + invoice.student.studentCode}">MSSV: SV001</small>
+                            <div class="fw-bold text-dark fs-6" th:text="${invoice.student != null ? invoice.student.fullName : '—'}">Nguyễn Văn A</div>
+                            <small class="text-muted font-monospace" th:text="${invoice.student != null ? 'MSSV: ' + invoice.student.studentCode : ''}">MSSV: SV001</small>
                         </div>
                         <div class="col-sm-6">
                             <span class="text-muted small">Phòng / Tòa:</span>
                             <div class="fw-bold text-dark fs-6">
-                                <span th:if="${invoice.room != null}" th:text="${'Phòng ' + invoice.room.roomNumber + ' — Tòa ' + invoice.room.building.code}">Phòng 101 — Tòa A</span>
-                                <span th:unless="${invoice.room != null}">—</span>
+                                <span th:if="${invoice.room != null && invoice.room.building != null}" th:text="${'Phòng ' + invoice.room.roomNumber + ' — Tòa ' + invoice.room.building.code}">Phòng 101 — Tòa A</span>
+                                <span th:if="${invoice.room != null && invoice.room.building == null}" th:text="${'Phòng ' + invoice.room.roomNumber}">Phòng 101</span>
+                                <span th:if="${invoice.room == null}">—</span>
                             </div>
                         </div>
                         <div class="col-sm-6">
@@ -177,7 +178,7 @@
                                           th:classappend="${p.method.name() == 'CASH' ? 'bg-success-subtle text-success' : 'bg-primary-subtle text-primary'}"
                                           th:text="${p.method.name() == 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}">Tiền mặt</span>
                                 </td>
-                                <td th:text="${p.recordedBy.fullName}">Cán bộ thu</td>
+                                <td th:text="${p.recordedBy != null ? p.recordedBy.username : '—'}">Cán bộ thu</td>
                                 <td class="text-muted small" th:text="${p.referenceNo != null ? p.referenceNo : '—'}">—</td>
                                 <td class="text-end pe-3 font-monospace fw-bold text-success" th:text="${#numbers.formatInteger(p.amount, 1, 'POINT')} + ' đ'">0 đ</td>
                             </tr>
@@ -224,7 +225,7 @@
                     <small class="text-muted">Hỗ trợ trả góp hoặc đóng đủ 100%</small>
                 </div>
                 <div class="card-body pt-0">
-                    <form th:action="@{/admin/payments}" method="post"
+                    <form th:action="${paymentBase != null ? paymentBase : '/manage/payments'}" method="post"
                           data-confirm="Xác nhận ghi nhận giao dịch thanh toán này vào sổ quỹ?"
                           data-confirm-title="Xác nhận thu tiền"
                           data-confirm-button="Xác nhận">

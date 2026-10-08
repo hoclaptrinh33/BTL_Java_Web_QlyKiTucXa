@@ -30,10 +30,6 @@ public class AllocationItem {
     @JoinColumn(name = "application_id", nullable = false)
     private RoomApplication application;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "student_id", nullable = false)
-    private Student student;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "bed_id", nullable = true)
     private Bed bed;
@@ -79,11 +75,7 @@ public class AllocationItem {
     }
 
     public Student getStudent() {
-        return student;
-    }
-
-    public void setStudent(Student student) {
-        this.student = student;
+        return application == null ? null : application.getStudent();
     }
 
     public Bed getBed() {

@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,6 +83,7 @@ public class BillingEngineImpl implements BillingEngine {
     private final UtilityReadingRepository utilityReadingRepository;
     private final SystemConfigRepository systemConfigRepository;
 
+    @Autowired
     public BillingEngineImpl(ContractRepository contractRepository,
                              InvoiceRepository invoiceRepository,
                              InvoiceItemRepository invoiceItemRepository,
@@ -430,7 +432,7 @@ public class BillingEngineImpl implements BillingEngine {
     public void applyLateFees(LocalDate today) {
         BigDecimal lateRate = getConfigBigDecimal("billing.late.rate", new BigDecimal("0.05"));
 
-        List<Invoice> candidates = invoiceRepository.findByStatusInAndDueDateBefore(
+        List<Invoice> candidates = invoiceRepository.findNeedingLateFee(
                 List.of(InvoiceStatus.UNPAID, InvoiceStatus.OVERDUE), today);
 
         for (Invoice invoice : candidates) {

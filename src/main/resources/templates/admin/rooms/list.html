@@ -3,7 +3,7 @@
 <body>
 <main th:fragment="content">
     <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
-        <form th:action="@{/admin/rooms}" method="get" class="d-flex align-items-center gap-2">
+        <form th:action="@{${baseUri ?: '/admin/rooms'}}" method="get" class="d-flex align-items-center gap-2">
             <select name="buildingId" class="form-select" style="min-width: 220px;" onchange="this.form.submit()">
                 <option value="">Tất cả tòa</option>
                 <option th:each="b : ${buildings}" th:value="${b.id}" th:selected="${buildingId == b.id}"
@@ -11,6 +11,9 @@
             </select>
         </form>
         <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-outline-info" th:href="@{/admin/room-types/images}">
+                <i class="bi bi-images"></i> Album ảnh loại phòng
+            </a>
             <a class="btn btn-outline-warning" th:href="@{/admin/rooms/occupancy-drift}">
                 <i class="bi bi-arrow-repeat"></i> Đồng bộ lưu trú
             </a>
@@ -46,7 +49,14 @@
                 </thead>
                 <tbody>
                 <tr th:each="r : ${rooms}">
-                    <td><span class="ktx-chip" th:text="${r.doorCode}">A-101</span></td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <img th:if="${r.imageUrl != null}" th:src="${r.imageUrl}" alt="Ảnh phòng"
+                                 class="rounded border shadow-2xs" style="width: 46px; height: 36px; object-fit: cover; flex-shrink: 0;"
+                                 loading="lazy" onerror="this.src='/images/rooms/room-standard-4.jpg'">
+                            <span class="ktx-chip" th:text="${r.doorCode}">A-101</span>
+                        </div>
+                    </td>
                     <td>
                         <strong th:text="${r.buildingName}">Tòa A</strong>
                         <small class="d-block text-muted" th:text="${r.genderLabel}">Nam</small>
@@ -75,6 +85,15 @@
                 </tbody>
             </table>
         </div>
+        <nav class="d-flex justify-content-between align-items-center px-4 py-3 border-top" th:if="${roomPage != null and roomPage.totalPages > 1}">
+            <span class="small text-muted" th:text="${roomPage.totalElements} + ' phòng · trang ' + (${roomPage.number} + 1) + '/' + ${roomPage.totalPages}"></span>
+            <div class="btn-group btn-group-sm">
+                <a class="btn btn-outline-secondary" th:if="${!roomPage.first}"
+                   th:href="@{${baseUri ?: '/admin/rooms'}(buildingId=${buildingId}, page=${roomPage.number - 1})}">Trước</a>
+                <a class="btn btn-outline-secondary" th:if="${!roomPage.last}"
+                   th:href="@{${baseUri ?: '/admin/rooms'}(buildingId=${buildingId}, page=${roomPage.number + 1})}">Sau</a>
+            </div>
+        </nav>
     </section>
 </main>
 </body>

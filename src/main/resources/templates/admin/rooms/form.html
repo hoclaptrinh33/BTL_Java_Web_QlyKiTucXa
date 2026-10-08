@@ -97,7 +97,20 @@
                             <span class="ktx-chip ktx-room-preview__chip" id="previewChip">A-101</span>
                             <p class="ktx-room-preview__meta" id="previewMeta">Chọn tòa và loại phòng.</p>
                             <ul class="ktx-room-preview__beds" id="previewBeds"></ul>
-                            <p class="form-text mb-0">Không upload ảnh phòng. Đặc tả v1 không có hình; giường là chip G1…Gn.</p>
+
+                            <!-- Ảnh preview không gian loại phòng -->
+                            <div class="mt-3 rounded overflow-hidden border bg-white shadow-2xs" style="max-height: 140px;">
+                                <img id="previewRoomImg" src="/images/rooms/room-standard-6.jpg" alt="Ảnh minh họa loại phòng"
+                                     class="w-100 object-fit-cover" style="height: 130px;"
+                                     onerror="this.src='/images/rooms/room-standard-4.jpg'">
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2 px-1">
+                                <span class="small text-muted fw-semibold" id="previewRoomImgLabel">Phòng tiêu chuẩn</span>
+                                <a class="small text-decoration-none text-primary" th:href="@{/admin/room-types/images}" target="_blank">
+                                    <i class="bi bi-images"></i> Xem album ảnh
+                                </a>
+                            </div>
+                            <p class="form-text mb-0 mt-1 small text-muted">Không upload ảnh tại đây (ảnh phòng đồng bộ theo album loại phòng).</p>
                         </div>
 
                         <div class="ktx-field mt-3">
@@ -125,6 +138,12 @@
         const buildings = /*[[${buildingOptions}]]*/ [];
         const prices = /*[[${defaultPrices}]]*/ { STANDARD_4: 2400000, STANDARD_6: 1800000, STANDARD_8: 1200000, VIP_AC: 4000000 };
         const caps = /*[[${capacities}]]*/ { STANDARD_4: 4, STANDARD_6: 6, STANDARD_8: 8, VIP_AC: 2 };
+        const roomImages = {
+            STANDARD_4: { src: '/images/rooms/room-standard-4.jpg', label: 'Tiêu chuẩn 4 giường' },
+            STANDARD_6: { src: '/images/rooms/room-standard-6.jpg', label: 'Tiêu chuẩn 6 giường' },
+            STANDARD_8: { src: '/images/rooms/room-standard-8.jpg', label: 'Tiết kiệm 8 giường' },
+            VIP_AC: { src: '/images/rooms/room-vip-ac.jpg', label: 'VIP máy lạnh cao cấp' }
+        };
         const typeEl = document.getElementById('roomType');
         const priceEl = document.getElementById('pricePerTerm');
         const numEl = document.getElementById('roomNumber');
@@ -143,6 +162,9 @@
             const chip = document.getElementById('previewChip');
             const meta = document.getElementById('previewMeta');
             const beds = document.getElementById('previewBeds');
+            const imgEl = document.getElementById('previewRoomImg');
+            const imgLabel = document.getElementById('previewRoomImgLabel');
+
             if (chip) chip.textContent = code + '-' + num.toUpperCase();
             const gender = b && b.genderPolicy === 'FEMALE' ? 'Tòa Nữ' : (b ? 'Tòa Nam' : 'Chưa chọn tòa');
             if (meta) meta.textContent = gender + ' · ' + cap + ' giường VACANT khi lưu';
@@ -153,6 +175,10 @@
                     li.textContent = 'G' + i;
                     beds.appendChild(li);
                 }
+            }
+            if (imgEl && roomImages[type]) {
+                imgEl.src = roomImages[type].src;
+                if (imgLabel) imgLabel.textContent = roomImages[type].label;
             }
         }
         if (typeEl && priceEl) {

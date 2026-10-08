@@ -2,343 +2,1230 @@
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
 <body>
 <main th:fragment="content">
-    <!-- Top Action / Info bar -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+<div class="cfg-container">
+
+    <!-- Top Header Bar -->
+    <div class="cfg-header-bar">
         <div>
-            <h1 class="h4 fw-bold mb-1">Cấu hình hệ thống</h1>
-            <p class="text-muted mb-0">
-                Quản lý các tham số vận hành toàn cục theo Phụ lục C (Trọng số phân bổ, Đặt cọc, Đơn giá điện nước, Điểm rèn luyện).
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <h1 class="h3 fw-bold mb-0 text-dark">Cài đặt hệ thống</h1>
+                <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 fw-semibold fs-7">
+                    <i class="bi bi-sliders2-vertical me-1"></i>19 tham số vận hành chuẩn (Phụ lục C)
+                </span>
+            </div>
+            <p class="text-muted mb-0 small">
+                <a th:href="@{/admin/dashboard}" class="text-decoration-none text-muted">Trang chủ</a> &rsaquo;
+                <span>Quản trị hệ thống</span> &rsaquo;
+                <span class="text-dark fw-medium">Cài đặt thông số</span>
             </p>
         </div>
-        <div>
-            <span class="ktx-pill is-mint py-2 px-3" th:if="${mailEnabled}">
-                <i class="bi bi-envelope-check-fill me-1"></i> Spring Mail: Đang BẬT
-            </span>
-            <span class="ktx-pill is-muted py-2 px-3" th:unless="${mailEnabled}">
-                <i class="bi bi-envelope-slash me-1"></i> Spring Mail: Đang TẮT (Opt-in)
-            </span>
+
+        <div class="cfg-search-input">
+            <i class="bi bi-search"></i>
+            <input type="text" id="cfgSearch" th:value="${q}" class="form-control" placeholder="Tìm kiếm tham số, mã config, đơn vị..." autocomplete="off" />
+            <button type="button" id="cfgSearchClear" class="btn btn-link btn-sm text-muted p-0 d-none" title="Xóa tìm kiếm">
+                <i class="bi bi-x-circle-fill"></i>
+            </button>
         </div>
     </div>
 
-    <!-- Email Status Card -->
-    <section class="ktx-card mb-4">
-        <div class="d-flex align-items-start gap-3">
-            <div class="ktx-toast-icon" style="font-size: 1.5rem; color: var(--violet);">
-                <i class="bi bi-info-circle-fill"></i>
+    <!-- Quick Stats Tab Navigation Strip -->
+    <div class="cfg-stats-strip" role="tablist" id="configTabs">
+        <button type="button" class="cfg-stat-chip is-active" id="alloc-tab" data-bs-toggle="tab" data-bs-target="#alloc-pane" role="tab" aria-controls="alloc-pane" aria-selected="true">
+            <i class="bi bi-diagram-3 text-primary"></i>
+            <span>Phân bổ chỗ ở:</span>
+            <strong th:text="${groupedConfigs['alloc'] != null ? groupedConfigs['alloc'].size() : 0}">4</strong>
+        </button>
+        <button type="button" class="cfg-stat-chip" id="contract-tab" data-bs-toggle="tab" data-bs-target="#contract-pane" role="tab" aria-controls="contract-pane" aria-selected="false">
+            <i class="bi bi-file-earmark-text text-info"></i>
+            <span>Hợp đồng &amp; Cọc:</span>
+            <strong th:text="${groupedConfigs['contract'] != null ? groupedConfigs['contract'].size() : 0}">3</strong>
+        </button>
+        <button type="button" class="cfg-stat-chip" id="billing-tab" data-bs-toggle="tab" data-bs-target="#billing-pane" role="tab" aria-controls="billing-pane" aria-selected="false">
+            <i class="bi bi-lightning-charge text-warning"></i>
+            <span>Điện nước &amp; Biểu phí:</span>
+            <strong th:text="${groupedConfigs['billing'] != null ? groupedConfigs['billing'].size() : 0}">8</strong>
+        </button>
+        <button type="button" class="cfg-stat-chip" id="conduct-tab" data-bs-toggle="tab" data-bs-target="#conduct-pane" role="tab" aria-controls="conduct-pane" aria-selected="false">
+            <i class="bi bi-award text-success"></i>
+            <span>Điểm rèn luyện:</span>
+            <strong th:text="${groupedConfigs['conduct'] != null ? groupedConfigs['conduct'].size() : 0}">2</strong>
+        </button>
+        <button type="button" class="cfg-stat-chip" id="other-tab" data-bs-toggle="tab" data-bs-target="#other-pane" role="tab" aria-controls="other-pane" aria-selected="false">
+            <i class="bi bi-sliders text-secondary"></i>
+            <span>Vận hành khác:</span>
+            <strong th:text="${groupedConfigs['other'] != null ? groupedConfigs['other'].size() : 0}">2</strong>
+        </button>
+    </div>
+
+    <!-- Compact Email Notification Bar -->
+    <div class="cfg-email-bar">
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle" style="width: 38px; height: 38px; font-size: 1.15rem; flex-shrink: 0;">
+                <i class="bi bi-envelope-at-fill" th:if="${mailEnabled}"></i>
+                <i class="bi bi-envelope-slash" th:unless="${mailEnabled}"></i>
             </div>
-            <div class="flex-grow-1">
-                <h6 class="fw-bold mb-1">Trạng thái gửi Email (Spring Mail)</h6>
-                <p class="text-muted mb-1 small">
-                    Hệ thống hoạt động độc lập không bắt buộc kết nối SMTP. Khi <code class="fw-semibold">ktx.mail.enabled=true</code> và có thông số SMTP trong cấu hình môi trường, hệ thống sẽ tự động kích hoạt gửi thông báo qua email cho sinh viên.
-                </p>
-                <div class="d-flex gap-3 align-items-center mt-2 small">
-                    <span>Trạng thái hiện tại: 
-                        <strong th:if="${mailEnabled}" class="text-success">Đã kích hoạt gửi mail</strong>
-                        <strong th:unless="${mailEnabled}" class="text-secondary">Chưa kích hoạt (Opt-in mode)</strong>
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <strong class="text-dark fs-7">Dịch vụ gửi Email tự động (Spring Mail)</strong>
+                    <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-2 py-0.5 fs-8" th:if="${mailEnabled}">
+                        <span class="cfg-dot-pulse is-on"></span> Đang BẬT
                     </span>
-                    <span class="text-muted">|</span>
-                    <span class="text-muted">Cấu hình qua biến môi trường: <code>KTX_MAIL_ENABLED=true</code></span>
+                    <span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5 fs-8" th:unless="${mailEnabled}">
+                        <span class="cfg-dot-pulse is-off"></span> Đang TẮT (Chế độ độc lập Opt-in)
+                    </span>
                 </div>
+                <p class="text-muted mb-0 small" style="font-size: 0.78rem;">
+                    Hệ thống chạy bình thường không cần SMTP. Để bật tính năng gửi email thông báo hóa đơn và nhắc hạn hợp đồng, cấu hình biến môi trường:
+                </p>
             </div>
         </div>
-    </section>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="cfg-email-bar__code" id="btnCopyEnv" title="Click để sao chép biến môi trường">
+                <span>KTX_MAIL_ENABLED=true</span>
+                <i class="bi bi-copy text-muted" id="iconCopyEnv"></i>
+            </button>
+        </div>
+    </div>
 
-    <!-- Config Navigation Tabs -->
-    <ul class="nav nav-tabs mb-4" id="configTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active fw-semibold" id="alloc-tab" data-bs-toggle="tab" data-bs-target="#alloc-pane" type="button" role="tab">
-                <i class="bi bi-grid-3x3-gap me-1"></i> Phân bổ chỗ ở (alloc)
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold" id="contract-tab" data-bs-toggle="tab" data-bs-target="#contract-pane" type="button" role="tab">
-                <i class="bi bi-file-earmark-text me-1"></i> Hợp đồng &amp; Cọc (contract)
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold" id="billing-tab" data-bs-toggle="tab" data-bs-target="#billing-pane" type="button" role="tab">
-                <i class="bi bi-lightning-charge me-1"></i> Điện nước &amp; Biểu phí (billing)
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold" id="conduct-tab" data-bs-toggle="tab" data-bs-target="#conduct-pane" type="button" role="tab">
-                <i class="bi bi-award me-1"></i> Điểm rèn luyện (conduct)
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold" id="other-tab" data-bs-toggle="tab" data-bs-target="#other-pane" type="button" role="tab">
-                <i class="bi bi-sliders me-1"></i> Cấu hình khác
-            </button>
-        </li>
-    </ul>
-
-    <!-- Config Panes Content -->
+    <!-- Tab Panes Content -->
     <div class="tab-content" id="configTabContent">
 
-        <!-- Tab 1: Allocation -->
+        <!-- ===================================================================
+             TAB 1: PHÂN BỔ CHỖ Ở (ALLOCATION)
+             =================================================================== -->
         <div class="tab-pane fade show active" id="alloc-pane" role="tabpanel">
-            <form th:action="@{/admin/configs}" method="post">
-                <section class="ktx-card p-0">
-                    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <form th:action="@{/admin/configs}" method="post" class="cfg-batch-form">
+                <div class="cfg-group-box">
+                    <div class="cfg-group-head">
                         <div>
-                            <h6 class="fw-bold mb-0">Tham số thuật toán phân bổ (AllocationEngine)</h6>
-                            <small class="text-muted">Các trọng số tính điểm ưu tiên khi duyệt và xếp chỗ ở tự động.</small>
+                            <h2 class="cfg-group-title">
+                                <i class="bi bi-diagram-3 text-primary"></i>
+                                <span>Tham số thuật toán phân bổ chỗ ở (Allocation Engine)</span>
+                            </h2>
+                            <p class="cfg-group-subtitle">
+                                Thiết lập các trọng số cộng điểm ưu tiên khi duyệt đơn và tự động xếp phòng cho sinh viên theo Phụ lục C.
+                            </p>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="bi bi-check2-circle me-1"></i> Lưu nhóm phân bổ
+                        <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Lưu tất cả nhóm phân bổ
                         </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 ktx-table">
-                            <thead>
-                            <tr>
-                                <th style="width: 25%;">Khóa cấu hình</th>
-                                <th style="width: 12%;">Kiểu</th>
-                                <th style="width: 35%;">Mô tả</th>
-                                <th style="width: 28%;">Giá trị</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr th:each="cfg : ${groupedConfigs['alloc']}">
-                                <td>
-                                    <span class="ktx-chip" th:text="${cfg.configKey}">alloc.weight.policy</span>
-                                </td>
-                                <td>
-                                    <span class="ktx-pill is-violet" th:text="${cfg.valueType}">INT</span>
-                                </td>
-                                <td>
-                                    <span class="small text-muted" th:text="${cfg.description}">Mô tả</span>
-                                </td>
-                                <td>
-                                    <input type="text" class="form-control form-control-sm"
-                                           th:name="${cfg.configKey}"
-                                           th:value="${cfg.configValue}" required />
-                                </td>
-                            </tr>
-                            <tr th:if="${#lists.isEmpty(groupedConfigs['alloc'])}">
-                                <td colspan="4" class="text-center text-muted py-3">Chưa có cấu hình nào trong nhóm này.</td>
-                            </tr>
-                            </tbody>
-                        </table>
+
+                    <!-- List of Alloc Configs -->
+                    <div class="cfg-cards-wrapper">
+
+                        <!-- 1. alloc.preference.mode -->
+                        <div class="cfg-setting-card" data-cfg-search="alloc.preference.mode chế độ xử lý lệch nguyện vọng phòng xếp chỗ linh hoạt nghiêm ngặt">
+                            <div>
+                                <h3 class="cfg-setting-label">Chế độ xử lý khi hết loại phòng mong muốn</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="alloc.preference.mode" title="Click để sao chép mã">
+                                        alloc.preference.mode <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-sky">STRING</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Quy định cách thuật toán xếp chỗ xử lý khi loại phòng mà sinh viên đăng ký ban đầu (ví dụ: phòng 4 người, phòng VIP) đã hết sạch giường trống.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>SOFT (Khuyên dùng):</strong> Tự động xếp sang loại phòng khác còn giường để sinh viên vẫn có chỗ ở. <strong>STRICT:</strong> Chỉ xếp đúng phòng đã chọn, hết chỗ sẽ đưa vào danh sách chờ.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Khuyến nghị: SOFT (Linh hoạt trong mùa tựu trường)
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <input type="hidden" name="alloc.preference.mode" id="input-alloc-preference-mode"
+                                       th:value="${groupedConfigs['alloc'] != null ? (groupedConfigs['alloc'].?[configKey == 'alloc.preference.mode'].size() > 0 ? groupedConfigs['alloc'].?[configKey == 'alloc.preference.mode'][0].configValue : 'SOFT') : 'SOFT'}" />
+                                <div class="cfg-options-group">
+                                    <label class="cfg-option-card" th:classappend="${(groupedConfigs['alloc'] != null ? (groupedConfigs['alloc'].?[configKey == 'alloc.preference.mode'].size() > 0 ? groupedConfigs['alloc'].?[configKey == 'alloc.preference.mode'][0].configValue : 'SOFT') : 'SOFT') != 'STRICT'} ? 'is-selected' : ''">
+                                        <input type="radio" name="radio_pref_mode" value="SOFT"
+                                               th:checked="${(groupedConfigs['alloc'] != null ? (groupedConfigs['alloc'].?[configKey == 'alloc.preference.mode'].size() > 0 ? groupedConfigs['alloc'].?[configKey == 'alloc.preference.mode'][0].configValue : 'SOFT') : 'SOFT') != 'STRICT'}"
+                                               data-target-input="input-alloc-preference-mode" />
+                                        <div>
+                                            <strong><i class="bi bi-shuffle me-1 text-primary"></i> SOFT (Linh hoạt)</strong>
+                                            <small>Tự động chuyển sang loại phòng khác còn trống tương đương</small>
+                                        </div>
+                                    </label>
+                                    <label class="cfg-option-card" th:classappend="${(groupedConfigs['alloc'] != null ? (groupedConfigs['alloc'].?[configKey == 'alloc.preference.mode'].size() > 0 ? groupedConfigs['alloc'].?[configKey == 'alloc.preference.mode'][0].configValue : 'SOFT') : 'SOFT') == 'STRICT'} ? 'is-selected' : ''">
+                                        <input type="radio" name="radio_pref_mode" value="STRICT"
+                                               th:checked="${(groupedConfigs['alloc'] != null ? (groupedConfigs['alloc'].?[configKey == 'alloc.preference.mode'].size() > 0 ? groupedConfigs['alloc'].?[configKey == 'alloc.preference.mode'][0].configValue : 'SOFT') : 'SOFT') == 'STRICT'}"
+                                               data-target-input="input-alloc-preference-mode" />
+                                        <div>
+                                            <strong><i class="bi bi-lock-fill me-1 text-danger"></i> STRICT (Nghiêm ngặt)</strong>
+                                            <small>Chỉ xếp đúng phòng đăng ký, nếu hết thì vào danh sách chờ</small>
+                                        </div>
+                                    </label>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="alloc.preference.mode"
+                                        data-input-id="input-alloc-preference-mode"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. alloc.weight.policy -->
+                        <div class="cfg-setting-card" data-cfg-search="alloc.weight.policy trọng số điểm ưu tiên diện chính sách hộ nghèo thương binh con liệt sĩ">
+                            <div>
+                                <h3 class="cfg-setting-label">Điểm ưu tiên cho Sinh viên diện chính sách</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="alloc.weight.policy" title="Click để sao chép mã">
+                                        alloc.weight.policy <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Số điểm cộng trực tiếp vào hồ sơ xét duyệt của sinh viên thuộc diện chính sách (con thương binh, bệnh binh, hộ nghèo, dân tộc thiểu số, khuyết tật...).
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Tác động:</strong> Điểm cộng càng cao thì sinh viên chính sách càng đứng đầu danh sách chọn phòng. Ví dụ: Cộng 1.000 điểm đảm bảo ưu tiên tuyệt đối.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 1.000 điểm
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" class="form-control" name="alloc.weight.policy" id="input-alloc-weight-policy"
+                                           th:value="${groupedConfigs['alloc'] != null ? (groupedConfigs['alloc'].?[configKey == 'alloc.weight.policy'].size() > 0 ? groupedConfigs['alloc'].?[configKey == 'alloc.weight.policy'][0].configValue : '1000') : '1000'}" required />
+                                    <span class="cfg-unit-tag">điểm</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="alloc.weight.policy"
+                                        data-input-id="input-alloc-weight-policy"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 3. alloc.weight.remote -->
+                        <div class="cfg-setting-card" data-cfg-search="alloc.weight.remote trọng số điểm ưu tiên hộ khẩu vùng sâu vùng xa hải đảo tỉnh xa">
+                            <div>
+                                <h3 class="cfg-setting-label">Điểm ưu tiên cho Sinh viên hộ khẩu vùng sâu, vùng xa</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="alloc.weight.remote" title="Click để sao chép mã">
+                                        alloc.weight.remote <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Số điểm ưu tiên cộng thêm cho sinh viên thường trú tại các vùng đặc biệt khó khăn, hải đảo hoặc tỉnh xa có nhu cầu chỗ ở nội trú cấp thiết.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Tác động:</strong> Sinh viên tỉnh xa được cộng 500 điểm, xếp trên sinh viên ở gần trường nhưng sau diện chính sách (1.000 điểm).</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 500 điểm
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" class="form-control" name="alloc.weight.remote" id="input-alloc-weight-remote"
+                                           th:value="${groupedConfigs['alloc'] != null ? (groupedConfigs['alloc'].?[configKey == 'alloc.weight.remote'].size() > 0 ? groupedConfigs['alloc'].?[configKey == 'alloc.weight.remote'][0].configValue : '500') : '500'}" required />
+                                    <span class="cfg-unit-tag">điểm</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="alloc.weight.remote"
+                                        data-input-id="input-alloc-weight-remote"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 4. alloc.weight.prev_good -->
+                        <div class="cfg-setting-card" data-cfg-search="alloc.weight.prev_good trọng số điểm ưu tiên kết quả nội trú kỳ trước tốt chấp hành tốt">
+                            <div>
+                                <h3 class="cfg-setting-label">Điểm ưu tiên cho Sinh viên nội trú kỳ trước tốt</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="alloc.weight.prev_good" title="Click để sao chép mã">
+                                        alloc.weight.prev_good <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Điểm thưởng khuyến khích cho sinh viên đã ở KTX kỳ trước có điểm rèn luyện tốt, không vi phạm kỷ luật và hoàn thành nghĩa vụ tài chính đúng hạn.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Tác động:</strong> Tự động cộng 200 điểm giúp sinh viên gương mẫu giữ được phòng hoặc ưu tiên tiếp tục ở lại KTX các kỳ sau.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 200 điểm
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" class="form-control" name="alloc.weight.prev_good" id="input-alloc-weight-prev_good"
+                                           th:value="${groupedConfigs['alloc'] != null ? (groupedConfigs['alloc'].?[configKey == 'alloc.weight.prev_good'].size() > 0 ? groupedConfigs['alloc'].?[configKey == 'alloc.weight.prev_good'][0].configValue : '200') : '200'}" required />
+                                    <span class="cfg-unit-tag">điểm</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="alloc.weight.prev_good"
+                                        data-input-id="input-alloc-weight-prev_good"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
-                </section>
+                </div>
             </form>
         </div>
 
-        <!-- Tab 2: Contract -->
+        <!-- ===================================================================
+             TAB 2: HỢP ĐỒNG & TIỀN CỌC (CONTRACT)
+             =================================================================== -->
         <div class="tab-pane fade" id="contract-pane" role="tabpanel">
-            <form th:action="@{/admin/configs}" method="post">
-                <section class="ktx-card p-0">
-                    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <form th:action="@{/admin/configs}" method="post" class="cfg-batch-form">
+                <div class="cfg-group-box">
+                    <div class="cfg-group-head">
                         <div>
-                            <h6 class="fw-bold mb-0">Tham số hợp đồng &amp; Tiền cọc</h6>
-                            <small class="text-muted">Tỉ lệ đặt cọc, thời hạn hợp đồng kỳ và thời gian nhắc hạn.</small>
+                            <h2 class="cfg-group-title">
+                                <i class="bi bi-file-earmark-text text-info"></i>
+                                <span>Tham số hợp đồng nội trú &amp; Tiền đặt cọc</span>
+                            </h2>
+                            <p class="cfg-group-subtitle">
+                                Quy định tỷ lệ cọc giữ chỗ, thời hạn lưu trú của học kỳ tiêu chuẩn và thời gian gửi email nhắc hết hạn.
+                            </p>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="bi bi-check2-circle me-1"></i> Lưu nhóm hợp đồng
+                        <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Lưu tất cả nhóm hợp đồng
                         </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 ktx-table">
-                            <thead>
-                            <tr>
-                                <th style="width: 25%;">Khóa cấu hình</th>
-                                <th style="width: 12%;">Kiểu</th>
-                                <th style="width: 35%;">Mô tả</th>
-                                <th style="width: 28%;">Giá trị</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr th:each="cfg : ${groupedConfigs['contract']}">
-                                <td>
-                                    <span class="ktx-chip" th:text="${cfg.configKey}">contract.deposit.ratio</span>
-                                </td>
-                                <td>
-                                    <span class="ktx-pill is-peach" th:text="${cfg.valueType}">DECIMAL</span>
-                                </td>
-                                <td>
-                                    <span class="small text-muted" th:text="${cfg.description}">Mô tả</span>
-                                </td>
-                                <td>
-                                    <input type="text" class="form-control form-control-sm"
-                                           th:name="${cfg.configKey}"
-                                           th:value="${cfg.configValue}" required />
-                                </td>
-                            </tr>
-                            <tr th:if="${#lists.isEmpty(groupedConfigs['contract'])}">
-                                <td colspan="4" class="text-center text-muted py-3">Chưa có cấu hình nào trong nhóm này.</td>
-                            </tr>
-                            </tbody>
-                        </table>
+
+                    <div class="cfg-cards-wrapper">
+
+                        <!-- 1. contract.deposit.ratio -->
+                        <div class="cfg-setting-card" data-cfg-search="contract.deposit.ratio tỷ lệ tiền đặt cọc giữ chỗ hợp đồng hoàn cọc bảo đảm tài sản">
+                            <div>
+                                <h3 class="cfg-setting-label">Tỷ lệ tiền đặt cọc giữ chỗ nội trú</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="contract.deposit.ratio" title="Click để sao chép mã">
+                                        contract.deposit.ratio <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-peach">DECIMAL</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Tỷ lệ phần trăm tính trên giá thuê phòng của cả kỳ học mà sinh viên bắt buộc nộp để đặt cọc giữ chỗ và bảo đảm tài sản phòng. Tiền này sẽ được hoàn trả khi trả phòng và thanh lý hợp đồng.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Ví dụ tính toán:</strong> Đặt <code>0.5</code> (50%). Nếu phòng có giá 1.500.000 đ/kỳ thì tiền cọc sinh viên phải nộp là <strong>750.000 đ</strong> (làm tròn số nguyên).</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 0.5 (tương đương 50% tiền phòng)
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" step="0.05" min="0" max="1" class="form-control" name="contract.deposit.ratio" id="input-contract-deposit-ratio"
+                                           th:value="${groupedConfigs['contract'] != null ? (groupedConfigs['contract'].?[configKey == 'contract.deposit.ratio'].size() > 0 ? groupedConfigs['contract'].?[configKey == 'contract.deposit.ratio'][0].configValue : '0.5') : '0.5'}" required />
+                                    <span class="cfg-unit-tag">(0.5 = 50%)</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="contract.deposit.ratio"
+                                        data-input-id="input-contract-deposit-ratio"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. contract.term.months -->
+                        <div class="cfg-setting-card" data-cfg-search="contract.term.months thời hạn hợp đồng nội trú tiêu chuẩn học kỳ tháng độ dài kỳ">
+                            <div>
+                                <h3 class="cfg-setting-label">Thời hạn hợp đồng nội trú tiêu chuẩn (kỳ học)</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="contract.term.months" title="Click để sao chép mã">
+                                        contract.term.months <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Số tháng hiệu lực của một hợp đồng nội trú theo kỳ học chính quy. Hệ thống tự động tính <code>Ngày kết thúc = Ngày bắt đầu + Số tháng này</code> khi tạo hợp đồng.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Ví dụ:</strong> Đặt <code>5</code> tháng tương ứng với 1 học kỳ đại học (HK1 từ T8-T12, HK2 từ T1-T5). Không nhân vào số tiền đặt cọc.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 5 tháng
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" min="1" max="12" class="form-control" name="contract.term.months" id="input-contract-term-months"
+                                           th:value="${groupedConfigs['contract'] != null ? (groupedConfigs['contract'].?[configKey == 'contract.term.months'].size() > 0 ? groupedConfigs['contract'].?[configKey == 'contract.term.months'][0].configValue : '5') : '5'}" required />
+                                    <span class="cfg-unit-tag">tháng / kỳ</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="contract.term.months"
+                                        data-input-id="input-contract-term-months"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 3. contract.expiry.remind.days -->
+                        <div class="cfg-setting-card" data-cfg-search="contract.expiry.remind.days thời gian gửi email nhắc sắp hết hạn hợp đồng thông báo gia hạn">
+                            <div>
+                                <h3 class="cfg-setting-label">Thời gian gửi email nhắc sắp hết hạn hợp đồng</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="contract.expiry.remind.days" title="Click để sao chép mã">
+                                        contract.expiry.remind.days <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Số ngày đếm ngược trước khi hợp đồng kết thúc để hệ thống tự động gửi email và thông báo nhắc sinh viên làm thủ tục gia hạn hoặc đăng ký trả phòng.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Cơ chế:</strong> Tác vụ quét lúc 00:00 hàng đêm. Nếu hợp đồng còn đúng hoặc dưới 30 ngày, sinh viên sẽ nhận được email hướng dẫn thủ tục.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 30 ngày trước khi hết hạn
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" min="1" max="90" class="form-control" name="contract.expiry.remind.days" id="input-contract-expiry-remind-days"
+                                           th:value="${groupedConfigs['contract'] != null ? (groupedConfigs['contract'].?[configKey == 'contract.expiry.remind.days'].size() > 0 ? groupedConfigs['contract'].?[configKey == 'contract.expiry.remind.days'][0].configValue : '30') : '30'}" required />
+                                    <span class="cfg-unit-tag">ngày trước hạn</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="contract.expiry.remind.days"
+                                        data-input-id="input-contract-expiry-remind-days"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
-                </section>
+                </div>
             </form>
         </div>
 
-        <!-- Tab 3: Billing -->
+        <!-- ===================================================================
+             TAB 3: ĐIỆN NƯỚC & BIỂU PHÍ (BILLING)
+             =================================================================== -->
         <div class="tab-pane fade" id="billing-pane" role="tabpanel">
-            <form th:action="@{/admin/configs}" method="post">
-                <section class="ktx-card p-0">
-                    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <form th:action="@{/admin/configs}" method="post" class="cfg-batch-form">
+                <div class="cfg-group-box">
+                    <div class="cfg-group-head">
                         <div>
-                            <h6 class="fw-bold mb-0">Tham số điện nước &amp; Biểu phí dịch vụ</h6>
-                            <small class="text-muted">Bậc thang điện EVN, đơn giá nước, các loại phí dịch vụ và tỉ lệ phạt quá hạn.</small>
+                            <h2 class="cfg-group-title">
+                                <i class="bi bi-lightning-charge text-warning"></i>
+                                <span>Biểu giá điện, nước, dịch vụ &amp; Quy định thanh toán</span>
+                            </h2>
+                            <p class="cfg-group-subtitle">
+                                Cấu hình biểu giá điện lũy tiến EVN 6 bậc, đơn giá nước, phí dịch vụ cố định và chế độ phạt nộp chậm.
+                            </p>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="bi bi-check2-circle me-1"></i> Lưu nhóm điện nước
+                        <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Lưu tất cả nhóm biểu phí
                         </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 ktx-table">
-                            <thead>
-                            <tr>
-                                <th style="width: 25%;">Khóa cấu hình</th>
-                                <th style="width: 12%;">Kiểu</th>
-                                <th style="width: 30%;">Mô tả</th>
-                                <th style="width: 33%;">Giá trị</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr th:each="cfg : ${groupedConfigs['billing']}">
-                                <td>
-                                    <span class="ktx-chip" th:text="${cfg.configKey}">billing.water.price_per_m3</span>
-                                </td>
-                                <td>
-                                    <span class="ktx-pill is-sky" th:if="${cfg.valueType == 'INT'}">INT</span>
-                                    <span class="ktx-pill is-peach" th:if="${cfg.valueType == 'DECIMAL'}">DECIMAL</span>
-                                    <span class="ktx-pill is-rose" th:if="${cfg.valueType == 'JSON'}">JSON</span>
-                                    <span class="ktx-pill is-mint" th:if="${cfg.valueType == 'BOOLEAN'}">BOOLEAN</span>
-                                    <span class="ktx-pill is-muted" th:if="${cfg.valueType != 'INT' and cfg.valueType != 'DECIMAL' and cfg.valueType != 'JSON' and cfg.valueType != 'BOOLEAN'}" th:text="${cfg.valueType}">STRING</span>
-                                </td>
-                                <td>
-                                    <span class="small text-muted" th:text="${cfg.description}">Mô tả</span>
-                                </td>
-                                <td>
-                                    <textarea th:if="${cfg.valueType == 'JSON'}" class="form-control form-control-sm font-monospace"
-                                              th:name="${cfg.configKey}"
-                                              rows="3" th:text="${cfg.configValue}" required></textarea>
-                                    <select th:if="${cfg.valueType == 'BOOLEAN'}" class="form-select form-select-sm"
-                                            th:name="${cfg.configKey}">
-                                        <option value="true" th:selected="${cfg.configValue == 'true'}">true</option>
-                                        <option value="false" th:selected="${cfg.configValue == 'false'}">false</option>
-                                    </select>
-                                    <input th:if="${cfg.valueType != 'JSON' and cfg.valueType != 'BOOLEAN'}"
-                                           type="text" class="form-control form-control-sm"
-                                           th:name="${cfg.configKey}"
-                                           th:value="${cfg.configValue}" required />
-                                </td>
-                            </tr>
-                            <tr th:if="${#lists.isEmpty(groupedConfigs['billing'])}">
-                                <td colspan="4" class="text-center text-muted py-3">Chưa có cấu hình nào trong nhóm này.</td>
-                            </tr>
-                            </tbody>
-                        </table>
+
+                    <div class="cfg-cards-wrapper">
+
+                        <!-- 1. billing.electricity.tiers -->
+                        <div class="cfg-setting-card" data-cfg-search="billing.electricity.tiers biểu giá điện sinh hoạt 6 bậc evn kwh lũy tiến tiền điện">
+                            <div>
+                                <h3 class="cfg-setting-label">Biểu giá điện sinh hoạt bậc thang lũy tiến (EVN 6 bậc)</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="billing.electricity.tiers" title="Click để sao chép mã">
+                                        billing.electricity.tiers <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-rose">JSON</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Bảng đơn giá điện tính theo bậc thang lũy tiến chuẩn của Tập đoàn Điện lực VN (EVN). Tổng số điện phòng dùng sẽ tính theo từng bậc rồi chia đều cho sinh viên trong phòng.
+                                    <div class="cfg-evn-box">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="fs-8 fw-bold text-dark text-uppercase"><i class="bi bi-lightning-fill text-warning me-1"></i> Bảng giá điện hiện hành:</span>
+                                            <span class="text-muted fs-8">6 bậc thang EVN</span>
+                                        </div>
+                                        <div class="cfg-evn-grid">
+                                            <div class="cfg-evn-item">
+                                                <span class="cfg-evn-badge">Bậc 1</span>
+                                                <span class="cfg-evn-kwh">0 - 50 kWh</span>
+                                                <span class="cfg-evn-price">1.984 đ</span>
+                                            </div>
+                                            <div class="cfg-evn-item">
+                                                <span class="cfg-evn-badge">Bậc 2</span>
+                                                <span class="cfg-evn-kwh">51 - 100 kWh</span>
+                                                <span class="cfg-evn-price">2.050 đ</span>
+                                            </div>
+                                            <div class="cfg-evn-item">
+                                                <span class="cfg-evn-badge">Bậc 3</span>
+                                                <span class="cfg-evn-kwh">101 - 200 kWh</span>
+                                                <span class="cfg-evn-price">2.380 đ</span>
+                                            </div>
+                                            <div class="cfg-evn-item">
+                                                <span class="cfg-evn-badge">Bậc 4</span>
+                                                <span class="cfg-evn-kwh">201 - 300 kWh</span>
+                                                <span class="cfg-evn-price">2.998 đ</span>
+                                            </div>
+                                            <div class="cfg-evn-item">
+                                                <span class="cfg-evn-badge">Bậc 5</span>
+                                                <span class="cfg-evn-kwh">301 - 400 kWh</span>
+                                                <span class="cfg-evn-price">3.350 đ</span>
+                                            </div>
+                                            <div class="cfg-evn-item">
+                                                <span class="cfg-evn-badge">Bậc 6</span>
+                                                <span class="cfg-evn-kwh">&gt; 400 kWh</span>
+                                                <span class="cfg-evn-price">3.460 đ</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <a class="cfg-json-toggle" data-bs-toggle="collapse" href="#collapseJsonTiers" role="button">
+                                            <i class="bi bi-code-slash"></i> Xem / Chỉnh sửa định dạng JSON nâng cao
+                                        </a>
+                                    </div>
+                                    <div class="collapse mt-2" id="collapseJsonTiers">
+                                        <textarea class="form-control cfg-json-editor" name="billing.electricity.tiers" id="input-billing-electricity-tiers" rows="3"
+                                                  th:text="${groupedConfigs['billing'] != null ? (groupedConfigs['billing'].?[configKey == 'billing.electricity.tiers'].size() > 0 ? groupedConfigs['billing'].?[configKey == 'billing.electricity.tiers'][0].configValue : '[{&quot;to&quot;:50,&quot;price&quot;:1984},{&quot;to&quot;:100,&quot;price&quot;:2050},{&quot;to&quot;:200,&quot;price&quot;:2380},{&quot;to&quot;:300,&quot;price&quot;:2998},{&quot;to&quot;:400,&quot;price&quot;:3350},{&quot;to&quot;:null,&quot;price&quot;:3460}]') : '[{&quot;to&quot;:50,&quot;price&quot;:1984},{&quot;to&quot;:100,&quot;price&quot;:2050},{&quot;to&quot;:200,&quot;price&quot;:2380},{&quot;to&quot;:300,&quot;price&quot;:2998},{&quot;to&quot;:400,&quot;price&quot;:3350},{&quot;to&quot;:null,&quot;price&quot;:3460}]'}"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="billing.electricity.tiers"
+                                        data-input-id="input-billing-electricity-tiers"
+                                        title="Lưu riêng bậc giá điện này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. billing.water.price_per_m3 -->
+                        <div class="cfg-setting-card" data-cfg-search="billing.water.price_per_m3 đơn giá nước sinh hoạt khối m3 tiền nước">
+                            <div>
+                                <h3 class="cfg-setting-label">Đơn giá nước sinh hoạt (đ / m³)</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="billing.water.price_per_m3" title="Click để sao chép mã">
+                                        billing.water.price_per_m3 <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Đơn giá tính cho mỗi mét khối (m³) nước sinh hoạt thực tế sử dụng qua đồng hồ nước của phòng trong tháng. Tổng tiền nước phòng được chia đều cho các thành viên.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Ví dụ:</strong> Phòng dùng 10 m³ nước x 15.000 đ = 150.000 đ. Phòng có 3 người thì mỗi bạn đóng 50.000 đ tiền nước.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 15.000 đ / m³
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" step="1000" min="0" class="form-control" name="billing.water.price_per_m3" id="input-billing-water-price_per_m3"
+                                           th:value="${groupedConfigs['billing'] != null ? (groupedConfigs['billing'].?[configKey == 'billing.water.price_per_m3'].size() > 0 ? groupedConfigs['billing'].?[configKey == 'billing.water.price_per_m3'][0].configValue : '15000') : '15000'}" required />
+                                    <span class="cfg-unit-tag">đ / m³</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="billing.water.price_per_m3"
+                                        data-input-id="input-billing-water-price_per_m3"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 3. billing.fee.sanitation_per_person -->
+                        <div class="cfg-setting-card" data-cfg-search="billing.fee.sanitation_per_person phí vệ sinh môi trường thu gom rác hàng tháng người">
+                            <div>
+                                <h3 class="cfg-setting-label">Phí vệ sinh môi trường &amp; Thu gom rác</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="billing.fee.sanitation_per_person" title="Click để sao chép mã">
+                                        billing.fee.sanitation_per_person <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Phí dịch vụ cố định hàng tháng tính trên mỗi sinh viên để chi trả cho công tác vệ sinh hành lang, khu vệ sinh chung và thu gom rác khuôn viên KTX.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Tác động:</strong> Tự động cộng vào hóa đơn hàng tháng của từng sinh viên đang ở trong ký túc xá.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 20.000 đ / người / tháng
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" step="5000" min="0" class="form-control" name="billing.fee.sanitation_per_person" id="input-billing-fee-sanitation_per_person"
+                                           th:value="${groupedConfigs['billing'] != null ? (groupedConfigs['billing'].?[configKey == 'billing.fee.sanitation_per_person'].size() > 0 ? groupedConfigs['billing'].?[configKey == 'billing.fee.sanitation_per_person'][0].configValue : '20000') : '20000'}" required />
+                                    <span class="cfg-unit-tag">đ / người / tháng</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="billing.fee.sanitation_per_person"
+                                        data-input-id="input-billing-fee-sanitation_per_person"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 4. billing.fee.internet_per_room -->
+                        <div class="cfg-setting-card" data-cfg-search="billing.fee.internet_per_room cước phí mạng internet wifi phòng chia đều">
+                            <div>
+                                <h3 class="cfg-setting-label">Cước phí mạng Internet Wifi cố định mỗi phòng</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="billing.fee.internet_per_room" title="Click để sao chép mã">
+                                        billing.fee.internet_per_room <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Chi phí gói mạng Internet cáp quang Wifi tốc độ cao trang bị cho từng phòng. Số tiền này hàng tháng được tự động chia đều cho các thành viên trong phòng.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Ví dụ:</strong> Gói 50.000 đ/phòng/tháng. Nếu phòng có 4 sinh viên thì mỗi bạn chia đều đóng 12.500 đ.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 50.000 đ / phòng / tháng
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" step="10000" min="0" class="form-control" name="billing.fee.internet_per_room" id="input-billing-fee-internet_per_room"
+                                           th:value="${groupedConfigs['billing'] != null ? (groupedConfigs['billing'].?[configKey == 'billing.fee.internet_per_room'].size() > 0 ? groupedConfigs['billing'].?[configKey == 'billing.fee.internet_per_room'][0].configValue : '50000') : '50000'}" required />
+                                    <span class="cfg-unit-tag">đ / phòng / tháng</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="billing.fee.internet_per_room"
+                                        data-input-id="input-billing-fee-internet_per_room"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 5. billing.fee.parking_per_person -->
+                        <div class="cfg-setting-card" data-cfg-search="billing.fee.parking_per_person phí gửi xe máy xe đạp bãi xe người">
+                            <div>
+                                <h3 class="cfg-setting-label">Phí gửi xe định kỳ hàng tháng</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="billing.fee.parking_per_person" title="Click để sao chép mã">
+                                        billing.fee.parking_per_person <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Cước phí trông giữ phương tiện (xe máy, xe đạp) tại nhà xe ký túc xá có camera và bảo vệ trông giữ 24/7.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Tác động:</strong> Tự động tính vào hóa đơn hàng tháng đối với các sinh viên có đăng ký gửi phương tiện tại KTX.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 30.000 đ / người / tháng
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" step="5000" min="0" class="form-control" name="billing.fee.parking_per_person" id="input-billing-fee-parking_per_person"
+                                           th:value="${groupedConfigs['billing'] != null ? (groupedConfigs['billing'].?[configKey == 'billing.fee.parking_per_person'].size() > 0 ? groupedConfigs['billing'].?[configKey == 'billing.fee.parking_per_person'][0].configValue : '30000') : '30000'}" required />
+                                    <span class="cfg-unit-tag">đ / người / tháng</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="billing.fee.parking_per_person"
+                                        data-input-id="input-billing-fee-parking_per_person"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 6. billing.room.split_monthly -->
+                        <div class="cfg-setting-card" data-cfg-search="billing.room.split_monthly phương thức thu tiền phòng theo kỳ học chia đều hàng tháng">
+                            <div>
+                                <h3 class="cfg-setting-label">Phương thức thu tiền thuê phòng</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="billing.room.split_monthly" title="Click để sao chép mã">
+                                        billing.room.split_monthly <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-mint">BOOLEAN</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Quy định chế độ thu tiền thuê phòng: thu trọn gói cả kỳ học (5 tháng) ngay khi nhận phòng hay chia nhỏ thu định kỳ hàng tháng kèm hóa đơn điện nước.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>TẮT (Khuyên dùng):</strong> Thu trọn gói tiền phòng cả kỳ khi làm hợp đồng. Hóa đơn hàng tháng chỉ gồm điện nước, dịch vụ. <strong>BẬT:</strong> Chia đều tiền phòng thu theo tháng.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mặc định: TẮT (Thu trọn kỳ học 5 tháng)
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <input type="hidden" name="billing.room.split_monthly" id="input-billing-room-split_monthly"
+                                       th:value="${groupedConfigs['billing'] != null ? (groupedConfigs['billing'].?[configKey == 'billing.room.split_monthly'].size() > 0 ? groupedConfigs['billing'].?[configKey == 'billing.room.split_monthly'][0].configValue : 'false') : 'false'}" />
+                                <div class="cfg-options-group">
+                                    <label class="cfg-option-card" th:classappend="${(groupedConfigs['billing'] != null ? (groupedConfigs['billing'].?[configKey == 'billing.room.split_monthly'].size() > 0 ? groupedConfigs['billing'].?[configKey == 'billing.room.split_monthly'][0].configValue : 'false') : 'false') != 'true'} ? 'is-selected' : ''">
+                                        <input type="radio" name="radio_split_monthly" value="false"
+                                               th:checked="${(groupedConfigs['billing'] != null ? (groupedConfigs['billing'].?[configKey == 'billing.room.split_monthly'].size() > 0 ? groupedConfigs['billing'].?[configKey == 'billing.room.split_monthly'][0].configValue : 'false') : 'false') != 'true'}"
+                                               data-target-input="input-billing-room-split_monthly" />
+                                        <div>
+                                            <strong><i class="bi bi-calendar3-range me-1 text-primary"></i> Thu trọn gói theo kỳ học (Mặc định)</strong>
+                                            <small>Sinh viên đóng đủ tiền phòng cả học kỳ khi ký hợp đồng nhận phòng</small>
+                                        </div>
+                                    </label>
+                                    <label class="cfg-option-card" th:classappend="${(groupedConfigs['billing'] != null ? (groupedConfigs['billing'].?[configKey == 'billing.room.split_monthly'].size() > 0 ? groupedConfigs['billing'].?[configKey == 'billing.room.split_monthly'][0].configValue : 'false') : 'false') == 'true'} ? 'is-selected' : ''">
+                                        <input type="radio" name="radio_split_monthly" value="true"
+                                               th:checked="${(groupedConfigs['billing'] != null ? (groupedConfigs['billing'].?[configKey == 'billing.room.split_monthly'].size() > 0 ? groupedConfigs['billing'].?[configKey == 'billing.room.split_monthly'][0].configValue : 'false') : 'false') == 'true'}"
+                                               data-target-input="input-billing-room-split_monthly" />
+                                        <div>
+                                            <strong><i class="bi bi-calendar-check me-1 text-info"></i> Chia nhỏ thu từng tháng</strong>
+                                            <small>Cộng tiền phòng từng tháng vào hóa đơn điện nước phát hành hàng tháng</small>
+                                        </div>
+                                    </label>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="billing.room.split_monthly"
+                                        data-input-id="input-billing-room-split_monthly"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 7. billing.late.rate -->
+                        <div class="cfg-setting-card" data-cfg-search="billing.late.rate tỷ lệ phí phạt nộp chậm tiền hóa đơn tiền phòng điện nước nộp muộn quá hạn">
+                            <div>
+                                <h3 class="cfg-setting-label">Tỷ lệ tính phí phạt khi nộp chậm hóa đơn</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="billing.late.rate" title="Click để sao chép mã">
+                                        billing.late.rate <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-peach">DECIMAL</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Tỷ lệ phần trăm tính thêm tiền phạt khi hóa đơn tiền phòng, điện nước đã quá hạn mà sinh viên chưa nộp.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Ví dụ tính toán:</strong> Đặt <code>0.05</code> (5%). Với hóa đơn 400.000 đ nếu quá hạn sinh viên sẽ bị phạt thêm <strong>20.000 đ</strong> (tổng phải đóng: 420.000 đ).</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 0.05 (phạt 5% trên tiền gốc)
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" step="0.01" min="0" max="1" class="form-control" name="billing.late.rate" id="input-billing-late-rate"
+                                           th:value="${groupedConfigs['billing'] != null ? (groupedConfigs['billing'].?[configKey == 'billing.late.rate'].size() > 0 ? groupedConfigs['billing'].?[configKey == 'billing.late.rate'][0].configValue : '0.05') : '0.05'}" required />
+                                    <span class="cfg-unit-tag">(0.05 = 5%)</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="billing.late.rate"
+                                        data-input-id="input-billing-late-rate"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 8. billing.due.days -->
+                        <div class="cfg-setting-card" data-cfg-search="billing.due.days thời hạn thanh toán hóa đơn hàng tháng ngày hết hạn nộp tiền">
+                            <div>
+                                <h3 class="cfg-setting-label">Thời hạn thanh toán hóa đơn hàng tháng (số ngày)</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="billing.due.days" title="Click để sao chép mã">
+                                        billing.due.days <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Số ngày cho phép sinh viên nộp tiền kể từ ngày Ban quản lý phát hành hóa đơn tiền phòng, điện nước. Hết số ngày này hóa đơn chuyển sang trạng thái "QUÁ HẠN".
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Ví dụ:</strong> Đặt <code>10</code> ngày: Hóa đơn ra ngày 01 hàng tháng sẽ có hạn chót thanh toán là ngày 11. Sau ngày 11 sẽ tự động tính phí phạt nộp muộn.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 10 ngày
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" min="1" max="30" class="form-control" name="billing.due.days" id="input-billing-due-days"
+                                           th:value="${groupedConfigs['billing'] != null ? (groupedConfigs['billing'].?[configKey == 'billing.due.days'].size() > 0 ? groupedConfigs['billing'].?[configKey == 'billing.due.days'][0].configValue : '10') : '10'}" required />
+                                    <span class="cfg-unit-tag">ngày</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="billing.due.days"
+                                        data-input-id="input-billing-due-days"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
-                </section>
+                </div>
             </form>
         </div>
 
-        <!-- Tab 4: Conduct -->
+        <!-- ===================================================================
+             TAB 4: ĐIỂM RÈN LUYỆN (CONDUCT)
+             =================================================================== -->
         <div class="tab-pane fade" id="conduct-pane" role="tabpanel">
-            <form th:action="@{/admin/configs}" method="post">
-                <section class="ktx-card p-0">
-                    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <form th:action="@{/admin/configs}" method="post" class="cfg-batch-form">
+                <div class="cfg-group-box">
+                    <div class="cfg-group-head">
                         <div>
-                            <h6 class="fw-bold mb-0">Quy định điểm rèn luyện</h6>
-                            <small class="text-muted">Điểm khởi tạo đầu kỳ và ngưỡng cảnh cáo vi phạm nội quy.</small>
+                            <h2 class="cfg-group-title">
+                                <i class="bi bi-award text-success"></i>
+                                <span>Tham số điểm rèn luyện &amp; Kỷ luật nội trú</span>
+                            </h2>
+                            <p class="cfg-group-subtitle">
+                                Quy định thang điểm rèn luyện chuẩn khi vào KTX và mức ngưỡng cảnh cáo kỷ luật sinh viên vi phạm nội quy.
+                            </p>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="bi bi-check2-circle me-1"></i> Lưu nhóm điểm rèn luyện
+                        <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Lưu tất cả nhóm rèn luyện
                         </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 ktx-table">
-                            <thead>
-                            <tr>
-                                <th style="width: 25%;">Khóa cấu hình</th>
-                                <th style="width: 12%;">Kiểu</th>
-                                <th style="width: 35%;">Mô tả</th>
-                                <th style="width: 28%;">Giá trị</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr th:each="cfg : ${groupedConfigs['conduct']}">
-                                <td>
-                                    <span class="ktx-chip" th:text="${cfg.configKey}">conduct.initial</span>
-                                </td>
-                                <td>
-                                    <span class="ktx-pill is-violet" th:text="${cfg.valueType}">INT</span>
-                                </td>
-                                <td>
-                                    <span class="small text-muted" th:text="${cfg.description}">Mô tả</span>
-                                </td>
-                                <td>
-                                    <input type="text" class="form-control form-control-sm"
-                                           th:name="${cfg.configKey}"
-                                           th:value="${cfg.configValue}" required />
-                                </td>
-                            </tr>
-                            <tr th:if="${#lists.isEmpty(groupedConfigs['conduct'])}">
-                                <td colspan="4" class="text-center text-muted py-3">Chưa có cấu hình nào trong nhóm này.</td>
-                            </tr>
-                            </tbody>
-                        </table>
+
+                    <div class="cfg-cards-wrapper">
+
+                        <!-- 1. conduct.initial -->
+                        <div class="cfg-setting-card" data-cfg-search="conduct.initial điểm rèn luyện nội trú khởi điểm ban đầu reset đầu kỳ">
+                            <div>
+                                <h3 class="cfg-setting-label">Điểm rèn luyện nội trú khởi điểm ban đầu</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="conduct.initial" title="Click để sao chép mã">
+                                        conduct.initial <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Mức điểm tối đa cấp cho mỗi sinh viên khi bắt đầu vào ở KTX hoặc khi bắt đầu một học kỳ mới. Điểm này phản ánh ý thức kỷ luật và văn hóa nội trú.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Cơ chế:</strong> Sinh viên bắt đầu kỳ học với 100 điểm. Khi vi phạm nội quy (như gây ồn, nấu ăn sai quy định...), ban quản lý sẽ lập biên bản trừ điểm vào quỹ điểm này.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 100 điểm
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" min="0" max="200" class="form-control" name="conduct.initial" id="input-conduct-initial"
+                                           th:value="${groupedConfigs['conduct'] != null ? (groupedConfigs['conduct'].?[configKey == 'conduct.initial'].size() > 0 ? groupedConfigs['conduct'].?[configKey == 'conduct.initial'][0].configValue : '100') : '100'}" required />
+                                    <span class="cfg-unit-tag">điểm gốc</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="conduct.initial"
+                                        data-input-id="input-conduct-initial"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. conduct.warn.threshold -->
+                        <div class="cfg-setting-card" data-cfg-search="conduct.warn.threshold ngưỡng điểm rèn luyện cảnh cáo vi phạm kỷ luật đình chỉ">
+                            <div>
+                                <h3 class="cfg-setting-label">Ngưỡng điểm rèn luyện cảnh cáo vi phạm kỷ luật</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="conduct.warn.threshold" title="Click để sao chép mã">
+                                        conduct.warn.threshold <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Mức điểm ranh giới báo động đỏ. Khi điểm rèn luyện của sinh viên bị trừ xuống bằng hoặc thấp hơn ngưỡng này, hệ thống sẽ tự động bật trạng thái cảnh cáo vi phạm.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Tác động:</strong> Sinh viên bị cảnh cáo sẽ hiển thị cảnh báo đỏ trên cổng cá nhân, nhận email cảnh cáo và có nguy cơ bị chấm dứt hợp đồng buộc rời khỏi KTX.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 50 điểm
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" min="0" max="100" class="form-control" name="conduct.warn.threshold" id="input-conduct-warn-threshold"
+                                           th:value="${groupedConfigs['conduct'] != null ? (groupedConfigs['conduct'].?[configKey == 'conduct.warn.threshold'].size() > 0 ? groupedConfigs['conduct'].?[configKey == 'conduct.warn.threshold'][0].configValue : '50') : '50'}" required />
+                                    <span class="cfg-unit-tag">điểm cảnh cáo</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="conduct.warn.threshold"
+                                        data-input-id="input-conduct-warn-threshold"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
-                </section>
+                </div>
             </form>
         </div>
 
-        <!-- Tab 5: Other -->
+        <!-- ===================================================================
+             TAB 5: VẬN HÀNH KHÁC (OTHER)
+             =================================================================== -->
         <div class="tab-pane fade" id="other-pane" role="tabpanel">
-            <form th:action="@{/admin/configs}" method="post">
-                <section class="ktx-card p-0">
-                    <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <form th:action="@{/admin/configs}" method="post" class="cfg-batch-form">
+                <div class="cfg-group-box">
+                    <div class="cfg-group-head">
                         <div>
-                            <h6 class="fw-bold mb-0">Cấu hình vận hành khác</h6>
-                            <small class="text-muted">Sức chứa phòng VIP, thời hạn tự động đóng sự cố,...</small>
+                            <h2 class="cfg-group-title">
+                                <i class="bi bi-sliders text-secondary"></i>
+                                <span>Cấu hình vận hành cơ sở vật chất &amp; Sự cố</span>
+                            </h2>
+                            <p class="cfg-group-subtitle">
+                                Thiết lập sức chứa mặc định phòng VIP và thời gian tự động đóng phiếu báo hỏng sau khi sửa chữa xong.
+                            </p>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="bi bi-check2-circle me-1"></i> Lưu nhóm cấu hình khác
+                        <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Lưu tất cả nhóm vận hành
                         </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 ktx-table">
-                            <thead>
-                            <tr>
-                                <th style="width: 25%;">Khóa cấu hình</th>
-                                <th style="width: 12%;">Kiểu</th>
-                                <th style="width: 35%;">Mô tả</th>
-                                <th style="width: 28%;">Giá trị</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr th:each="cfg : ${groupedConfigs['other']}">
-                                <td>
-                                    <span class="ktx-chip" th:text="${cfg.configKey}">room.type.vip.capacity</span>
-                                </td>
-                                <td>
-                                    <span class="ktx-pill is-muted" th:text="${cfg.valueType}">INT</span>
-                                </td>
-                                <td>
-                                    <span class="small text-muted" th:text="${cfg.description}">Mô tả</span>
-                                </td>
-                                <td>
-                                    <input type="text" class="form-control form-control-sm"
-                                           th:name="${cfg.configKey}"
-                                           th:value="${cfg.configValue}" required />
-                                </td>
-                            </tr>
-                            <tr th:if="${#lists.isEmpty(groupedConfigs['other'])}">
-                                <td colspan="4" class="text-center text-muted py-3">Chưa có cấu hình nào trong nhóm này.</td>
-                            </tr>
-                            </tbody>
-                        </table>
+
+                    <div class="cfg-cards-wrapper">
+
+                        <!-- 1. room.type.vip.capacity -->
+                        <div class="cfg-setting-card" data-cfg-search="room.type.vip.capacity sức chứa tiêu chuẩn phòng vip điều hòa ac người giường">
+                            <div>
+                                <h3 class="cfg-setting-label">Sức chứa tiêu chuẩn phòng VIP điều hòa (VIP_AC)</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="room.type.vip.capacity" title="Click để sao chép mã">
+                                        room.type.vip.capacity <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Số lượng sinh viên tối đa được phép xếp vào một phòng phân hạng VIP có máy lạnh khi ban quản lý tạo mới phòng thuộc loại này trong tòa nhà.
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Tác động:</strong> Giá trị này tự động điền sẵn khi quản lý KTX bấm thêm mới phòng VIP_AC trong danh mục phòng.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 2 người / phòng
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" min="1" max="8" class="form-control" name="room.type.vip.capacity" id="input-room-type-vip-capacity"
+                                           th:value="${groupedConfigs['other'] != null ? (groupedConfigs['other'].?[configKey == 'room.type.vip.capacity'].size() > 0 ? groupedConfigs['other'].?[configKey == 'room.type.vip.capacity'][0].configValue : '2') : '2'}" required />
+                                    <span class="cfg-unit-tag">người / phòng</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="room.type.vip.capacity"
+                                        data-input-id="input-room-type-vip-capacity"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. ticket.autoclose.days -->
+                        <div class="cfg-setting-card" data-cfg-search="ticket.autoclose.days thời hạn tự động đóng phiếu báo hỏng sự cố sửa chữa hoàn thành">
+                            <div>
+                                <h3 class="cfg-setting-label">Thời hạn tự động đóng phiếu báo hỏng / sự cố (số ngày)</h3>
+                                <div class="cfg-meta-tags">
+                                    <span class="cfg-code-key btn-copy-key" data-config-key="ticket.autoclose.days" title="Click để sao chép mã">
+                                        ticket.autoclose.days <i class="bi bi-copy"></i>
+                                    </span>
+                                    <span class="ktx-pill is-violet">INT</span>
+                                </div>
+                                <div class="cfg-explain-box">
+                                    <strong>Ý nghĩa:</strong> Số ngày hệ thống tự động hoàn tất và đóng vĩnh viễn phiếu yêu cầu sửa chữa cơ sở vật chất sau khi nhân viên kỹ thuật đã bấm chuyển trạng thái sang "Đã xử lý".
+                                    <div class="cfg-explain-example">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span><strong>Cơ chế:</strong> Sinh viên có 7 ngày để kiểm tra thực tế xem thiết bị đã hoạt động tốt chưa. Sau 7 ngày nếu không có khiếu nại, phiếu sẽ tự động đóng hoàn tất.</span>
+                                    </div>
+                                    <span class="cfg-explain-recommend">
+                                        <i class="bi bi-check-circle-fill"></i> Mức chuẩn đề xuất: 7 ngày sau khi xử lý xong
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="cfg-action-col">
+                                <div class="cfg-input-wrap">
+                                    <input type="number" min="1" max="30" class="form-control" name="ticket.autoclose.days" id="input-ticket-autoclose-days"
+                                           th:value="${groupedConfigs['other'] != null ? (groupedConfigs['other'].?[configKey == 'ticket.autoclose.days'].size() > 0 ? groupedConfigs['other'].?[configKey == 'ticket.autoclose.days'][0].configValue : '7') : '7'}" required />
+                                    <span class="cfg-unit-tag">ngày</span>
+                                </div>
+                                <button type="button" class="cfg-btn-save-single btn-single-save"
+                                        data-config-key="ticket.autoclose.days"
+                                        data-input-id="input-ticket-autoclose-days"
+                                        title="Lưu riêng mục này">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
-                </section>
+                </div>
             </form>
         </div>
 
     </div>
+
+</div>
+
+<!-- Hidden CSRF token holder for AJAX single saves -->
+<form id="csrfForm" class="d-none">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+</form>
+
+<!-- Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // 1. Copy config key helper
+    document.querySelectorAll('.btn-copy-key').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const key = this.getAttribute('data-config-key');
+            if (key) {
+                navigator.clipboard.writeText(key).then(() => {
+                    const icon = this.querySelector('i');
+                    if (icon) {
+                        icon.className = 'bi bi-check2 text-success';
+                        setTimeout(() => { icon.className = 'bi bi-copy'; }, 1500);
+                    }
+                });
+            }
+        });
+    });
+
+    // 2. Radio card selection synchronization
+    document.querySelectorAll('.cfg-option-card input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const parentGroup = this.closest('.cfg-options-group');
+            if (parentGroup) {
+                parentGroup.querySelectorAll('.cfg-option-card').forEach(card => card.classList.remove('is-selected'));
+                const currentCard = this.closest('.cfg-option-card');
+                if (currentCard) currentCard.classList.add('is-selected');
+            }
+            const targetInputId = this.getAttribute('data-target-input');
+            if (targetInputId) {
+                const targetInput = document.getElementById(targetInputId);
+                if (targetInput) {
+                    targetInput.value = this.value;
+                    targetInput.dispatchEvent(new Event('change'));
+                }
+            }
+        });
+    });
+
+    // 3. Single Save via AJAX
+    const csrfToken = document.querySelector('#csrfForm input[type="hidden"]')?.value || '';
+    const csrfParam = document.querySelector('#csrfForm input[type="hidden"]')?.name || '_csrf';
+
+    document.querySelectorAll('.btn-single-save').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const key = this.getAttribute('data-config-key');
+            const inputId = this.getAttribute('data-input-id');
+            const inputEl = document.getElementById(inputId);
+
+            if (!key || !inputEl) return;
+            const val = inputEl.value;
+
+            const icon = this.querySelector('i');
+            const origClass = icon ? icon.className : 'bi bi-check-lg';
+            if (icon) icon.className = 'spinner-border spinner-border-sm text-primary';
+            this.disabled = true;
+
+            const formData = new URLSearchParams();
+            formData.append('configKey', key);
+            formData.append('configValue', val);
+            formData.append(csrfParam, csrfToken);
+
+            fetch('/admin/configs/single', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.text();
+            })
+            .then(() => {
+                if (icon) icon.className = 'bi bi-check-circle-fill text-success';
+                const row = this.closest('.cfg-setting-card');
+                if (row) {
+                    row.classList.remove('is-changed');
+                    row.style.backgroundColor = '#F0FDF4';
+                    setTimeout(() => { row.style.backgroundColor = ''; }, 1500);
+                }
+                setTimeout(() => {
+                    if (icon) icon.className = origClass;
+                    this.disabled = false;
+                }, 1800);
+            })
+            .catch(err => {
+                console.error('Error updating config:', err);
+                if (icon) icon.className = 'bi bi-exclamation-triangle-fill text-danger';
+                alert('Không thể lưu cấu hình "' + key + '". Vui lòng kiểm tra dữ liệu.');
+                setTimeout(() => {
+                    if (icon) icon.className = origClass;
+                    this.disabled = false;
+                }, 2000);
+            });
+        });
+    });
+
+    // 4. Tab Navigation
+    const tabBtns = document.querySelectorAll('.cfg-stat-chip');
+
+    function activateTab(tabId) {
+        const targetBtn = document.getElementById(tabId);
+        if (targetBtn && window.bootstrap) {
+            const bsTab = bootstrap.Tab.getOrCreateInstance(targetBtn);
+            bsTab.show();
+            sessionStorage.setItem('ktx_cfg_active_tab', tabId);
+
+            tabBtns.forEach(btn => btn.classList.remove('is-active'));
+            targetBtn.classList.add('is-active');
+        }
+    }
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            activateTab(this.id);
+        });
+    });
+
+    // Restore active tab
+    const savedTab = sessionStorage.getItem('ktx_cfg_active_tab');
+    const urlHash = window.location.hash;
+    if (urlHash) {
+        const matchedBtn = document.querySelector(`[data-bs-target="${urlHash}"]`);
+        if (matchedBtn) activateTab(matchedBtn.id);
+    } else if (savedTab) {
+        activateTab(savedTab);
+    }
+
+    // 5. Live Search Filter (Supports both inline cfgSearch and navbar topbarSearch)
+    const searchInput = document.getElementById('cfgSearch');
+    const topbarSearch = document.getElementById('topbarSearch');
+    const clearBtn = document.getElementById('cfgSearchClear');
+    const settingCards = document.querySelectorAll('.cfg-setting-card');
+
+    function applySearch(query) {
+        query = (query || '').trim().toLowerCase();
+        if (query.length > 0) {
+            if (clearBtn) clearBtn.classList.remove('d-none');
+            let firstMatchedPane = null;
+            settingCards.forEach(card => {
+                const text = (card.getAttribute('data-cfg-search') || card.innerText).toLowerCase();
+                if (text.includes(query)) {
+                    card.style.display = '';
+                    const pane = card.closest('.tab-pane');
+                    if (pane) {
+                        if (!firstMatchedPane) firstMatchedPane = pane;
+                        const tabBtn = document.querySelector(`[data-bs-target="#${pane.id}"]`);
+                        if (tabBtn && !tabBtn.classList.contains('is-active')) {
+                            tabBtn.style.outline = '2px solid var(--violet)';
+                        }
+                    }
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            // If active tab has no matching items, switch tab to the first matching group
+            if (firstMatchedPane) {
+                const activePane = document.querySelector('.tab-pane.show.active');
+                if (activePane && activePane.querySelectorAll('.cfg-setting-card:not([style*="display: none"])').length === 0) {
+                    const firstTabBtn = document.querySelector(`[data-bs-target="#${firstMatchedPane.id}"]`);
+                    if (firstTabBtn) activateTab(firstTabBtn.id);
+                }
+            }
+        } else {
+            if (clearBtn) clearBtn.classList.add('d-none');
+            settingCards.forEach(card => card.style.display = '');
+            tabBtns.forEach(btn => btn.style.outline = '');
+        }
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            if (topbarSearch) topbarSearch.value = this.value;
+            applySearch(this.value);
+        });
+    }
+
+    if (topbarSearch) {
+        topbarSearch.addEventListener('input', function() {
+            if (searchInput) searchInput.value = this.value;
+            applySearch(this.value);
+        });
+        if (topbarSearch.form) {
+            topbarSearch.form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                applySearch(topbarSearch.value);
+            });
+        }
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            if (searchInput) searchInput.value = '';
+            if (topbarSearch) topbarSearch.value = '';
+            applySearch('');
+            if (searchInput) searchInput.focus();
+        });
+    }
+
+    // Auto-apply initial search from URL parameter or prefilled value
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialQuery = urlParams.get('q') || (searchInput ? searchInput.value : '') || (topbarSearch ? topbarSearch.value : '');
+    if (initialQuery) {
+        if (searchInput) searchInput.value = initialQuery;
+        if (topbarSearch) topbarSearch.value = initialQuery;
+        applySearch(initialQuery);
+    }
+
+    // 6. Copy Env Var Button
+    const btnCopyEnv = document.getElementById('btnCopyEnv');
+    if (btnCopyEnv) {
+        btnCopyEnv.addEventListener('click', function() {
+            navigator.clipboard.writeText('KTX_MAIL_ENABLED=true').then(() => {
+                const icon = document.getElementById('iconCopyEnv');
+                if (icon) {
+                    icon.className = 'bi bi-check2 text-success';
+                    setTimeout(() => { icon.className = 'bi bi-copy text-muted'; }, 1500);
+                }
+            });
+        });
+    }
+
+    // 7. Input Change (dirty indicator)
+    document.querySelectorAll('.cfg-input-wrap input, .cfg-setting-card textarea').forEach(input => {
+        input.addEventListener('input', function() {
+            const card = this.closest('.cfg-setting-card');
+            if (card) card.classList.add('is-changed');
+        });
+    });
+});
+</script>
 </main>
 </body>
 </html>

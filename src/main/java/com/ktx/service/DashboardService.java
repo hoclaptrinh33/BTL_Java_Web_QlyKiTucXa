@@ -7,8 +7,6 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ktx.common.util.OccupyingStatuses;
 import com.ktx.domain.Bed;
 import com.ktx.domain.Building;
-import com.ktx.domain.Invoice;
 import com.ktx.domain.Notification;
 import com.ktx.domain.RegistrationPeriod;
 import com.ktx.domain.Room;
@@ -347,25 +344,29 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public DebtByMonthDto calculateDebtByMonth() {
-        List<Invoice> unpaidInvoices = invoiceRepository.findByStatusInOrderByDueDateAsc(
+        List<Object[]> rows = invoiceRepository.sumDebtByMonth(
                 List.of(InvoiceStatus.UNPAID, InvoiceStatus.OVERDUE));
 
         Map<YearMonth, BigDecimal> sumByMonth = new TreeMap<>();
         Map<YearMonth, Long> countByMonth = new HashMap<>();
         BigDecimal totalDebt = BigDecimal.ZERO;
+        long totalInvoices = 0;
 
-        for (Invoice inv : unpaidInvoices) {
-            LocalDate d = inv.getBillingMonth() != null ? inv.getBillingMonth() : inv.getDueDate();
-            YearMonth ym = YearMonth.from(d);
-            BigDecimal amount = inv.getTotal() != null ? inv.getTotal() : BigDecimal.ZERO;
-            sumByMonth.merge(ym, amount, BigDecimal::add);
-            countByMonth.merge(ym, 1L, Long::sum);
+        for (Object[] row : rows) {
+            int year = ((Number) row[0]).intValue();
+            int month = ((Number) row[1]).intValue();
+            BigDecimal amount = (BigDecimal) row[2];
+            long count = ((Number) row[3]).longValue();
+            YearMonth ym = YearMonth.of(year, month);
+            sumByMonth.put(ym, amount);
+            countByMonth.put(ym, count);
             totalDebt = totalDebt.add(amount);
+            totalInvoices += count;
         }
 
         DebtByMonthDto dto = new DebtByMonthDto();
         dto.setTotalDebt(totalDebt);
-        dto.setTotalInvoices(unpaidInvoices.size());
+        dto.setTotalInvoices(totalInvoices);
 
         DateTimeFormatter labelFormatter = DateTimeFormatter.ofPattern("MM/yyyy");
         DateTimeFormatter keyFormatter = DateTimeFormatter.ofPattern("yyyy-MM");

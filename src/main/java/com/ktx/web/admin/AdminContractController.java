@@ -60,8 +60,15 @@ public class AdminContractController {
     public String list(@RequestParam(value = "buildingId", required = false) Long buildingId,
                        @RequestParam(value = "status", required = false) ContractStatus status,
                        @RequestParam(value = "keyword", required = false) String keyword,
+                       @RequestParam(value = "page", defaultValue = "0") int page,
                        Model model) {
-        List<Contract> contracts = contractService.searchContracts(buildingId, status, keyword);
+        var contractPage = contractService.searchContracts(buildingId, status, keyword,
+                org.springframework.data.domain.PageRequest.of(Math.max(page, 0), 30));
+        if (contractPage == null) {
+            contractPage = org.springframework.data.domain.Page.empty();
+        }
+        List<Contract> contracts = contractPage.getContent();
+        model.addAttribute("contractPage", contractPage);
         List<Building> buildings = buildingRepository.findAll();
 
         model.addAttribute("contracts", contracts);
@@ -100,6 +107,23 @@ public class AdminContractController {
         model.addAttribute("pageSubtitle", "Chi tiết hồ sơ hợp đồng, bàn giao tài sản và nghĩa vụ tài chính");
         model.addAttribute("activeMenu", "contracts");
         return "admin/contracts/detail";
+    }
+
+    @GetMapping({"/manage/contracts/{id}/print", "/admin/contracts/{id}/print"})
+    public String printContract(@PathVariable("id") Long id, HttpServletRequest request, Model model) {
+        Contract contract = contractService.getByIdWithDetails(id);
+        List<RoomAsset> roomAssets = List.of();
+        if (contract.getBed() != null && contract.getBed().getRoom() != null) {
+            roomAssets = roomAssetRepository.findByRoomIdOrderByIdAsc(contract.getBed().getRoom().getId());
+        }
+        String backUrl = base(request) + "/" + id;
+        model.addAttribute("contract", contract);
+        model.addAttribute("student", contract.getStudent());
+        model.addAttribute("roomAssets", roomAssets);
+        model.addAttribute("backUrl", backUrl);
+        model.addAttribute("printDate", java.time.LocalDate.now());
+        model.addAttribute("pageTitle", "In hợp đồng " + contract.getContractNo());
+        return "contracts/print";
     }
 
     @PostMapping({"/manage/contracts/{id}/check-in", "/admin/contracts/{id}/check-in"})
@@ -201,15 +225,32 @@ public class AdminContractController {
 
     @GetMapping({"/manage/check-in-out", "/admin/check-in-out"})
     public String checkInOutLog(@RequestParam(value = "buildingId", required = false) Long buildingId,
+                                @RequestParam(value = "eventType", required = false) com.ktx.domain.enums.CheckInOutType eventType,
+                                @RequestParam(value = "ok", required = false) Boolean ok,
+                                @RequestParam(value = "keyword", required = false) String keyword,
+                                @RequestParam(value = "page", defaultValue = "0") int page,
+                                HttpServletRequest request,
                                 Model model) {
-        List<CheckInOut> checkInOutList = checkInOutService.findRecent(buildingId);
+        org.springframework.data.domain.Page<CheckInOut> checkInOutPage =
+                checkInOutService.findPage(buildingId, eventType, ok, keyword, org.springframework.data.domain.PageRequest.of(Math.max(page, 0), 25));
         List<Building> buildings = buildingRepository.findAll();
 
-        model.addAttribute("checkInOutList", checkInOutList);
+        model.addAttribute("checkInOutPage", checkInOutPage);
+        model.addAttribute("checkInOutList", checkInOutPage.getContent());
         model.addAttribute("buildings", buildings);
         model.addAttribute("selectedBuildingId", buildingId);
-        model.addAttribute("pageTitle", "Lịch sử Check-in / Check-out");
-        model.addAttribute("pageSubtitle", "Nhật ký nhận phòng, trả phòng và bàn giao tài sản");
+        model.addAttribute("selectedEventType", eventType);
+        model.addAttribute("selectedOk", ok);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("eventTypes", com.ktx.domain.enums.CheckInOutType.values());
+        model.addAttribute("totalCount", checkInOutService.countTotal());
+        model.addAttribute("checkinCount", checkInOutService.countCheckIns());
+        model.addAttribute("checkoutCount", checkInOutService.countCheckOuts());
+        model.addAttribute("damagedCount", checkInOutService.countDamaged());
+        model.addAttribute("contractBase", base(request));
+        model.addAttribute("checkinBase", request.getRequestURI() != null && request.getRequestURI().startsWith("/manage") ? "/manage/check-in-out" : "/admin/check-in-out");
+        model.addAttribute("pageTitle", "Lịch sử Check-in & Check-out");
+        model.addAttribute("pageSubtitle", "Nhật ký nhận phòng, trả phòng và biên bản bàn giao hiện trạng tài sản");
         model.addAttribute("activeMenu", "checkin");
         return "admin/contracts/checkin_log";
     }

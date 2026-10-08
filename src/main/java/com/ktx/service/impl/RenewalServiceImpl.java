@@ -12,7 +12,6 @@ import com.ktx.common.util.OccupyingStatuses;
 import com.ktx.domain.Contract;
 import com.ktx.domain.Notification;
 import com.ktx.domain.RenewalRequest;
-import com.ktx.domain.Student;
 import com.ktx.domain.enums.ContractStatus;
 import com.ktx.domain.enums.NotificationType;
 import com.ktx.domain.enums.RenewalStatus;
@@ -43,7 +42,7 @@ public class RenewalServiceImpl implements RenewalService {
     @Override
     @Transactional
     public RenewalRequest submitRenewal(Long studentId, Integer termMonths, LocalDate requestedEnd, String note) {
-        Student student = studentRepository.findById(studentId)
+        studentRepository.findById(studentId)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy sinh viên #" + studentId));
 
         List<Contract> contracts = contractRepository.findByStudentIdAndStatusInWithDetails(
@@ -77,7 +76,6 @@ public class RenewalServiceImpl implements RenewalService {
 
         // Tạo đơn gia hạn
         RenewalRequest req = new RenewalRequest();
-        req.setStudent(student);
         req.setContract(contract);
         req.setRequestedEnd(targetRequestedEnd);
         req.setStatus(RenewalStatus.SUBMITTED);
@@ -245,5 +243,11 @@ public class RenewalServiceImpl implements RenewalService {
     @Transactional(readOnly = true)
     public List<RenewalRequest> searchRequests(RenewalStatus status, Long buildingId) {
         return renewalRequestRepository.searchRequests(status, buildingId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<RenewalRequest> searchRequests(RenewalStatus status, Long buildingId, org.springframework.data.domain.Pageable pageable) {
+        return renewalRequestRepository.searchRequests(status, buildingId, pageable);
     }
 }

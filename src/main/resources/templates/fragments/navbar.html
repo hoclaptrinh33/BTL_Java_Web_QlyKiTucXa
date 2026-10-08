@@ -9,36 +9,32 @@
         <h1 th:text="${pageTitle}">Tổng quan</h1>
         <p th:if="${pageSubtitle}" th:text="${pageSubtitle}">Bảng điều khiển hệ thống</p>
     </div>
-    <form class="ktx-search d-none d-md-flex" role="search" action="#" method="get">
+    <form class="ktx-search d-none d-md-flex" role="search"
+          th:action="${activeMenu == 'configs' or activeMenu == 'dashboard' or activeMenu == 'logs' or activeMenu == 'admin-accounts' or activeMenu == 'accounts' or #authorization.expression('hasRole(''SYSTEM_ADMIN'') or (!hasRole(''ADMIN'') and hasAnyAuthority(''config.read'', ''admin_account.manage''))')} ? @{/admin/configs} : @{/manage/students}"
+          method="get">
         <i class="bi bi-search"></i>
-        <input type="search" name="q" placeholder="Tìm kiếm sinh viên, phòng, đơn…" aria-label="Tìm kiếm"/>
-        <span class="ktx-search__badge d-none d-xl-inline-block">Ctrl + K</span>
+        <input type="search" id="topbarSearch" name="q" th:value="${q}"
+               th:placeholder="${activeMenu == 'configs' or activeMenu == 'dashboard' or activeMenu == 'logs' or activeMenu == 'admin-accounts' or activeMenu == 'accounts' or #authorization.expression('hasRole(''SYSTEM_ADMIN'') or (!hasRole(''ADMIN'') and hasAnyAuthority(''config.read'', ''admin_account.manage''))')} ? 'Tìm kiếm cài đặt hệ thống, tham số…' : 'Tìm kiếm sinh viên, phòng, đơn…'"
+               aria-label="Tìm kiếm"/>
     </form>
-    <button class="btn ktx-icon-btn position-relative" type="button" aria-label="Thông báo" disabled>
-        <i class="bi bi-bell"></i>
-        <span class="ktx-bell-badge">3</span>
-    </button>
     <div class="dropdown">
         <button class="ktx-user" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <span class="ktx-avatar" sec:authorize="hasRole('SYSTEM_ADMIN')">SA</span>
-            <span class="ktx-avatar" sec:authorize="hasRole('ADMIN') and !hasRole('SYSTEM_ADMIN')">AD</span>
-            <span class="ktx-avatar" sec:authorize="hasRole('QUAN_LY')">QL</span>
-            <span class="ktx-avatar" sec:authorize="hasRole('CAN_BO')">CB</span>
-            <span class="ktx-avatar" sec:authorize="hasRole('STAFF') and !hasAnyRole('CAN_BO', 'QUAN_LY')">ST</span>
+            <span class="ktx-avatar" sec:authorize="hasRole('SYSTEM_ADMIN') or (hasAnyAuthority('config.read', 'admin_account.manage') and !hasRole('ADMIN'))">SA</span>
+            <span class="ktx-avatar" sec:authorize="(hasRole('QUAN_LY') or hasRole('ADMIN')) and !hasRole('SYSTEM_ADMIN')">QL</span>
+            <span class="ktx-avatar" sec:authorize="(hasRole('STAFF') or hasRole('CAN_BO')) and !hasAnyRole('QUAN_LY', 'ADMIN', 'SYSTEM_ADMIN')">CB</span>
             <span class="ktx-avatar" sec:authorize="hasRole('STUDENT')">SV</span>
-            <span class="ktx-avatar" sec:authorize="hasAnyAuthority('config.read', 'admin_account.manage') and !hasRole('ADMIN')">SA</span>
             <span class="ktx-user__meta">
                 <strong sec:authentication="name">user</strong>
-                <small sec:authorize="hasRole('QUAN_LY') or (hasRole('ADMIN') and hasAuthority('allocation.manage'))">Quản lý KTX</small>
-                <small sec:authorize="hasRole('STAFF') or hasRole('CAN_BO')">Cán bộ tòa</small>
+                <small sec:authorize="hasRole('SYSTEM_ADMIN') or (hasAnyAuthority('config.read', 'admin_account.manage') and !hasRole('ADMIN'))">Quản trị hệ thống</small>
+                <small sec:authorize="hasRole('QUAN_LY') or (hasRole('ADMIN') and !hasRole('SYSTEM_ADMIN'))">Quản lý KTX</small>
+                <small sec:authorize="(hasRole('STAFF') or hasRole('CAN_BO')) and !hasAnyRole('QUAN_LY', 'ADMIN', 'SYSTEM_ADMIN')">Cán bộ tòa</small>
                 <small sec:authorize="hasRole('STUDENT')">Sinh viên</small>
-                <small sec:authorize="hasAnyAuthority('config.read', 'admin_account.manage') and !hasRole('ADMIN')">Quản trị hệ thống</small>
             </span>
             <i class="bi bi-chevron-down"></i>
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-            <li>
-                <a class="dropdown-item py-2" th:href="${#authorization.expression('hasRole(''STUDENT'')')} ? @{/student/profile} : (${#authorization.expression('hasRole(''ADMIN'')')} ? @{/admin/profile} : @{/staff/profile})">
+            <li sec:authorize="!hasAnyRole('ADMIN', 'SYSTEM_ADMIN') and !hasAnyAuthority('config.read', 'admin_account.manage')">
+                <a class="dropdown-item py-2" th:href="${#authorization.expression('hasRole(''STUDENT'')')} ? @{/student/profile} : @{/staff/profile}">
                     <i class="bi bi-person me-2"></i>Thông tin cá nhân
                 </a>
             </li>
@@ -60,8 +56,8 @@
 </header>
 
 <header class="ktx-topbar ktx-topbar--portal" th:fragment="navbar-student">
-    <div class="d-flex align-items-center gap-3">
-        <button class="btn ktx-icon-btn d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#studentNavMenu" aria-expanded="false" aria-label="Menu">
+    <div class="d-flex align-items-center gap-1 gap-sm-2 flex-shrink-1 min-w-0">
+        <button class="btn ktx-icon-btn d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#studentSidebar" aria-label="Mở menu">
             <i class="bi bi-list"></i>
         </button>
         <a class="ktx-brand" th:href="@{/student/dashboard}">
@@ -169,7 +165,7 @@
     </nav>
 
     <!-- Notification bell & User Account Dropdown -->
-    <div class="d-flex align-items-center gap-2 ms-auto">
+    <div class="d-flex align-items-center gap-1 gap-sm-2 ms-auto flex-shrink-0">
         <button class="btn ktx-icon-btn" type="button" aria-label="Thông báo" disabled>
             <i class="bi bi-bell"></i>
         </button>
@@ -203,52 +199,6 @@
                     </form>
                 </li>
             </ul>
-        </div>
-    </div>
-
-    <!-- Mobile Collapse Menu -->
-    <div class="collapse w-100 d-lg-none mt-2 pt-2 border-top" id="studentNavMenu">
-        <div class="d-flex flex-column gap-1">
-            <a class="ktx-portal-link" th:href="@{/student/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? 'is-active'">
-                <i class="bi bi-house"></i> <span>Tổng quan</span>
-            </a>
-            <div class="fw-bold px-3 py-1 text-muted small text-uppercase">Đăng ký chỗ ở</div>
-            <a class="ktx-portal-link ps-4" th:href="@{/student/applications}" th:classappend="${activeMenu == 'applications'} ? 'is-active'">
-                <i class="bi bi-card-checklist"></i> <span>Các đợt mở &amp; Đơn ở</span>
-            </a>
-            <a class="ktx-portal-link ps-4" th:href="@{/student/applications/new}" th:classappend="${activeMenu == 'applications-new'} ? 'is-active'">
-                <i class="bi bi-pencil-square"></i> <span>Nộp đơn nguyện vọng</span>
-            </a>
-
-            <div class="fw-bold px-3 py-1 text-muted small text-uppercase mt-2">Hợp đồng &amp; Lưu trú</div>
-            <a class="ktx-portal-link ps-4" th:href="@{/student/contract}" th:classappend="${activeMenu == 'contract'} ? 'is-active'">
-                <i class="bi bi-file-text"></i> <span>Hợp đồng lưu trú</span>
-            </a>
-            <a class="ktx-portal-link ps-4" th:href="@{/student/renewals}" th:classappend="${activeMenu == 'renewals'} ? 'is-active'">
-                <i class="bi bi-calendar-plus"></i> <span>Gia hạn hợp đồng</span>
-            </a>
-            <a class="ktx-portal-link ps-4" th:href="@{/student/room-change}" th:classappend="${activeMenu == 'room-change'} ? 'is-active'">
-                <i class="bi bi-arrow-left-right"></i> <span>Đơn xin chuyển phòng</span>
-            </a>
-            <a class="ktx-portal-link ps-4" th:href="@{/student/return-room}" th:classappend="${activeMenu == 'return-room'} ? 'is-active'">
-                <i class="bi bi-box-arrow-left"></i> <span>Đơn xin trả phòng</span>
-            </a>
-
-            <div class="fw-bold px-3 py-1 text-muted small text-uppercase mt-2">Thanh toán</div>
-            <a class="ktx-portal-link ps-4" th:href="@{/student/invoices}" th:classappend="${activeMenu == 'invoices'} ? 'is-active'">
-                <i class="bi bi-receipt"></i> <span>Hóa đơn &amp; Tiền phòng</span>
-            </a>
-
-            <div class="fw-bold px-3 py-1 text-muted small text-uppercase mt-2">Vận hành &amp; Sự cố</div>
-            <a class="ktx-portal-link ps-4" th:href="@{/student/tickets}" th:classappend="${activeMenu == 'tickets'} ? 'is-active'">
-                <i class="bi bi-tools"></i> <span>Danh sách báo hỏng</span>
-            </a>
-            <a class="ktx-portal-link ps-4" th:href="@{/student/tickets/new}" th:classappend="${activeMenu == 'tickets-new'} ? 'is-active'">
-                <i class="bi bi-plus-circle"></i> <span>Tạo phiếu báo hỏng</span>
-            </a>
-            <a class="ktx-portal-link ps-4" th:href="@{/student/violations}" th:classappend="${activeMenu == 'violations'} ? 'is-active'">
-                <i class="bi bi-shield-exclamation"></i> <span>Vi phạm &amp; Rèn luyện</span>
-            </a>
         </div>
     </div>
 </header>

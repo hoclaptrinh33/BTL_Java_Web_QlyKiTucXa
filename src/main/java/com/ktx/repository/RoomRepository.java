@@ -14,8 +14,16 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     @Query("SELECT r FROM Room r JOIN FETCH r.building ORDER BY r.building.code, r.floor, r.roomNumber")
     List<Room> findAllWithBuilding();
 
+    @Query(value = "SELECT r FROM Room r JOIN FETCH r.building ORDER BY r.building.code, r.floor, r.roomNumber",
+           countQuery = "SELECT COUNT(r) FROM Room r")
+    org.springframework.data.domain.Page<Room> findAllWithBuilding(org.springframework.data.domain.Pageable pageable);
+
     @Query("SELECT r FROM Room r JOIN FETCH r.building WHERE r.building.id = :buildingId ORDER BY r.floor, r.roomNumber")
     List<Room> findByBuildingIdWithBuilding(@Param("buildingId") Long buildingId);
+
+    @Query(value = "SELECT r FROM Room r JOIN FETCH r.building WHERE r.building.id = :buildingId ORDER BY r.floor, r.roomNumber",
+           countQuery = "SELECT COUNT(r) FROM Room r WHERE r.building.id = :buildingId")
+    org.springframework.data.domain.Page<Room> findByBuildingIdWithBuilding(@Param("buildingId") Long buildingId, org.springframework.data.domain.Pageable pageable);
 
     @Query("SELECT r FROM Room r JOIN FETCH r.building WHERE r.id = :id")
     Optional<Room> findByIdWithBuilding(@Param("id") Long id);

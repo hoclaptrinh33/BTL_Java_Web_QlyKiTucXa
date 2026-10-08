@@ -163,7 +163,6 @@ class AllocationServiceTest {
         bed1.setRoom(room1);
 
         AllocationItem item1 = new AllocationItem();
-        item1.setStudent(sv1);
         item1.setApplication(app1);
         item1.setBed(bed1);
         item1.setRankNo(1);
@@ -172,7 +171,6 @@ class AllocationServiceTest {
         items.add(item1);
 
         AllocationItem item2 = new AllocationItem();
-        item2.setStudent(sv1);
         item2.setApplication(app1);
         item2.setRankNo(2);
         item2.setScore(500);
@@ -181,7 +179,6 @@ class AllocationServiceTest {
         items.add(item2);
 
         AllocationItem item3 = new AllocationItem();
-        item3.setStudent(sv1);
         item3.setApplication(app1);
         item3.setRankNo(3);
         item3.setScore(0);
@@ -302,7 +299,6 @@ class AllocationServiceTest {
         bed1.setBedCode("G1");
 
         AllocationItem item1 = new AllocationItem();
-        item1.setStudent(sv1);
         item1.setApplication(app1);
         item1.setBed(bed1);
         item1.setRankNo(1);
@@ -315,7 +311,6 @@ class AllocationServiceTest {
         app2.setStatus(ApplicationStatus.SUBMITTED);
 
         AllocationItem item2 = new AllocationItem();
-        item2.setStudent(sv1);
         item2.setApplication(app2);
         item2.setRankNo(2);
         item2.setScore(500);
@@ -327,7 +322,6 @@ class AllocationServiceTest {
         app3.setStatus(ApplicationStatus.SUBMITTED);
 
         AllocationItem item3 = new AllocationItem();
-        item3.setStudent(sv1);
         item3.setApplication(app3);
         item3.setRankNo(3);
         item3.setScore(0);

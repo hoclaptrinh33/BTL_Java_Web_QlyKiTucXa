@@ -21,7 +21,6 @@ import com.ktx.domain.Building;
 import com.ktx.domain.CheckInOut;
 import com.ktx.domain.Contract;
 import com.ktx.domain.RoomAsset;
-import com.ktx.domain.Staff;
 import com.ktx.domain.enums.AssetCondition;
 import com.ktx.domain.enums.ContractStatus;
 import com.ktx.domain.enums.DepositStatus;
@@ -107,6 +106,26 @@ public class StaffCheckInController {
         model.addAttribute("activeMenu", "checkin");
         model.addAttribute("baseUrl", getBaseUrl(request));
         return "staff/checkin/form";
+    }
+
+    @GetMapping({"/manage/checkin/{id}/print", "/staff/checkin/{id}/print"})
+    public String printContract(@PathVariable("id") Long id, Authentication auth, HttpServletRequest request, Model model) {
+        Contract contract = contractService.getByIdWithDetails(id);
+        staffScope.assertBuilding(auth, contract.getBed().getRoom().getBuilding().getId());
+
+        List<RoomAsset> roomAssets = List.of();
+        if (contract.getBed() != null && contract.getBed().getRoom() != null) {
+            roomAssets = roomAssetRepository.findByRoomIdOrderByIdAsc(contract.getBed().getRoom().getId());
+        }
+
+        String backUrl = getBaseUrl(request) + "/checkin/" + id;
+        model.addAttribute("contract", contract);
+        model.addAttribute("student", contract.getStudent());
+        model.addAttribute("roomAssets", roomAssets);
+        model.addAttribute("backUrl", backUrl);
+        model.addAttribute("printDate", java.time.LocalDate.now());
+        model.addAttribute("pageTitle", "In hợp đồng " + contract.getContractNo());
+        return "contracts/print";
     }
 
     @PostMapping({"/manage/checkin/{id}", "/staff/checkin/{id}"})

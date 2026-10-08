@@ -3,7 +3,6 @@ package com.ktx.web.admin;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -48,10 +47,10 @@ class AdminApplicationControllerTest {
         p2.setId(20L);
 
         when(periodService.listAll()).thenReturn(List.of(p1, p2));
-        when(roomApplicationService.listAllByPeriod(10L)).thenReturn(Collections.emptyList());
+        when(roomApplicationService.pageByPeriod(eq(10L), any())).thenReturn(org.springframework.data.domain.Page.empty());
 
         Model model = new ConcurrentModel();
-        String viewName = controller.list(null, model);
+        String viewName = controller.list(null, 0, model);
 
         assertEquals("admin/applications/list", viewName);
         assertEquals(10L, model.getAttribute("selectedPeriodId"));
@@ -69,10 +68,10 @@ class AdminApplicationControllerTest {
         app.setId(100L);
 
         when(periodService.listAll()).thenReturn(List.of(p1));
-        when(roomApplicationService.listAllByPeriod(10L)).thenReturn(List.of(app));
+        when(roomApplicationService.pageByPeriod(eq(10L), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(app)));
 
         Model model = new ConcurrentModel();
-        String viewName = controller.list(10L, model);
+        String viewName = controller.list(10L, 0, model);
 
         assertEquals("admin/applications/list", viewName);
         assertEquals(10L, model.getAttribute("selectedPeriodId"));

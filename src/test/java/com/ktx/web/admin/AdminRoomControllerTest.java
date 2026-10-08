@@ -30,6 +30,7 @@ import com.ktx.common.exception.BusinessException;
 import com.ktx.common.exception.DuplicateFieldException;
 import com.ktx.domain.Bed;
 import com.ktx.domain.Building;
+import com.ktx.domain.Contract;
 import com.ktx.domain.Room;
 import com.ktx.domain.RoomAsset;
 import com.ktx.domain.enums.BedStatus;
@@ -48,6 +49,7 @@ import com.ktx.security.SecurityConfig;
 import com.ktx.service.AssetService;
 import com.ktx.service.BedService;
 import com.ktx.service.BuildingService;
+import com.ktx.service.ContractService;
 import com.ktx.service.DashboardService;
 import com.ktx.service.RoomService;
 import com.ktx.service.StudentService;
@@ -88,6 +90,9 @@ class AdminRoomControllerTest {
 
     @MockitoBean
     private NotificationRepository notificationRepository;
+
+    @MockitoBean
+    private ContractService contractService;
 
     @Test
     void staffCannotAccessRooms() throws Exception {
@@ -166,7 +171,7 @@ class AdminRoomControllerTest {
 
     @Test
     void listShowsDoorChip() throws Exception {
-        when(roomService.listRows(isNull())).thenReturn(List.of());
+        when(roomService.pageRows(isNull(), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of()));
         when(buildingService.listAll()).thenReturn(List.of());
 
         mockMvc.perform(get("/admin/rooms").with(user("admin").roles("ADMIN")))
@@ -393,5 +398,49 @@ class AdminRoomControllerTest {
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl("/admin/rooms/occupancy-drift"));
         verify(roomService).reconcileSingleBed(5L);
+    }
+
+    @Test
+    void roomDetail_displaysRentalHistoryAndBedFilter() throws Exception {
+        Room room = new Room();
+        room.setId(10L);
+        room.setBuilding(building());
+        room.setRoomNumber("101");
+        room.setFloor(1);
+        room.setRoomType(com.ktx.domain.enums.RoomType.STANDARD_6);
+        room.setCapacity(6);
+        room.setPricePerTerm(new java.math.BigDecimal("1200000"));
+        room.setStatus(com.ktx.domain.enums.RoomStatus.ACTIVE);
+
+        Bed bed = new Bed();
+        bed.setId(100L);
+        bed.setBedCode("G1");
+        bed.setStatus(BedStatus.OCCUPIED);
+        bed.setRoom(room);
+
+        com.ktx.domain.Student student = new com.ktx.domain.Student();
+        student.setFullName("Nguyen Van Test");
+        student.setStudentCode("SV999");
+
+        Contract contract = new Contract();
+        contract.setId(500L);
+        contract.setContractNo("HD-TEST-001");
+        contract.setBed(bed);
+        contract.setStudent(student);
+        contract.setStartDate(java.time.LocalDate.of(2026, 9, 1));
+        contract.setEndDate(java.time.LocalDate.of(2027, 1, 31));
+        contract.setStatus(com.ktx.domain.enums.ContractStatus.ACTIVE);
+
+        when(roomService.getById(10L)).thenReturn(room);
+        when(bedRepository.findByRoomIdOrderByBedCodeAsc(10L)).thenReturn(List.of(bed));
+        when(assetService.list(10L)).thenReturn(List.of());
+        when(contractService.findRentalHistory(10L, null)).thenReturn(List.of(contract));
+
+        mockMvc.perform(get("/admin/rooms/10").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Lịch sử thuê phòng &amp; giường")))
+                .andExpect(content().string(containsString("HD-TEST-001")))
+                .andExpect(content().string(containsString("Nguyen Van Test")))
+                .andExpect(content().string(containsString("SV999")));
     }
 }

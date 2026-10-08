@@ -64,7 +64,7 @@ class AdminViolationControllerTest {
     @Test
     void adminCanViewViolations() throws Exception {
         when(buildingRepository.findAll()).thenReturn(List.of());
-        when(conductService.getViolationsForAdmin(any())).thenReturn(List.of());
+        when(conductService.getViolationsForAdmin(any(), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of()));
 
         mockMvc.perform(get("/admin/violations").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk());
@@ -100,5 +100,31 @@ class AdminViolationControllerTest {
                 eq(10L), eq("admin"), eq(ViolationType.DAMAGE), eq(ViolationSeverity.SEVERE),
                 eq(50), eq(ViolationAction.TERMINATE), eq("Lam hong tai san"),
                 eq(LocalDateTime.of(2026, 9, 21, 8, 30)), any(Authentication.class));
+    }
+
+    @Test
+    void adminCanSearchStudents() throws Exception {
+        com.ktx.domain.Student s = new com.ktx.domain.Student();
+        s.setId(10L);
+        s.setFullName("Nguyen Van A");
+        s.setStudentCode("B22DCCN001");
+        s.setConductScore(90);
+
+        when(studentRepository.searchByKeyword(eq("Nguyen"), any())).thenReturn(List.of(s));
+
+        mockMvc.perform(get("/admin/violations/search-students")
+                        .param("keyword", "Nguyen")
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$[0].id").value(10))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$[0].fullName").value("Nguyen Van A"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$[0].studentCode").value("B22DCCN001"));
+    }
+
+    @Test
+    void adminCanOpenNewViolationForm() throws Exception {
+        mockMvc.perform(get("/admin/violations/new")
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk());
     }
 }

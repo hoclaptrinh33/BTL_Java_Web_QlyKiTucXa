@@ -37,12 +37,14 @@ import com.ktx.dto.RoomBatchForm;
 import com.ktx.dto.RoomBatchResult;
 import com.ktx.dto.RoomForm;
 import com.ktx.repository.BedRepository;
+import com.ktx.common.util.OccupyingStatuses;
+import com.ktx.domain.Contract;
 import com.ktx.security.StaffScope;
 import com.ktx.service.AssetService;
 import com.ktx.service.BedService;
 import com.ktx.service.BuildingService;
+import com.ktx.service.ContractService;
 import com.ktx.service.RoomService;
-import com.ktx.dto.OccupancyDriftRow;
 
 @Controller
 @RequestMapping({"/manage/rooms", "/admin/rooms"})
@@ -54,16 +56,19 @@ public class AdminRoomController {
     private final BedService bedService;
     private final AssetService assetService;
     private final BedRepository bedRepository;
+    private final ContractService contractService;
     private final StaffScope staffScope;
 
     public AdminRoomController(RoomService roomService, BuildingService buildingService,
             BedService bedService, AssetService assetService, BedRepository bedRepository,
+            ContractService contractService,
             @org.springframework.beans.factory.annotation.Autowired(required = false) StaffScope staffScope) {
         this.roomService = roomService;
         this.buildingService = buildingService;
         this.bedService = bedService;
         this.assetService = assetService;
         this.bedRepository = bedRepository;
+        this.contractService = contractService;
         this.staffScope = staffScope;
     }
 
@@ -74,7 +79,9 @@ public class AdminRoomController {
 
     @GetMapping
     public String list(@RequestParam(name = "buildingId", required = false) Long buildingId,
+                       @RequestParam(name = "page", defaultValue = "0") int page,
                        Authentication auth,
+                       HttpServletRequest request,
                        Model model) {
         if (buildingId == null && staffScope != null && auth != null) {
             try {
@@ -88,9 +95,13 @@ public class AdminRoomController {
             }
         }
         page(model, "Phòng ở", "Danh mục phòng theo tòa — giường tự tạo theo loại");
-        model.addAttribute("rooms", roomService.listRows(buildingId));
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(Math.max(page, 0), 20);
+        org.springframework.data.domain.Page<com.ktx.dto.RoomRow> roomPage = roomService.pageRows(buildingId, pageable);
+        model.addAttribute("roomPage", roomPage);
+        model.addAttribute("rooms", roomPage.getContent());
         model.addAttribute("buildings", buildingService.listAll());
         model.addAttribute("buildingId", buildingId);
+        model.addAttribute("baseUri", base(request));
         return "admin/rooms/list";
     }
 
@@ -173,8 +184,9 @@ public class AdminRoomController {
     }
 
     @GetMapping("/{id}")
-    public String detail(@PathVariable Long id,
+    public String detail(@PathVariable("id") Long id,
             @RequestParam(name = "assetId", required = false) Long assetId,
+            @RequestParam(name = "bedId", required = false) Long bedId,
             Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         try {
             RoomAssetForm form = new RoomAssetForm();
@@ -190,7 +202,7 @@ public class AdminRoomController {
                 form.setNote(asset.getNote());
                 form.setSerialNumber(asset.getSerialNumber());
             }
-            detailModel(model, id, form, assetId);
+            detailModel(model, id, form, assetId, bedId);
             return "admin/rooms/detail";
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
@@ -199,12 +211,12 @@ public class AdminRoomController {
     }
 
     @GetMapping("/{id}/assets")
-    public String assets(@PathVariable Long id, HttpServletRequest request) {
+    public String assets(@PathVariable("id") Long id, HttpServletRequest request) {
         return "redirect:" + base(request) + "/" + id;
     }
 
     @PostMapping("/{id}/beds/{bedId}/status")
-    public String updateBedStatus(@PathVariable Long id, @PathVariable Long bedId,
+    public String updateBedStatus(@PathVariable("id") Long id, @PathVariable("bedId") Long bedId,
             @RequestParam("status") BedStatus status,
             @RequestParam("version") Long version,
             RedirectAttributes redirectAttributes,
@@ -220,7 +232,7 @@ public class AdminRoomController {
     }
 
     @PostMapping("/{id}/assets")
-    public String createAsset(@PathVariable Long id, @Valid @ModelAttribute("assetForm") RoomAssetForm form,
+    public String createAsset(@PathVariable("id") Long id, @Valid @ModelAttribute("assetForm") RoomAssetForm form,
             BindingResult binding, Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         if (binding.hasErrors()) {
             try {
@@ -247,7 +259,7 @@ public class AdminRoomController {
     }
 
     @PostMapping("/{id}/assets/{assetId}/edit")
-    public String updateAsset(@PathVariable Long id, @PathVariable Long assetId,
+    public String updateAsset(@PathVariable("id") Long id, @PathVariable("assetId") Long assetId,
             @Valid @ModelAttribute("assetForm") RoomAssetForm form, BindingResult binding,
             Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         if (binding.hasErrors()) {
@@ -275,7 +287,7 @@ public class AdminRoomController {
     }
 
     @PostMapping("/{id}/assets/{assetId}/delete")
-    public String deleteAsset(@PathVariable Long id, @PathVariable Long assetId,
+    public String deleteAsset(@PathVariable("id") Long id, @PathVariable("assetId") Long assetId,
             RedirectAttributes redirectAttributes, HttpServletRequest request) {
         try {
             assetService.delete(id, assetId);
@@ -287,7 +299,7 @@ public class AdminRoomController {
     }
 
     @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+    public String editForm(@PathVariable("id") Long id, Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         try {
             Room room = roomService.getById(id);
             RoomForm form = new RoomForm();
@@ -306,7 +318,7 @@ public class AdminRoomController {
     }
 
     @PostMapping("/{id}/edit")
-    public String update(@PathVariable Long id, @Valid @ModelAttribute("form") RoomForm form,
+    public String update(@PathVariable("id") Long id, @Valid @ModelAttribute("form") RoomForm form,
             BindingResult binding, Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         if (binding.hasErrors()) {
             formModel(model, form, id, true);
@@ -333,7 +345,7 @@ public class AdminRoomController {
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+    public String delete(@PathVariable("id") Long id, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         try {
             Room room = roomService.getById(id);
             Long buildingId = room.getBuilding().getId();
@@ -430,6 +442,10 @@ public class AdminRoomController {
     }
 
     private void detailModel(Model model, Long roomId, RoomAssetForm form, Long editAssetId) {
+        detailModel(model, roomId, form, editAssetId, null);
+    }
+
+    private void detailModel(Model model, Long roomId, RoomAssetForm form, Long editAssetId, Long bedId) {
         Room room = roomService.getById(roomId);
         List<Bed> beds = bedRepository.findByRoomIdOrderByBedCodeAsc(roomId);
         long[] counts = new long[3];
@@ -451,6 +467,21 @@ public class AdminRoomController {
         model.addAttribute("assetForm", form);
         model.addAttribute("editAssetId", editAssetId);
         model.addAttribute("editingAsset", editAssetId != null);
+
+        // Lịch sử thuê phòng / giường
+        List<Contract> rentalHistory = contractService.findRentalHistory(roomId, bedId);
+        model.addAttribute("rentalHistory", rentalHistory);
+        model.addAttribute("selectedBedId", bedId);
+
+        // Map hợp đồng đang ở theo bedId để hiển thị thông tin sinh viên trên thẻ giường
+        List<Contract> allRoomContracts = contractService.findRentalHistory(roomId, null);
+        Map<Long, Contract> activeBedContracts = new LinkedHashMap<>();
+        for (Contract c : allRoomContracts) {
+            if (c.getBed() != null && OccupyingStatuses.OCCUPYING.contains(c.getStatus())) {
+                activeBedContracts.putIfAbsent(c.getBed().getId(), c);
+            }
+        }
+        model.addAttribute("activeBedContracts", activeBedContracts);
     }
 
     private static void page(Model model, String title, String subtitle) {
@@ -478,7 +509,7 @@ public class AdminRoomController {
     }
 
     @PostMapping("/beds/{bedId}/reconcile")
-    public String reconcileSingle(@PathVariable Long bedId, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+    public String reconcileSingle(@PathVariable("bedId") Long bedId, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         try {
             roomService.reconcileSingleBed(bedId);
             redirectAttributes.addFlashAttribute("successMessage", "Đồng bộ giường thành công!");

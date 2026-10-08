@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -164,6 +163,15 @@ public class ConductServiceImpl implements ConductService {
             return violationRepository.findByBuildingIdWithDetails(buildingId, OccupyingStatuses.OCCUPYING);
         }
         return violationRepository.findAllWithDetails();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<Violation> getViolationsForAdmin(Long buildingId, org.springframework.data.domain.Pageable pageable) {
+        if (buildingId != null) {
+            return violationRepository.findByBuildingIdWithDetails(buildingId, OccupyingStatuses.OCCUPYING, pageable);
+        }
+        return violationRepository.findAllWithDetails(pageable);
     }
 
     @Override

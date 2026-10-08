@@ -149,4 +149,44 @@ class PaymentServiceTest {
         assertThrows(BusinessException.class, () ->
                 paymentService.recordPayment(205L, new BigDecimal("-50000"), PaymentMethod.CASH, null, 1L));
     }
+
+    @Test
+    @DisplayName("searchPayments: null hoặc blank gọi findAllPage")
+    void testSearchPayments_blankKeyword_callsFindAllPage() {
+        var pageable = org.springframework.data.domain.PageRequest.of(0, 30);
+        when(paymentRepository.findAllPage(pageable)).thenReturn(org.springframework.data.domain.Page.empty());
+
+        var result = paymentService.searchPayments(null, pageable);
+        assertNotNull(result);
+        verify(paymentRepository).findAllPage(pageable);
+
+        paymentService.searchPayments("   ", pageable);
+        verify(paymentRepository, org.mockito.Mockito.times(2)).findAllPage(pageable);
+    }
+
+    @Test
+    @DisplayName("searchPayments: có keyword gọi searchPage với trimmed keyword")
+    void testSearchPayments_withKeyword_callsSearchPage() {
+        var pageable = org.springframework.data.domain.PageRequest.of(0, 30);
+        when(paymentRepository.searchPage("SV001", pageable)).thenReturn(org.springframework.data.domain.Page.empty());
+
+        var result = paymentService.searchPayments("  SV001  ", pageable);
+        assertNotNull(result);
+        verify(paymentRepository).searchPage("SV001", pageable);
+    }
+
+    @Test
+    @DisplayName("sumPayments: blank keyword gọi sumAll, có keyword gọi sumSearch")
+    void testSumPayments_routing() {
+        when(paymentRepository.sumAll()).thenReturn(new BigDecimal("1000000"));
+        when(paymentRepository.sumSearch("SV001")).thenReturn(new BigDecimal("500000"));
+
+        BigDecimal sumAll = paymentService.sumPayments(null);
+        assertEquals(new BigDecimal("1000000"), sumAll);
+        verify(paymentRepository).sumAll();
+
+        BigDecimal sumSearch = paymentService.sumPayments(" SV001 ");
+        assertEquals(new BigDecimal("500000"), sumSearch);
+        verify(paymentRepository).sumSearch("SV001");
+    }
 }

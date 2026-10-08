@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +49,30 @@ public class StudentService {
             rows.add(toRow(student, occupying));
         }
         return rows;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<StudentRow> page(String stay, Pageable pageable) {
+        Set<Long> occupyingIds = new HashSet<>(
+                contractRepository.findStudentIdsByStatusIn(OccupyingStatuses.OCCUPYING));
+        Page<Student> students = studentRepository.findPageWithUser(pageable);
+        String filter = stay == null ? STAY_ALL : stay;
+        List<StudentRow> rows = new ArrayList<>();
+        for (Student student : students.getContent()) {
+            boolean occupying = occupyingIds.contains(student.getId());
+            if (STAY_OCCUPYING.equals(filter) && !occupying) {
+                continue;
+            }
+            if (STAY_VACANT.equals(filter) && occupying) {
+                continue;
+            }
+            rows.add(toRow(student, occupying));
+        }
+        return new org.springframework.data.domain.PageImpl<>(rows, pageable, students.getTotalElements());
+    }
+
+    public long occupyingCount() {
+        return contractRepository.findStudentIdsByStatusIn(OccupyingStatuses.OCCUPYING).size();
     }
 
     private static StudentRow toRow(Student student, boolean occupying) {

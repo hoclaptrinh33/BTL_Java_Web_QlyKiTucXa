@@ -1,75 +1,289 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout(~{::content})}">
 <body>
-<main th:fragment="content">
-    <p class="text-muted mb-3">
-        Occupancy = giường đang dùng / giường khả dụng (phòng ACTIVE, trừ bảo trì).
-        Trang tổng quan chỉ hiện KPI; bảng dưới là chi tiết theo tòa.
-    </p>
-    <section class="ktx-kpi-grid mb-3">
-        <article class="ktx-kpi">
-            <span class="ktx-kpi__icon is-lilac"><i class="bi bi-people-fill"></i></span>
+<main th:fragment="content" class="ktx-dash">
+    <!-- Hero Header -->
+    <section class="ktx-hero-header mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary-subtle text-primary fw-semibold px-2.5 py-1" style="border-radius: 999px; font-size: 0.8rem;">
+                        <i class="bi bi-bar-chart-fill me-1"></i> Phân tích công suất
+                    </span>
+                    <span class="d-inline-flex align-items-center text-success small fw-medium">
+                        <span class="status-dot dot-success"></span> Dữ liệu thời gian thực
+                    </span>
+                </div>
+                <h1 class="h3 fw-bold mb-1 text-dark">Thống kê &amp; Công suất Lưu trú Ký túc xá</h1>
+                <p class="text-muted mb-0 small">
+                    Chỉ số lấp đầy (Occupancy) = Giường đang sử dụng / Giường khả dụng (phòng ACTIVE, trừ bảo trì). Theo dõi tải trọng toàn hệ thống và từng tòa.
+                </p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a th:href="@{/manage/reports}" class="btn btn-outline-secondary btn-sm fw-semibold d-inline-flex align-items-center gap-1 shadow-sm" style="border-radius: 10px; padding: 0.55rem 0.95rem;">
+                    <i class="bi bi-file-earmark-excel"></i> Xuất file báo cáo
+                </a>
+                <a th:href="@{/manage/buildings}" class="btn btn-primary btn-sm fw-semibold d-inline-flex align-items-center gap-1 shadow-sm" style="border-radius: 10px; padding: 0.55rem 0.95rem; background: var(--violet); border-color: var(--violet);">
+                    <i class="bi bi-building"></i> Quản lý tòa nhà
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Top KPI Grid -->
+    <section class="ktx-kpi-grid mb-4">
+        <article class="ktx-kpi ktx-kpi-interactive">
+            <span class="ktx-kpi__icon is-lilac">
+                <i class="bi bi-people-fill"></i>
+            </span>
             <p class="ktx-kpi__label">Sinh viên nội trú</p>
-            <p class="ktx-kpi__value" th:text="${#numbers.formatInteger(dash.occupyingStudentCount, 1, 'POINT')}">0</p>
-            <p class="ktx-kpi__meta">Tổng hồ sơ <span th:text="${dash.studentCount}">0</span></p>
+            <p class="ktx-kpi__value" th:text="${dash != null ? #numbers.formatInteger(dash.occupyingStudentCount, 1, 'POINT') : '0'}">0</p>
+            <p class="ktx-kpi__meta text-muted">
+                Tổng hồ sơ: <strong th:text="${dash != null ? #numbers.formatInteger(dash.studentCount, 1, 'POINT') : '0'}">0</strong> sinh viên
+            </p>
         </article>
-        <article class="ktx-kpi">
-            <span class="ktx-kpi__icon is-mint"><i class="bi bi-graph-up"></i></span>
-            <p class="ktx-kpi__label">Lấp đầy</p>
-            <p class="ktx-kpi__value" th:text="${dash.occupancyPercentLabel} + '%'">0%</p>
-            <p class="ktx-kpi__meta"><span th:text="${dash.occupiedBeds}">0</span> / <span th:text="${dash.capacityBeds}">0</span> giường</p>
+
+        <article class="ktx-kpi ktx-kpi-interactive">
+            <span class="ktx-kpi__icon is-mint">
+                <i class="bi bi-pie-chart-fill"></i>
+            </span>
+            <p class="ktx-kpi__label">Tỷ lệ lấp đầy</p>
+            <p class="ktx-kpi__value text-success" th:text="${dash != null ? (dash.occupancyPercentLabel + '%') : '0%'}">0%</p>
+            <p class="ktx-kpi__meta text-muted">
+                <span th:text="${dash != null ? dash.occupiedBeds : 0}">0</span> / <span th:text="${dash != null ? dash.capacityBeds : 0}">0</span> giường khả dụng
+            </p>
         </article>
-        <article class="ktx-kpi">
-            <span class="ktx-kpi__icon is-sky"><i class="bi bi-lamp"></i></span>
+
+        <article class="ktx-kpi ktx-kpi-interactive">
+            <span class="ktx-kpi__icon is-peach">
+                <i class="bi bi-lamp"></i>
+            </span>
             <p class="ktx-kpi__label">Giường trống</p>
-            <p class="ktx-kpi__value" th:text="${#numbers.formatInteger(dash.vacantBeds, 1, 'POINT')}">0</p>
-            <p class="ktx-kpi__meta">Bảo trì <span th:text="${dash.maintenanceBeds}">0</span></p>
+            <p class="ktx-kpi__value text-warning" th:text="${dash != null ? #numbers.formatInteger(dash.vacantBeds, 1, 'POINT') : '0'}">0</p>
+            <p class="ktx-kpi__meta text-muted">
+                Bảo trì: <span class="fw-semibold text-danger" th:text="${dash != null ? dash.maintenanceBeds : 0}">0</span> giường
+            </p>
         </article>
-        <article class="ktx-kpi">
-            <span class="ktx-kpi__icon is-peach"><i class="bi bi-building"></i></span>
-            <p class="ktx-kpi__label">Phòng ACTIVE</p>
-            <p class="ktx-kpi__value" th:text="${#numbers.formatInteger(dash.activeRoomCount, 1, 'POINT')}">0</p>
-            <p class="ktx-kpi__meta">Đầy <span th:text="${dash.fullRooms}">0</span> · Trống <span th:text="${dash.emptyRooms}">0</span></p>
+
+        <article class="ktx-kpi ktx-kpi-interactive">
+            <span class="ktx-kpi__icon is-sky">
+                <i class="bi bi-door-closed-fill"></i>
+            </span>
+            <p class="ktx-kpi__label">Phòng hoạt động</p>
+            <p class="ktx-kpi__value text-primary" th:text="${dash != null ? #numbers.formatInteger(dash.activeRoomCount, 1, 'POINT') : '0'}">0</p>
+            <p class="ktx-kpi__meta text-muted">
+                Đầy: <span class="fw-semibold" th:text="${dash != null ? dash.fullRooms : 0}">0</span> · Trống: <span class="fw-semibold" th:text="${dash != null ? dash.emptyRooms : 0}">0</span>
+            </p>
         </article>
     </section>
-    <section class="ktx-card p-0">
+
+    <!-- Overall System Capacity Visual Bar -->
+    <section class="card border shadow-sm p-4 mb-4" style="border-radius: 18px; border-color: rgba(226, 232, 240, 0.9) !important; background: #FFFFFF;" th:if="${dash != null && dash.hasBeds()}">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3 gap-2">
+            <div>
+                <h2 class="h5 fw-bold text-dark mb-1">Cơ cấu sử dụng giường toàn ký túc xá</h2>
+                <p class="text-muted small mb-0">
+                    Tổng quy mô hệ thống: <strong class="text-dark" th:text="${#numbers.formatInteger(dash.totalBeds, 1, 'POINT')}">0</strong> giường tại <strong class="text-dark" th:text="${dash.buildingCount}">0</strong> tòa nhà (<strong class="text-dark" th:text="${dash.roomCount}">0</strong> phòng).
+                </p>
+            </div>
+            <div class="d-flex align-items-center gap-3 small">
+                <span class="d-flex align-items-center gap-1.5">
+                    <span style="width: 12px; height: 12px; border-radius: 3px; background: #6D5EF5; display: inline-block;"></span>
+                    <span>Đang dùng: <strong th:text="${dash.occupancyPercentLabel} + '%'">0%</strong></span>
+                </span>
+                <span class="d-flex align-items-center gap-1.5">
+                    <span style="width: 12px; height: 12px; border-radius: 3px; background: #10B981; display: inline-block;"></span>
+                    <span>Còn trống: <strong th:text="${dash.vacantPercentLabel} + '%'">0%</strong></span>
+                </span>
+                <span class="d-flex align-items-center gap-1.5" th:if="${dash.maintenanceBeds > 0}">
+                    <span style="width: 12px; height: 12px; border-radius: 3px; background: #F59E0B; display: inline-block;"></span>
+                    <span>Bảo trì: <strong th:text="${dash.maintenanceBeds}">0</strong></span>
+                </span>
+            </div>
+        </div>
+
+        <div class="progress" style="height: 18px; border-radius: 10px; background-color: #F1F5F9; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);">
+            <div class="progress-bar" role="progressbar" 
+                 th:style="'width: ' + ${dash.occupancyPercent} + '%; background-color: #6D5EF5;'" 
+                 th:aria-valuenow="${dash.occupancyPercent}" aria-valuemin="0" aria-valuemax="100"
+                 title="Đang sử dụng"></div>
+            <div class="progress-bar" role="progressbar" 
+                 th:style="'width: ' + ${dash.capacityBeds > 0 ? (dash.vacantBeds * 100.0 / dash.totalBeds) : 0} + '%; background-color: #10B981;'" 
+                 th:aria-valuenow="${dash.vacantBeds}" aria-valuemin="0" aria-valuemax="100"
+                 title="Còn trống"></div>
+            <div class="progress-bar" role="progressbar" 
+                 th:style="'width: ' + ${dash.totalBeds > 0 ? (dash.maintenanceBeds * 100.0 / dash.totalBeds) : 0} + '%; background-color: #F59E0B;'" 
+                 th:aria-valuenow="${dash.maintenanceBeds}" aria-valuemin="0" aria-valuemax="100"
+                 title="Đang bảo trì"></div>
+        </div>
+    </section>
+
+    <!-- Building Occupancy Breakdown Table -->
+    <section class="card border shadow-sm mb-4" style="border-radius: 18px; border-color: rgba(226, 232, 240, 0.9) !important; background: #FFFFFF; overflow: hidden;">
+        <div class="p-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <h2 class="h5 fw-bold text-dark mb-1">Chi tiết công suất lưu trú theo từng tòa</h2>
+                <p class="text-muted small mb-0">Thống kê số lượng phòng và phân đoạn phân bổ giường theo từng khu lưu trú</p>
+            </div>
+            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill fw-semibold">
+                <i class="bi bi-buildings me-1 text-primary"></i> <span th:text="${dash != null ? dash.buildings.size() : 0}">0</span> Tòa nhà
+            </span>
+        </div>
+
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 ktx-table">
-                <thead>
+            <table class="table table-hover align-middle mb-0" style="font-size: 0.925rem;">
+                <thead style="background-color: #F8FAFC; border-bottom: 2px solid #E2E8F0;">
                 <tr>
-                    <th>Tòa</th>
-                    <th>Giới tính</th>
-                    <th class="text-end">Phòng</th>
-                    <th class="text-end">Đang dùng</th>
-                    <th class="text-end">Trống</th>
-                    <th class="text-end">Bảo trì</th>
-                    <th>Lấp đầy</th>
+                    <th class="ps-4 text-secondary text-uppercase fw-bold small" style="letter-spacing: 0.5px;">Tòa nhà</th>
+                    <th class="text-secondary text-uppercase fw-bold small" style="letter-spacing: 0.5px;">Đối tượng</th>
+                    <th class="text-end text-secondary text-uppercase fw-bold small" style="letter-spacing: 0.5px;">Số phòng</th>
+                    <th class="text-end text-secondary text-uppercase fw-bold small" style="letter-spacing: 0.5px;">Đang dùng</th>
+                    <th class="text-end text-secondary text-uppercase fw-bold small" style="letter-spacing: 0.5px;">Còn trống</th>
+                    <th class="text-end text-secondary text-uppercase fw-bold small" style="letter-spacing: 0.5px;">Bảo trì</th>
+                    <th class="text-center text-secondary text-uppercase fw-bold small" style="letter-spacing: 0.5px; width: 220px;">Tỷ lệ phân bổ</th>
+                    <th class="pe-4 text-end text-secondary text-uppercase fw-bold small" style="letter-spacing: 0.5px;">Lấp đầy</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:if="${dash.buildings.empty}">
-                    <td colspan="7" class="text-muted p-4">Chưa có tòa. Thêm tòa để thống kê occupancy.</td>
+                <tr th:if="${dash == null || dash.buildings.empty}">
+                    <td colspan="8" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                        Chưa có dữ liệu tòa nhà trong hệ thống.
+                    </td>
                 </tr>
-                <tr th:each="row : ${dash.buildings}">
-                    <td><span class="ktx-chip" th:text="${row.code}">A</span> <span class="ms-2" th:text="${row.name}">Tòa A</span></td>
-                    <td th:text="${row.genderLabel}">Nam</td>
-                    <td class="text-end" th:text="${row.rooms}">0</td>
-                    <td class="text-end" th:text="${row.occupied}">0</td>
-                    <td class="text-end" th:text="${row.vacant}">0</td>
-                    <td class="text-end" th:text="${row.maintenance}">0</td>
-                    <td>
-                        <div class="ktx-barchart__track ktx-barchart__track--sm" th:if="${row.totalBeds > 0}">
-                            <span class="is-used" th:style="|width:${row.occupiedShare}%|"></span>
-                            <span class="is-vacant" th:style="|width:${row.vacantShare}%|"></span>
-                            <span class="is-maint" th:style="|width:${row.maintenanceShare}%|"></span>
+                <tr th:if="${dash != null}" th:each="row : ${dash.buildings}" style="border-bottom: 1px solid #F1F5F9;">
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge fw-bold px-2.5 py-1.5" style="background: #EEF2FF; color: #4F46E5; border-radius: 8px; font-size: 0.85rem;" th:text="${row.code}">A</span>
+                            <strong class="text-dark" th:text="${row.name}">Tòa A</strong>
                         </div>
-                        <small class="text-muted" th:text="${row.occupancyPercentLabel} + '%'">0%</small>
+                    </td>
+                    <td>
+                        <span class="badge rounded-pill px-2.5 py-1 small fw-semibold"
+                              th:classappend="${row.genderLabel == 'Nam' ? 'bg-info-subtle text-info-emphasis' : (row.genderLabel == 'Nữ' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary')}"
+                              th:text="${row.genderLabel}">Nam</span>
+                    </td>
+                    <td class="text-end fw-semibold text-secondary" th:text="${row.rooms}">0</td>
+                    <td class="text-end fw-bold text-dark" th:text="${row.occupied}">0</td>
+                    <td class="text-end fw-bold text-success" th:text="${row.vacant}">0</td>
+                    <td class="text-end text-warning fw-semibold" th:text="${row.maintenance}">0</td>
+                    <td>
+                        <div class="progress" style="height: 10px; border-radius: 6px; background-color: #E2E8F0;" th:if="${row.totalBeds > 0}">
+                            <div class="progress-bar" style="background-color: #6D5EF5;" th:style="'width: ' + ${row.occupiedShare} + '%; background-color: #6D5EF5;'" title="Đang dùng"></div>
+                            <div class="progress-bar" style="background-color: #10B981;" th:style="'width: ' + ${row.vacantShare} + '%; background-color: #10B981;'" title="Còn trống"></div>
+                            <div class="progress-bar" style="background-color: #F59E0B;" th:style="'width: ' + ${row.maintenanceShare} + '%; background-color: #F59E0B;'" title="Bảo trì"></div>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 0.75rem;" th:if="${row.totalBeds > 0}">
+                            <span>Tổng: <strong th:text="${row.totalBeds}">0</strong></span>
+                            <span>Trống: <strong class="text-success" th:text="${row.vacant}">0</strong></span>
+                        </div>
+                    </td>
+                    <td class="pe-4 text-end">
+                        <span class="badge px-2.5 py-1.5 fw-bold"
+                              th:classappend="${row.occupancyPercent >= 85 ? 'bg-success-subtle text-success' : (row.occupancyPercent >= 60 ? 'bg-primary-subtle text-primary' : 'bg-warning-subtle text-warning')}"
+                              style="border-radius: 8px; font-size: 0.85rem;"
+                              th:text="${row.occupancyPercentLabel} + '%'">0%</span>
                     </td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </section>
+
+    <!-- Monthly Debt Overview Section if available -->
+    <section class="card border shadow-sm p-4 mb-4" style="border-radius: 18px; border-color: rgba(226, 232, 240, 0.9) !important; background: #FFFFFF;" th:if="${dash != null && dash.debtByMonth != null && !dash.debtByMonth.items.empty}">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <h2 class="h5 fw-bold text-dark mb-1">Thống kê công nợ phát sinh theo tháng</h2>
+                <p class="text-muted small mb-0">Các kỳ thanh toán còn hóa đơn quá hạn hoặc chưa thu</p>
+            </div>
+            <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill fw-bold" th:text="'Tổng nợ: ' + ${dash.debtByMonth.formattedTotalDebt}">
+                0 đ
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.9rem;" id="statsDebtTable">
+                <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Kỳ hóa đơn (Tháng)</th>
+                    <th class="text-center">Số hóa đơn chưa thu</th>
+                    <th class="text-end pe-3">Số tiền công nợ</th>
+                </tr>
+                </thead>
+                <tbody id="statsDebtTableBody">
+                <tr th:each="it : ${dash.debtByMonth.items}" class="stats-debt-row">
+                    <td class="ps-3 fw-semibold text-dark">
+                        <i class="bi bi-calendar3 me-1 text-secondary"></i>
+                        <span th:text="${it.label}">09/2026</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-warning-subtle text-dark rounded-pill px-2.5 py-1" th:text="${it.count}">0</span>
+                    </td>
+                    <td class="text-end pe-3 fw-bold text-danger" th:text="${it.formattedAmount}">0 đ</td>
+                </tr>
+                </tbody>
+            </table>
+
+            <!-- Phân trang mini cho stats debt table -->
+            <div class="d-flex align-items-center justify-content-between p-3 border-top small" id="statsDebtPagination">
+                <span class="text-muted" style="font-size:0.8rem;">
+                    Trang <strong id="statsDebtCurrentPage" class="text-dark">1</strong>/<span id="statsDebtTotalPages">1</span> (<span id="statsDebtTotalCount">0</span> kỳ)
+                </span>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" id="statsDebtPrevBtn" class="btn btn-outline-secondary py-0.5 px-2.5" disabled title="Trang trước">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button type="button" id="statsDebtNextBtn" class="btn btn-outline-secondary py-0.5 px-2.5" title="Trang sau">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tbody = document.getElementById("statsDebtTableBody");
+            if (!tbody) return;
+            const rows = Array.from(tbody.querySelectorAll(".stats-debt-row"));
+            if (!rows || rows.length === 0) return;
+
+            // Đảo ngược để tháng mới nhất lên đầu
+            rows.reverse().forEach(row => tbody.appendChild(row));
+
+            const pageSize = 6;
+            const totalRows = rows.length;
+            const totalPages = Math.ceil(totalRows / pageSize);
+            let currentPage = 1;
+
+            const pageSpan = document.getElementById("statsDebtCurrentPage");
+            const totalPagesSpan = document.getElementById("statsDebtTotalPages");
+            const totalCountSpan = document.getElementById("statsDebtTotalCount");
+            const prevBtn = document.getElementById("statsDebtPrevBtn");
+            const nextBtn = document.getElementById("statsDebtNextBtn");
+
+            if (totalPagesSpan) totalPagesSpan.textContent = totalPages;
+            if (totalCountSpan) totalCountSpan.textContent = totalRows;
+
+            function showPage(p) {
+                currentPage = p;
+                const start = (p - 1) * pageSize;
+                const end = start + pageSize;
+                rows.forEach((row, idx) => {
+                    row.style.display = (idx >= start && idx < end) ? "" : "none";
+                });
+                if (pageSpan) pageSpan.textContent = currentPage;
+                if (prevBtn) prevBtn.disabled = (currentPage <= 1);
+                if (nextBtn) nextBtn.disabled = (currentPage >= totalPages);
+            }
+
+            if (prevBtn) prevBtn.addEventListener("click", () => { if (currentPage > 1) showPage(currentPage - 1); });
+            if (nextBtn) nextBtn.addEventListener("click", () => { if (currentPage < totalPages) showPage(currentPage + 1); });
+
+            showPage(1);
+        });
+    </script>
 </main>
 </body>
 </html>

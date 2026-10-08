@@ -33,7 +33,6 @@ import com.ktx.domain.Student;
 import com.ktx.domain.User;
 import com.ktx.domain.enums.Role;
 import com.ktx.domain.enums.TicketPriority;
-import com.ktx.domain.enums.TicketStatus;
 import com.ktx.repository.ContractRepository;
 import com.ktx.repository.NotificationRepository;
 import com.ktx.repository.StudentRepository;
